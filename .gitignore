@@ -1,0 +1,74 @@
+# Ignore build outputs
+bin/
+obj/
+
+# Ignore Rider project files
+.idea/
+.idea_modules/
+.idea_modules/
+
+# Ignore Rider workspace
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries
+.idea/libraries
+.idea/vcs.xml
+.idea/.rider/
+
+# Ignore other JetBrains IDEs project files
+*.sln.iml
+*.csproj.user
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Ignore Visual Studio Code files
+.vscode/
+
+# Ignore build logs
+msbuild.log
+msbuild.err
+msbuild.wrn
+
+# Ignore User-specific files
+*.rsuser
+*.sln.ide
+*.userprefs
+
+# ASP.NET Scaffolding
+.scaffolding
+
+# .NET Core project files
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Linux generated files
+*~
+
+# Log files
+*.log
+
+# Uncomment if you have tasks, stages and plans defined in Bamboo
+# atlassian-bamboo-specs/
+
+# Rider-specific files
+.idea/
+.idea/.idea/uml/*.uml
+
+# Ignore global configuration files
+*.sln.docstates

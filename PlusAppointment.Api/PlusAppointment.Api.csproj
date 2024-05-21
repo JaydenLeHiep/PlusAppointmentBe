@@ -4,6 +4,7 @@
         <TargetFramework>net8.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
+        <RootNamespace>WebApplication1</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
@@ -21,6 +22,10 @@
       </PackageReference>
       <PackageReference Include="Npgsql" Version="8.0.3" />
       <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.4" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\PlusAppointment.Models\PlusAppointment.Models.csproj" />
     </ItemGroup>
 
 </Project>

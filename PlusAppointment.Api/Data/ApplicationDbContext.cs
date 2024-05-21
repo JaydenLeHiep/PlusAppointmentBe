@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Models;
 
+
 namespace WebApplication1.Data;
 
 public class ApplicationDbContext : DbContext
@@ -30,7 +31,7 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<Appointment>()
             .HasOne(a => a.Customer)
-            .WithMany()
+            .WithMany(c => c.Appointments)
             .HasForeignKey(a => a.CustomerId);
 
         modelBuilder.Entity<Appointment>()

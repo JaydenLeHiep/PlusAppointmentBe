@@ -72,3 +72,11 @@ $RECYCLE.BIN/
 
 # Ignore global configuration files
 *.sln.docstates
+# Ignore environment-specific settings files
+appsettings.*.json
+# Ignore environment-specific settings files
+appsettings.Development.json
+# Do not ignore the main appsettings.json file
+!appsettings.json
+
+

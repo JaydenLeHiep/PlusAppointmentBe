@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using WebApplication1.Data;
@@ -11,9 +12,11 @@ using WebApplication1.Data;
 namespace WebApplication1.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240520202349_InitialCreate")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,7 +25,7 @@ namespace WebApplication1.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("WebApplication1.Models.Appointment", b =>
+            modelBuilder.Entity("PlusAppointment.Api.Models.Appointment", b =>
                 {
                     b.Property<int>("AppointmentId")
                         .ValueGeneratedOnAdd()
@@ -71,7 +74,7 @@ namespace WebApplication1.Migrations
                     b.ToTable("Appointments");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Business", b =>
+            modelBuilder.Entity("PlusAppointment.Api.Models.Business", b =>
                 {
                     b.Property<int>("BusinessId")
                         .ValueGeneratedOnAdd()
@@ -105,7 +108,7 @@ namespace WebApplication1.Migrations
                     b.ToTable("Businesses");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.BusinessServices", b =>
+            modelBuilder.Entity("PlusAppointment.Api.Models.BusinessServices", b =>
                 {
                     b.Property<int>("BusinessId")
                         .HasColumnType("integer");
@@ -120,7 +123,7 @@ namespace WebApplication1.Migrations
                     b.ToTable("BusinessServices");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Customer", b =>
+            modelBuilder.Entity("PlusAppointment.Api.Models.Customer", b =>
                 {
                     b.Property<int>("CustomerId")
                         .ValueGeneratedOnAdd()
@@ -145,7 +148,7 @@ namespace WebApplication1.Migrations
                     b.ToTable("Customers");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Service", b =>
+            modelBuilder.Entity("PlusAppointment.Api.Models.Service", b =>
                 {
                     b.Property<int>("ServiceId")
                         .ValueGeneratedOnAdd()
@@ -172,7 +175,7 @@ namespace WebApplication1.Migrations
                     b.ToTable("Services");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Staff", b =>
+            modelBuilder.Entity("PlusAppointment.Api.Models.Staff", b =>
                 {
                     b.Property<int>("StaffId")
                         .ValueGeneratedOnAdd()
@@ -206,7 +209,7 @@ namespace WebApplication1.Migrations
                     b.ToTable("Staff");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.User", b =>
+            modelBuilder.Entity("PlusAppointment.Api.Models.User", b =>
                 {
                     b.Property<int>("UserId")
                         .ValueGeneratedOnAdd()
@@ -237,27 +240,27 @@ namespace WebApplication1.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Appointment", b =>
+            modelBuilder.Entity("PlusAppointment.Api.Models.Appointment", b =>
                 {
-                    b.HasOne("WebApplication1.Models.Business", "Business")
+                    b.HasOne("PlusAppointment.Api.Models.Business", "Business")
                         .WithMany("Appointments")
                         .HasForeignKey("BusinessId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("WebApplication1.Models.Customer", "Customer")
+                    b.HasOne("PlusAppointment.Api.Models.Customer", "Customer")
                         .WithMany()
                         .HasForeignKey("CustomerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("WebApplication1.Models.Service", "Service")
+                    b.HasOne("PlusAppointment.Api.Models.Service", "Service")
                         .WithMany()
                         .HasForeignKey("ServiceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("WebApplication1.Models.Staff", "Staff")
+                    b.HasOne("PlusAppointment.Api.Models.Staff", "Staff")
                         .WithMany()
                         .HasForeignKey("StaffId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -272,9 +275,9 @@ namespace WebApplication1.Migrations
                     b.Navigation("Staff");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Business", b =>
+            modelBuilder.Entity("PlusAppointment.Api.Models.Business", b =>
                 {
-                    b.HasOne("WebApplication1.Models.User", "User")
+                    b.HasOne("PlusAppointment.Api.Models.User", "User")
                         .WithMany("Businesses")
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -283,15 +286,15 @@ namespace WebApplication1.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.BusinessServices", b =>
+            modelBuilder.Entity("PlusAppointment.Api.Models.BusinessServices", b =>
                 {
-                    b.HasOne("WebApplication1.Models.Business", "Business")
+                    b.HasOne("PlusAppointment.Api.Models.Business", "Business")
                         .WithMany("BusinessServices")
                         .HasForeignKey("BusinessId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("WebApplication1.Models.Service", "Service")
+                    b.HasOne("PlusAppointment.Api.Models.Service", "Service")
                         .WithMany("BusinessServices")
                         .HasForeignKey("ServiceId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -302,9 +305,9 @@ namespace WebApplication1.Migrations
                     b.Navigation("Service");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Staff", b =>
+            modelBuilder.Entity("PlusAppointment.Api.Models.Staff", b =>
                 {
-                    b.HasOne("WebApplication1.Models.Business", "Business")
+                    b.HasOne("PlusAppointment.Api.Models.Business", "Business")
                         .WithMany("Staff")
                         .HasForeignKey("BusinessId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -313,7 +316,7 @@ namespace WebApplication1.Migrations
                     b.Navigation("Business");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Business", b =>
+            modelBuilder.Entity("PlusAppointment.Api.Models.Business", b =>
                 {
                     b.Navigation("Appointments");
 
@@ -322,12 +325,12 @@ namespace WebApplication1.Migrations
                     b.Navigation("Staff");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Service", b =>
+            modelBuilder.Entity("PlusAppointment.Api.Models.Service", b =>
                 {
                     b.Navigation("BusinessServices");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.User", b =>
+            modelBuilder.Entity("PlusAppointment.Api.Models.User", b =>
                 {
                     b.Navigation("Businesses");
                 });

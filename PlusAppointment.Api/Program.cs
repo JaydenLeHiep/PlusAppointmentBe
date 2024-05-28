@@ -1,23 +1,25 @@
+using System.Text;
 using log4net;
 using log4net.Config;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using WebApplication1.Data;
 using WebApplication1.Repositories.Implementation.UserRepo;
 using WebApplication1.Repositories.Interfaces.UserRepo;
 using WebApplication1.Services.Implematations.UserService;
 using WebApplication1.Services.Interfaces.UserService;
-
+using WebApplication1.Repositories.Implementation.BusinessRepo;
+using WebApplication1.Repositories.Interfaces.BusinessRepo;
+using WebApplication1.Services.Implematations.BusinessService;
+using WebApplication1.Services.Interfaces.BusinessService;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // logging
-// Ensure Logs directory exists
 EnsureLogsDirectory();
-
-// Load log4net configuration
 var logRepository = LogManager.GetRepository(System.Reflection.Assembly.GetEntryAssembly());
 XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
-
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -26,9 +28,30 @@ builder.Services.AddControllers();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Add other services like repositories and service interfaces here
+// Register repositories and services
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IBusinessRepository, BusinessRepository>();
+builder.Services.AddScoped<IBusinessService, BusinessService>();
+
+// Add JWT Authentication
+var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"]);
+builder.Services.AddAuthentication(x =>
+{
+    x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(x =>
+{
+    x.RequireHttpsMetadata = false;
+    x.SaveToken = true;
+    x.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ValidateIssuer = false,
+        ValidateAudience = false
+    };
+});
 
 var app = builder.Build();
 
@@ -45,13 +68,12 @@ else
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
 app.MapGet("/", () => "Hello World!");
 
 app.Run();
@@ -65,4 +87,5 @@ void EnsureLogsDirectory()
         Directory.CreateDirectory(logsPath);
     }
 }
+
 public partial class Program { } // This is needed for the EF Core CLI tools to function properly

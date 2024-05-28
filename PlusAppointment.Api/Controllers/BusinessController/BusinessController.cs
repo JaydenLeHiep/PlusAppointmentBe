@@ -1,0 +1,128 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+using PlusAppointment.Models.DTOs;
+using WebApplication1.Models;
+using WebApplication1.Services.Interfaces.BusinessService;
+
+
+[ApiController]
+[Route("api/[controller]")]
+public class BusinessController : ControllerBase
+{
+    private readonly IBusinessService _businessService;
+
+    public BusinessController(IBusinessService businessService)
+    {
+        _businessService = businessService;
+    }
+
+    [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> GetAll()
+    {
+        var businesses = await _businessService.GetAllBusinessesAsync();
+        return Ok(businesses);
+    }
+
+    [HttpGet("{id}")]
+    [Authorize]
+    public async Task<IActionResult> GetById(int id)
+    {
+        var business = await _businessService.GetBusinessByIdAsync(id);
+        if (business == null)
+        {
+            return NotFound(new { message = "Business not found" });
+        }
+        return Ok(business);
+    }
+
+    [HttpPost]
+    [Authorize]
+    public async Task<IActionResult> Create([FromBody] BusinessDto businessDto)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { message = "User not authorized" });
+        }
+
+        var business = new Business
+        {
+            Name = businessDto.Name,
+            Address = businessDto.Address,
+            Phone = businessDto.Phone,
+            Email = businessDto.Email,
+            UserID = int.Parse(userId)
+        };
+
+        await _businessService.AddBusinessAsync(business);
+        return Ok(new { message = "Business created successfully" });
+    }
+
+    [HttpPut("{id}")]
+    [Authorize]
+    public async Task<IActionResult> Update(int id, [FromBody] BusinessDto businessDto)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { message = "User not authorized" });
+        }
+
+        var business = await _businessService.GetBusinessByIdAsync(id);
+        if (business == null)
+        {
+            return NotFound(new { message = "Business not found" });
+        }
+
+        if (business.UserID != int.Parse(userId))
+        {
+            return Unauthorized(new { message = "User not authorized" });
+        }
+
+        business.Name = businessDto.Name;
+        business.Address = businessDto.Address;
+        business.Phone = businessDto.Phone;
+        business.Email = businessDto.Email;
+
+        await _businessService.UpdateBusinessAsync(business);
+        return Ok(new { message = "Business updated successfully" });
+    }
+
+    [HttpDelete("{id}")]
+    [Authorize]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var business = await _businessService.GetBusinessByIdAsync(id);
+        if (business == null)
+        {
+            return NotFound(new { message = "Business not found" });
+        }
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId) || business.UserID != int.Parse(userId))
+        {
+            return Unauthorized(new { message = "User not authorized" });
+        }
+
+        await _businessService.DeleteBusinessAsync(id);
+        return Ok(new { message = "Business deleted successfully" });
+    }
+
+    [HttpGet("{id}/services")]
+    [Authorize]
+    public async Task<IActionResult> GetServices(int id)
+    {
+        var services = await _businessService.GetServicesByBusinessIdAsync(id);
+        return Ok(services);
+    }
+
+    [HttpGet("{id}/staff")]
+    [Authorize]
+    public async Task<IActionResult> GetStaff(int id)
+    {
+        var staff = await _businessService.GetStaffByBusinessIdAsync(id);
+        return Ok(staff);
+    }
+}

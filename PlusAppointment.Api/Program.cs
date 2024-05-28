@@ -2,7 +2,10 @@ using log4net;
 using log4net.Config;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Data;
-
+using WebApplication1.Repositories.Implementation.UserRepo;
+using WebApplication1.Repositories.Interfaces.UserRepo;
+using WebApplication1.Services.Implematations.UserService;
+using WebApplication1.Services.Interfaces.UserService;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,8 +27,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add other services like repositories and service interfaces here
-// builder.Services.AddScoped<IUserRepository, UserRepository>();
-// builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 var app = builder.Build();
 

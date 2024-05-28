@@ -1,4 +1,4 @@
-namespace WebApplication1.Models.DTOS;
+namespace PlusAppointment.Models.DTOs;
 
 public class AppointmentDetailDto
 {

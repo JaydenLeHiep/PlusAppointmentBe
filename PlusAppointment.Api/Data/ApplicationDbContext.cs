@@ -14,7 +14,7 @@ namespace WebApplication1.Data
         public DbSet<Business> Businesses { get; set; }
         public DbSet<Appointment> Appointments { get; set; }
         public DbSet<Service> Services { get; set; }
-        public DbSet<Staff> Staff { get; set; }
+        public DbSet<Staff> Staffs { get; set; }  // Updated from Staff to Staffs
         public DbSet<Customer> Customers { get; set; }
         public DbSet<BusinessServices> BusinessServices { get; set; }
 
@@ -49,7 +49,7 @@ namespace WebApplication1.Data
 
             modelBuilder.Entity<Staff>()
                 .HasOne(s => s.Business)
-                .WithMany(b => b.Staff)
+                .WithMany(b => b.Staffs)  // Updated from b.Staff to b.Staffs
                 .HasForeignKey(s => s.BusinessId);
 
             modelBuilder.Entity<Service>()

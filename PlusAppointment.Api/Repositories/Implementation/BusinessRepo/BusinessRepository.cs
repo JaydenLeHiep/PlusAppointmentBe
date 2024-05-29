@@ -56,6 +56,6 @@ public class BusinessRepository: IBusinessRepository
 
     public async Task<IEnumerable<Staff>> GetStaffByBusinessIdAsync(int businessId)
     {
-        return await _context.Staff.Where(s => s.BusinessId == businessId).ToListAsync();
+        return await _context.Staffs.Where(s => s.BusinessId == businessId).ToListAsync();
     }
 }

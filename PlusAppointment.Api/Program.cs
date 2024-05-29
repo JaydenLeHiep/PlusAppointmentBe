@@ -10,9 +10,13 @@ using WebApplication1.Repositories.Interfaces.UserRepo;
 using WebApplication1.Services.Implematations.UserService;
 using WebApplication1.Services.Interfaces.UserService;
 using WebApplication1.Repositories.Implementation.BusinessRepo;
+using WebApplication1.Repositories.Implementation.ServicesRepo;
 using WebApplication1.Repositories.Interfaces.BusinessRepo;
+using WebApplication1.Repositories.Interfaces.ServicesRepo;
 using WebApplication1.Services.Implematations.BusinessService;
+using WebApplication1.Services.Implematations.ServicesService;
 using WebApplication1.Services.Interfaces.BusinessService;
+using WebApplication1.Services.Interfaces.ServicesService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +37,8 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IBusinessRepository, BusinessRepository>();
 builder.Services.AddScoped<IBusinessService, BusinessService>();
+builder.Services.AddScoped<IServicesRepository, ServicesRepository>();
+builder.Services.AddScoped<IServicesService, ServicesService>();
 
 // Add JWT Authentication
 var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"]);

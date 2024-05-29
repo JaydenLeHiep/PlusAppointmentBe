@@ -115,6 +115,11 @@ public class BusinessController : ControllerBase
     public async Task<IActionResult> GetServices(int id)
     {
         var services = await _businessService.GetServicesByBusinessIdAsync(id);
+        if (services == null || !services.Any())
+        {
+            return NotFound(new { message = "No services found for this business" });
+        }
+
         return Ok(services);
     }
 
@@ -123,6 +128,11 @@ public class BusinessController : ControllerBase
     public async Task<IActionResult> GetStaff(int id)
     {
         var staff = await _businessService.GetStaffByBusinessIdAsync(id);
+        if (staff == null || !staff.Any())
+        {
+            return NotFound(new { message = "No staff found for this business" });
+        }
+
         return Ok(staff);
     }
 }

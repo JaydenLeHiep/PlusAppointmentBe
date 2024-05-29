@@ -65,6 +65,28 @@ namespace WebApplication1.Data
                         .WithMany(s => s.BusinessServices)
                         .HasForeignKey(bs => bs.ServiceId),
                     j => { j.HasKey(bs => new { bs.BusinessId, bs.ServiceId }); });
+
+            // Add indexes to improve performance
+            modelBuilder.Entity<Business>()
+                .HasIndex(b => b.UserID);
+
+            modelBuilder.Entity<Appointment>()
+                .HasIndex(a => a.CustomerId);
+            
+            modelBuilder.Entity<Appointment>()
+                .HasIndex(a => a.BusinessId);
+            
+            modelBuilder.Entity<Appointment>()
+                .HasIndex(a => a.ServiceId);
+            
+            modelBuilder.Entity<Appointment>()
+                .HasIndex(a => a.StaffId);
+
+            modelBuilder.Entity<Staff>()
+                .HasIndex(s => s.BusinessId);
+
+            modelBuilder.Entity<BusinessServices>()
+                .HasIndex(bs => new { bs.BusinessId, bs.ServiceId });
         }
     }
 }

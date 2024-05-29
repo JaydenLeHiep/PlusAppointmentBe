@@ -10,8 +10,9 @@ namespace WebApplication1.Models
         public int UserID { get; set; }
         public User User { get; set; }
         public ICollection<Service> Services { get; set; } = new List<Service>();
-        public ICollection<Staff> Staff { get; set; } = new List<Staff>();
+        public ICollection<Staff> Staffs { get; set; } = new List<Staff>();
         public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
         public ICollection<BusinessServices> BusinessServices { get; set; } = new List<BusinessServices>();
+        
     }
 }

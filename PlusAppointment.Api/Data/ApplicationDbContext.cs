@@ -14,7 +14,8 @@ namespace WebApplication1.Data
         public DbSet<Business> Businesses { get; set; }
         public DbSet<Appointment> Appointments { get; set; }
         public DbSet<Service> Services { get; set; }
-        public DbSet<Staff> Staffs { get; set; }  // Updated from Staff to Staffs
+        public DbSet<Staff> Staffs { get; set; }
+
         public DbSet<Customer> Customers { get; set; }
         public DbSet<BusinessServices> BusinessServices { get; set; }
 

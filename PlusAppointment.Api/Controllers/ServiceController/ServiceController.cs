@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using PlusAppointment.Models.DTOs;
+using PlusAppointment.Models.Enums;
 using WebApplication1.Models;
 
 using WebApplication1.Services.Interfaces.ServicesService;
@@ -45,7 +46,9 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> AddService([FromBody] ServiceDto serviceDto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
+            var userRole = User.FindFirstValue(ClaimTypes.Role);
+
+            if (string.IsNullOrEmpty(userId) || userRole != Role.Owner.ToString())
             {
                 return Unauthorized(new { message = "User not authorized" });
             }
@@ -74,7 +77,9 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> AddServices([FromBody] ServicesDto servicesDto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
+            var userRole = User.FindFirstValue(ClaimTypes.Role);
+
+            if (string.IsNullOrEmpty(userId) || userRole != Role.Owner.ToString())
             {
                 return Unauthorized(new { message = "User not authorized" });
             }

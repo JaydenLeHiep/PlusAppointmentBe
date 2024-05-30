@@ -2,7 +2,6 @@ using WebApplication1.Models;
 using WebApplication1.Repositories.Interfaces.StaffRepo;
 using WebApplication1.Services.Interfaces.StaffService;
 using PlusAppointment.Models.DTOs;
-using System.Linq;
 using WebApplication1.Utils.Hash;
 using WebApplication1.Utils.Jwt;
 

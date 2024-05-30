@@ -70,4 +70,19 @@ public class StaffRepository: IStaffRepository
             await _context.SaveChangesAsync();
         }
     }
+    
+    public async Task<Staff> GetByEmailAsync(string email)
+    {
+        return await _context.Staffs.SingleOrDefaultAsync(s => s.Email == email);
+    }
+    
+    public async Task<bool> EmailExistsAsync(string email)
+    {
+        return await _context.Staffs.AnyAsync(s => s.Email == email);
+    }
+
+    public async Task<bool> PhoneExistsAsync(string phone)
+    {
+        return await _context.Staffs.AnyAsync(s => s.Phone == phone);
+    }
 }

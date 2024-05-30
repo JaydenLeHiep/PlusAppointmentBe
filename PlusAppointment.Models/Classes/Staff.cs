@@ -1,6 +1,8 @@
+using PlusAppointment.Models.Interfaces;
+
 namespace WebApplication1.Models;
 
-public class Staff
+public class Staff : IUserIdentity
 {
     public int StaffId { get; set; }
     public int BusinessId { get; set; }
@@ -8,6 +10,9 @@ public class Staff
     public string Name { get; set; }
     public string Email { get; set; }
     public string Phone { get; set; }
-    
+    public string Password { get; set; }
 
+    int IUserIdentity.Id => StaffId;
+    string IUserIdentity.Username => Name;
+    string IUserIdentity.Role => "Staff"; // Assuming Staff has a fixed role
 }

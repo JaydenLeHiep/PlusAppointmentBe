@@ -1,10 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
 using PlusAppointment.Models.DTOs;
-using WebApplication1.Models;
-
 using WebApplication1.Services.Interfaces.StaffService;
+using System.Security.Claims;
+using PlusAppointment.Models.Enums;
 
 namespace WebApplication1.Controllers
 {
@@ -45,21 +44,16 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> AddStaff([FromBody] StaffDto staffDto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
+            var userRole = User.FindFirstValue(ClaimTypes.Role);
+
+            if (string.IsNullOrEmpty(userId) || userRole != Role.Owner.ToString())
             {
                 return Unauthorized(new { message = "User not authorized" });
             }
 
-            var staff = new Staff
-            {
-                Name = staffDto.Name,
-                Email = staffDto.Email,
-                Phone = staffDto.Phone
-            };
-
             try
             {
-                await _staffService.AddStaffAsync(staff, staffDto.BusinessId);
+                await _staffService.AddStaffAsync(staffDto);
                 return Ok(new { message = "Staff added successfully" });
             }
             catch (Exception ex)
@@ -73,23 +67,16 @@ namespace WebApplication1.Controllers
         public async Task<IActionResult> AddStaffs([FromBody] IEnumerable<StaffDto> staffDtos)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
+            var userRole = User.FindFirstValue(ClaimTypes.Role);
+
+            if (string.IsNullOrEmpty(userId) || userRole != Role.Owner.ToString())
             {
                 return Unauthorized(new { message = "User not authorized" });
             }
 
-            var staffs = staffDtos.Select(staffDto => new Staff
-            {
-                Name = staffDto.Name,
-                Email = staffDto.Email,
-                Phone = staffDto.Phone
-            }).ToList();
-
-            var businessId = staffDtos.FirstOrDefault()?.BusinessId ?? 0;
-
             try
             {
-                await _staffService.AddListStaffsAsync(staffs, businessId);
+                await _staffService.AddListStaffsAsync(staffDtos);
                 return Ok(new { message = "Staffs added successfully" });
             }
             catch (Exception ex)
@@ -108,17 +95,19 @@ namespace WebApplication1.Controllers
                 return Unauthorized(new { message = "User not authorized" });
             }
 
-            var staff = await _staffService.GetStaffIdAsync(id);
-            if (staff == null)
+            try
             {
-                return NotFound(new { message = "Staff not found" });
+                await _staffService.UpdateStaffAsync(id, staffDto);
+                return Ok(new { message = "Staff updated successfully" });
             }
-
-            staff.Name = staffDto.Name;
-            staff.Email = staffDto.Email;
-            staff.Phone = staffDto.Phone;
-            await _staffService.UpdateStaffAsync(staff);
-            return Ok(new { message = "Staff updated successfully" });
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpDelete("{id}")]
@@ -131,9 +120,33 @@ namespace WebApplication1.Controllers
                 return Unauthorized(new { message = "User not authorized" });
             }
 
-            var staff = await _staffService.GetStaffIdAsync(id);
-            await _staffService.DeleteStaffAsync(id);
-            return Ok(new { message = "Staff deleted successfully" });
+            try
+            {
+                await _staffService.DeleteStaffAsync(id);
+                return Ok(new { message = "Staff deleted successfully" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+        
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] StaffLoginDto loginDto)
+        {
+            try
+            {
+                var token = await _staffService.LoginAsync(loginDto.Email, loginDto.Password);
+                return Ok(new { token });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

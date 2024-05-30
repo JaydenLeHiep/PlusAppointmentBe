@@ -1,6 +1,9 @@
+using PlusAppointment.Models.Enums;
+using PlusAppointment.Models.Interfaces;
+
 namespace WebApplication1.Models;
 
-public class User
+public class User : IUserIdentity
 {
     public int UserId { get; set; }
     public string Username { get; set; }
@@ -8,5 +11,10 @@ public class User
     public string Email { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    public Role Role { get; set; }
     public ICollection<Business> Businesses { get; set; }
+
+    int IUserIdentity.Id => UserId;
+    string IUserIdentity.Username => Username;
+    string IUserIdentity.Role => Role.ToString();
 }

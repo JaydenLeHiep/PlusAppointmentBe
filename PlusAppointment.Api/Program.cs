@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using WebApplication1.Data;
+using WebApplication1.Middleware;
 using WebApplication1.Repositories.Implementation.UserRepo;
 using WebApplication1.Repositories.Interfaces.UserRepo;
 using WebApplication1.Services.Implematations.UserService;
@@ -84,7 +85,7 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
-
+app.UseRoleMiddleware();
 app.MapControllers();
 app.MapGet("/", () => "Hello World!");
 

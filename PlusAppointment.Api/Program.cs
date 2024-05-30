@@ -24,7 +24,7 @@ using WebApplication1.Services.Interfaces.StaffService;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// logging
+// Ensure the Logs directory exists
 EnsureLogsDirectory();
 var logRepository = LogManager.GetRepository(System.Reflection.Assembly.GetEntryAssembly());
 XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
@@ -65,6 +65,17 @@ builder.Services.AddAuthentication(x =>
     };
 });
 
+// Configure CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontendOnly", builder =>
+    {
+        builder.WithOrigins("http://localhost:3000")
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -81,6 +92,9 @@ else
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+
+// Use CORS
+app.UseCors("AllowFrontendOnly");
 
 app.UseAuthentication();
 app.UseAuthorization();

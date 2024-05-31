@@ -36,7 +36,7 @@ public class ServicesRepository: IServicesRepository
         await _context.Services.AddAsync(service);
         await _context.SaveChangesAsync();
 
-        business.BusinessServices.Add(new BusinessServices { BusinessId = businessId, ServiceId = service.ServiceId });
+        //business.BusinessServices.Add(new BusinessServices { BusinessId = businessId, ServiceId = service.ServiceId });
         await _context.SaveChangesAsync();
     }
 
@@ -51,10 +51,7 @@ public class ServicesRepository: IServicesRepository
         await _context.Services.AddRangeAsync(services);
         await _context.SaveChangesAsync();
 
-        foreach (var service in services)
-        {
-            business.BusinessServices.Add(new BusinessServices { BusinessId = businessId, ServiceId = service.ServiceId });
-        }
+
         await _context.SaveChangesAsync();
     }
 

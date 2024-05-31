@@ -15,9 +15,7 @@ namespace WebApplication1.Data
         public DbSet<Appointment> Appointments { get; set; }
         public DbSet<Service> Services { get; set; }
         public DbSet<Staff> Staffs { get; set; }
-
         public DbSet<Customer> Customers { get; set; }
-        public DbSet<BusinessServices> BusinessServices { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -45,27 +43,18 @@ namespace WebApplication1.Data
 
             modelBuilder.Entity<Appointment>()
                 .HasOne(a => a.Staff)
-                .WithMany()
+                .WithMany(s => s.Appointments)
                 .HasForeignKey(a => a.StaffId);
 
             modelBuilder.Entity<Staff>()
                 .HasOne(s => s.Business)
-                .WithMany(b => b.Staffs)  // Updated from b.Staff to b.Staffs
+                .WithMany(b => b.Staffs)
                 .HasForeignKey(s => s.BusinessId);
 
             modelBuilder.Entity<Service>()
-                .HasMany(s => s.Businesses)
+                .HasOne(s => s.Business)
                 .WithMany(b => b.Services)
-                .UsingEntity<BusinessServices>(
-                    j => j
-                        .HasOne(bs => bs.Business)
-                        .WithMany(b => b.BusinessServices)
-                        .HasForeignKey(bs => bs.BusinessId),
-                    j => j
-                        .HasOne(bs => bs.Service)
-                        .WithMany(s => s.BusinessServices)
-                        .HasForeignKey(bs => bs.ServiceId),
-                    j => { j.HasKey(bs => new { bs.BusinessId, bs.ServiceId }); });
+                .HasForeignKey(s => s.BusinessId);
 
             // Add indexes to improve performance
             modelBuilder.Entity<Business>()
@@ -73,21 +62,21 @@ namespace WebApplication1.Data
 
             modelBuilder.Entity<Appointment>()
                 .HasIndex(a => a.CustomerId);
-            
+
             modelBuilder.Entity<Appointment>()
                 .HasIndex(a => a.BusinessId);
-            
+
             modelBuilder.Entity<Appointment>()
                 .HasIndex(a => a.ServiceId);
-            
+
             modelBuilder.Entity<Appointment>()
                 .HasIndex(a => a.StaffId);
 
             modelBuilder.Entity<Staff>()
                 .HasIndex(s => s.BusinessId);
 
-            modelBuilder.Entity<BusinessServices>()
-                .HasIndex(bs => new { bs.BusinessId, bs.ServiceId });
+            modelBuilder.Entity<Service>()
+                .HasIndex(s => s.BusinessId);
         }
     }
 }

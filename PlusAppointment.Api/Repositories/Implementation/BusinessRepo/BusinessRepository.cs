@@ -48,9 +48,8 @@ public class BusinessRepository: IBusinessRepository
 
     public async Task<IEnumerable<Service>> GetServicesByBusinessIdAsync(int businessId)
     {
-        return await _context.BusinessServices
-            .Where(bs => bs.BusinessId == businessId)
-            .Select(bs => bs.Service)
+        return await _context.Services
+            .Where(s => s.BusinessId == businessId)
             .ToListAsync();
     }
 

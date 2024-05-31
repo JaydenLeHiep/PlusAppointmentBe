@@ -37,17 +37,13 @@ public class StaffRepository: IStaffRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task AddListStaffsAsync(IEnumerable<Staff> staffs, int businessId)
+    public async Task AddListStaffsAsync(IEnumerable<Staff> staffs)
     {
+        var businessId = staffs.FirstOrDefault()?.BusinessId ?? 0;
         var business = await _context.Businesses.FindAsync(businessId);
         if (business == null)
         {
             throw new Exception("Business not found");
-        }
-
-        foreach (var staff in staffs)
-        {
-            staff.BusinessId = businessId;
         }
 
         await _context.Staffs.AddRangeAsync(staffs);

@@ -41,9 +41,9 @@ namespace WebApplication1.Controllers
             return Ok(service);
         }
 
-        [HttpPost("add")]
+        [HttpPost("{id}/add")]
         [Authorize]
-        public async Task<IActionResult> AddService([FromBody] ServiceDto serviceDto)
+        public async Task<IActionResult> AddService([FromRoute] int id, [FromBody] ServiceDto serviceDto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var userRole = User.FindFirstValue(ClaimTypes.Role);
@@ -52,18 +52,21 @@ namespace WebApplication1.Controllers
             {
                 return Unauthorized(new { message = "User not authorized" });
             }
-
+            var businessId = id;
             var service = new Service
             {
                 Name = serviceDto.Name,
                 Description = serviceDto.Description,
                 Duration = serviceDto.Duration,
-                Price = serviceDto.Price
+                Price = serviceDto.Price,
+                BusinessId = businessId
             };
+
+            
 
             try
             {
-                await _servicesService.AddServiceAsync(service, serviceDto.BusinessId);
+                await _servicesService.AddServiceAsync(service, businessId);
                 return Ok(new { message = "Service created successfully" });
             }
             catch (Exception ex)
@@ -72,9 +75,9 @@ namespace WebApplication1.Controllers
             }
         }
 
-        [HttpPost("addList")]
+        [HttpPost("{id}/addList")]
         [Authorize]
-        public async Task<IActionResult> AddServices([FromBody] ServicesDto servicesDto)
+        public async Task<IActionResult> AddServices([FromRoute] int id,[FromBody] ServicesDto servicesDto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var userRole = User.FindFirstValue(ClaimTypes.Role);
@@ -83,16 +86,17 @@ namespace WebApplication1.Controllers
             {
                 return Unauthorized(new { message = "User not authorized" });
             }
-
+            var businessId = id;
             var services = servicesDto.Services.Select(serviceDto => new Service
             {
                 Name = serviceDto.Name,
                 Description = serviceDto.Description,
                 Duration = serviceDto.Duration,
-                Price = serviceDto.Price
+                Price = serviceDto.Price,
+                BusinessId = id
             }).ToList();
 
-            var businessId = servicesDto.Services.FirstOrDefault()?.BusinessId ?? 0;
+            
 
             try
             {

@@ -50,7 +50,7 @@ namespace WebApplication1.Services.Implematations.StaffService
             await _staffRepository.AddStaffAsync(staff, staffDto.BusinessId);
         }
 
-        public async Task AddListStaffsAsync(IEnumerable<StaffDto> staffDtos)
+        public async Task AddListStaffsAsync(IEnumerable<StaffDto> staffDtos, int businessId)
         {
             foreach (var staffDto in staffDtos)
             {
@@ -70,13 +70,12 @@ namespace WebApplication1.Services.Implematations.StaffService
                 Name = staffDto.Name,
                 Email = staffDto.Email,
                 Phone = staffDto.Phone,
-                Password = HashUtility.HashPassword(staffDto.Password)
+                Password = HashUtility.HashPassword(staffDto.Password),
+                BusinessId = businessId
             }).ToList();
 
-            var businessId = staffDtos.FirstOrDefault()?.BusinessId ?? 0;
-            await _staffRepository.AddListStaffsAsync(staffs, businessId);
+            await _staffRepository.AddListStaffsAsync(staffs);
         }
-
         public async Task UpdateStaffAsync(int id, StaffDto staffDto)
         {
             var staff = await _staffRepository.GetByIdAsync(id);

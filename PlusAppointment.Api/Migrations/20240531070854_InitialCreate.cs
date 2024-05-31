@@ -28,22 +28,6 @@ namespace WebApplication1.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Services",
-                columns: table => new
-                {
-                    ServiceId = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    Description = table.Column<string>(type: "text", nullable: false),
-                    Duration = table.Column<TimeSpan>(type: "interval", nullable: false),
-                    Price = table.Column<decimal>(type: "numeric", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Services", x => x.ServiceId);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
                 {
@@ -53,7 +37,8 @@ namespace WebApplication1.Migrations
                     Password = table.Column<string>(type: "text", nullable: false),
                     Email = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Role = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -84,31 +69,30 @@ namespace WebApplication1.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "BusinessServices",
+                name: "Services",
                 columns: table => new
                 {
-                    BusinessId = table.Column<int>(type: "integer", nullable: false),
                     ServiceId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: false),
+                    Duration = table.Column<TimeSpan>(type: "interval", nullable: false),
+                    Price = table.Column<decimal>(type: "numeric", nullable: false),
+                    BusinessId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_BusinessServices", x => new { x.BusinessId, x.ServiceId });
+                    table.PrimaryKey("PK_Services", x => x.ServiceId);
                     table.ForeignKey(
-                        name: "FK_BusinessServices_Businesses_BusinessId",
+                        name: "FK_Services_Businesses_BusinessId",
                         column: x => x.BusinessId,
                         principalTable: "Businesses",
                         principalColumn: "BusinessId",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_BusinessServices_Services_ServiceId",
-                        column: x => x.ServiceId,
-                        principalTable: "Services",
-                        principalColumn: "ServiceId",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Staff",
+                name: "Staffs",
                 columns: table => new
                 {
                     StaffId = table.Column<int>(type: "integer", nullable: false)
@@ -117,13 +101,13 @@ namespace WebApplication1.Migrations
                     Name = table.Column<string>(type: "text", nullable: false),
                     Email = table.Column<string>(type: "text", nullable: false),
                     Phone = table.Column<string>(type: "text", nullable: false),
-                    Position = table.Column<string>(type: "text", nullable: false)
+                    Password = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Staff", x => x.StaffId);
+                    table.PrimaryKey("PK_Staffs", x => x.StaffId);
                     table.ForeignKey(
-                        name: "FK_Staff_Businesses_BusinessId",
+                        name: "FK_Staffs_Businesses_BusinessId",
                         column: x => x.BusinessId,
                         principalTable: "Businesses",
                         principalColumn: "BusinessId",
@@ -168,9 +152,9 @@ namespace WebApplication1.Migrations
                         principalColumn: "ServiceId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Appointments_Staff_StaffId",
+                        name: "FK_Appointments_Staffs_StaffId",
                         column: x => x.StaffId,
-                        principalTable: "Staff",
+                        principalTable: "Staffs",
                         principalColumn: "StaffId",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -201,13 +185,13 @@ namespace WebApplication1.Migrations
                 column: "UserID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_BusinessServices_ServiceId",
-                table: "BusinessServices",
-                column: "ServiceId");
+                name: "IX_Services_BusinessId",
+                table: "Services",
+                column: "BusinessId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Staff_BusinessId",
-                table: "Staff",
+                name: "IX_Staffs_BusinessId",
+                table: "Staffs",
                 column: "BusinessId");
         }
 
@@ -218,16 +202,13 @@ namespace WebApplication1.Migrations
                 name: "Appointments");
 
             migrationBuilder.DropTable(
-                name: "BusinessServices");
-
-            migrationBuilder.DropTable(
                 name: "Customers");
 
             migrationBuilder.DropTable(
-                name: "Staff");
+                name: "Services");
 
             migrationBuilder.DropTable(
-                name: "Services");
+                name: "Staffs");
 
             migrationBuilder.DropTable(
                 name: "Businesses");

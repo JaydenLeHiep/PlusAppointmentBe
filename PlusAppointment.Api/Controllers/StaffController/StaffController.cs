@@ -39,9 +39,9 @@ namespace WebApplication1.Controllers
             return Ok(staff);
         }
 
-        [HttpPost("add")]
+        [HttpPost("{id}/add")]
         [Authorize]
-        public async Task<IActionResult> AddStaff([FromBody] StaffDto staffDto)
+        public async Task<IActionResult> AddStaff([FromRoute] int id,[FromBody] StaffDto staffDto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var userRole = User.FindFirstValue(ClaimTypes.Role);
@@ -51,6 +51,7 @@ namespace WebApplication1.Controllers
                 return Unauthorized(new { message = "User not authorized" });
             }
 
+            staffDto.BusinessId = id;
             try
             {
                 await _staffService.AddStaffAsync(staffDto);
@@ -62,9 +63,9 @@ namespace WebApplication1.Controllers
             }
         }
 
-        [HttpPost("addList")]
+        [HttpPost("{id}/addList")]
         [Authorize]
-        public async Task<IActionResult> AddStaffs([FromBody] IEnumerable<StaffDto> staffDtos)
+        public async Task<IActionResult> AddStaffs([FromRoute] int id, [FromBody] IEnumerable<StaffDto> staffDtos)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var userRole = User.FindFirstValue(ClaimTypes.Role);
@@ -76,7 +77,7 @@ namespace WebApplication1.Controllers
 
             try
             {
-                await _staffService.AddListStaffsAsync(staffDtos);
+                await _staffService.AddListStaffsAsync(staffDtos, id);
                 return Ok(new { message = "Staffs added successfully" });
             }
             catch (Exception ex)

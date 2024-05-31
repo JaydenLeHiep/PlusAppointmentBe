@@ -12,8 +12,8 @@ using WebApplication1.Data;
 namespace WebApplication1.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240529194612_InitialCreateV2")]
-    partial class InitialCreateV2
+    [Migration("20240531070854_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -108,23 +108,6 @@ namespace WebApplication1.Migrations
                     b.ToTable("Businesses");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.BusinessServices", b =>
-                {
-                    b.Property<int>("BusinessId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("ServiceId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("BusinessId", "ServiceId");
-
-                    b.HasIndex("ServiceId");
-
-                    b.HasIndex("BusinessId", "ServiceId");
-
-                    b.ToTable("BusinessServices");
-                });
-
             modelBuilder.Entity("WebApplication1.Models.Customer", b =>
                 {
                     b.Property<int>("CustomerId")
@@ -158,6 +141,9 @@ namespace WebApplication1.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ServiceId"));
 
+                    b.Property<int>("BusinessId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("text");
@@ -173,6 +159,8 @@ namespace WebApplication1.Migrations
                         .HasColumnType("numeric");
 
                     b.HasKey("ServiceId");
+
+                    b.HasIndex("BusinessId");
 
                     b.ToTable("Services");
                 });
@@ -193,6 +181,10 @@ namespace WebApplication1.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Password")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -225,6 +217,9 @@ namespace WebApplication1.Migrations
                     b.Property<string>("Password")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -259,7 +254,7 @@ namespace WebApplication1.Migrations
                         .IsRequired();
 
                     b.HasOne("WebApplication1.Models.Staff", "Staff")
-                        .WithMany()
+                        .WithMany("Appointments")
                         .HasForeignKey("StaffId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -284,23 +279,15 @@ namespace WebApplication1.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.BusinessServices", b =>
+            modelBuilder.Entity("WebApplication1.Models.Service", b =>
                 {
                     b.HasOne("WebApplication1.Models.Business", "Business")
-                        .WithMany("BusinessServices")
+                        .WithMany("Services")
                         .HasForeignKey("BusinessId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("WebApplication1.Models.Service", "Service")
-                        .WithMany("BusinessServices")
-                        .HasForeignKey("ServiceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.Navigation("Business");
-
-                    b.Navigation("Service");
                 });
 
             modelBuilder.Entity("WebApplication1.Models.Staff", b =>
@@ -318,7 +305,7 @@ namespace WebApplication1.Migrations
                 {
                     b.Navigation("Appointments");
 
-                    b.Navigation("BusinessServices");
+                    b.Navigation("Services");
 
                     b.Navigation("Staffs");
                 });
@@ -328,9 +315,9 @@ namespace WebApplication1.Migrations
                     b.Navigation("Appointments");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Service", b =>
+            modelBuilder.Entity("WebApplication1.Models.Staff", b =>
                 {
-                    b.Navigation("BusinessServices");
+                    b.Navigation("Appointments");
                 });
 
             modelBuilder.Entity("WebApplication1.Models.User", b =>

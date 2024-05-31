@@ -1,3 +1,5 @@
+using PlusAppointment.Models.Classes;
+
 namespace WebApplication1.Models
 {
     public class Business

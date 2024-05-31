@@ -1,4 +1,6 @@
-namespace WebApplication1.Models
+using WebApplication1.Models;
+
+namespace PlusAppointment.Models.Classes
 {
     public class Appointment
     {

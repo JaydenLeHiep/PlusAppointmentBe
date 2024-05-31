@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
 using WebApplication1.Data;
 using WebApplication1.Models;

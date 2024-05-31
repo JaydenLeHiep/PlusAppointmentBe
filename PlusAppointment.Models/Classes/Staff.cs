@@ -1,5 +1,6 @@
 using PlusAppointment.Models.Interfaces;
 using System.Collections.Generic;
+using PlusAppointment.Models.Classes;
 
 namespace WebApplication1.Models
 {

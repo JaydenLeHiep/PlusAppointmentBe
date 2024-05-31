@@ -66,7 +66,7 @@ public class AppointmentsController : ControllerBase
     public async Task<IActionResult> GetByStaffId(int staffId)
     {
         var userRole = User.FindFirstValue(ClaimTypes.Role);
-        if (userRole != Role.Staff.ToString())
+        if (userRole == Role.Customer.ToString() || userRole == null)
         {
             return Unauthorized(new { message = "User not authorized" });
         }
@@ -106,6 +106,10 @@ public class AppointmentsController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             return NotFound(new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
         }
         catch (Exception ex)
         {

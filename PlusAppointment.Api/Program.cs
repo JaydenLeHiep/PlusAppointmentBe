@@ -35,7 +35,12 @@ var logRepository = LogManager.GetRepository(System.Reflection.Assembly.GetEntry
 XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+    });
 
 // Configure the DbContext with the connection string from appsettings.json
 builder.Services.AddDbContext<ApplicationDbContext>(options =>

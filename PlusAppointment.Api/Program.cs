@@ -12,18 +12,22 @@ using WebApplication1.Repositories.Interfaces.UserRepo;
 using WebApplication1.Services.Implematations.UserService;
 using WebApplication1.Services.Interfaces.UserService;
 using WebApplication1.Repositories.Implementation.BusinessRepo;
+using WebApplication1.Repositories.Implementation.CustomerRepo;
 using WebApplication1.Repositories.Implementation.ServicesRepo;
 using WebApplication1.Repositories.Implementation.StaffRepo;
 using WebApplication1.Repositories.Interfaces.AppointmentRepo;
 using WebApplication1.Repositories.Interfaces.BusinessRepo;
+using WebApplication1.Repositories.Interfaces.CustomerRepo;
 using WebApplication1.Repositories.Interfaces.ServicesRepo;
 using WebApplication1.Repositories.Interfaces.StaffRepo;
 using WebApplication1.Services.Implematations.AppointmentService;
 using WebApplication1.Services.Implematations.BusinessService;
+using WebApplication1.Services.Implematations.CustomerService;
 using WebApplication1.Services.Implematations.ServicesService;
 using WebApplication1.Services.Implematations.StaffService;
 using WebApplication1.Services.Interfaces.AppointmentService;
 using WebApplication1.Services.Interfaces.BusinessService;
+using WebApplication1.Services.Interfaces.CustomerService;
 using WebApplication1.Services.Interfaces.ServicesService;
 using WebApplication1.Services.Interfaces.StaffService;
 
@@ -57,7 +61,8 @@ builder.Services.AddScoped<IStaffRepository, StaffRepository>();
 builder.Services.AddScoped<IStaffService, StaffService>();
 builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
-
+builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
 // Add JWT Authentication
 var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"]);
 builder.Services.AddAuthentication(x =>

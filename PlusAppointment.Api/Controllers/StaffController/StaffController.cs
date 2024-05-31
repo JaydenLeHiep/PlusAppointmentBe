@@ -1,11 +1,11 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using PlusAppointment.Models.DTOs;
-using WebApplication1.Services.Interfaces.StaffService;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using PlusAppointment.Models.DTOs;
 using PlusAppointment.Models.Enums;
+using WebApplication1.Services.Interfaces.StaffService;
 
-namespace WebApplication1.Controllers
+namespace WebApplication1.Controllers.StaffController
 {
     [ApiController]
     [Route("api/[controller]")]

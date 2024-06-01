@@ -14,12 +14,12 @@ public class BusinessRepository: IBusinessRepository
         _context = context;
     }
 
-    public async Task<IEnumerable<Business>> GetAllAsync()
+    public async Task<IEnumerable<Business?>> GetAllAsync()
     {
         return await _context.Businesses.ToListAsync();
     }
 
-    public async Task<Business> GetByIdAsync(int id)
+    public async Task<Business?> GetByIdAsync(int id)
     {
         return await _context.Businesses.FindAsync(id);
     }
@@ -46,14 +46,14 @@ public class BusinessRepository: IBusinessRepository
         }
     }
 
-    public async Task<IEnumerable<Service>> GetServicesByBusinessIdAsync(int businessId)
+    public async Task<IEnumerable<Service?>> GetServicesByBusinessIdAsync(int businessId)
     {
         return await _context.Services
             .Where(s => s.BusinessId == businessId)
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<Staff>> GetStaffByBusinessIdAsync(int businessId)
+    public async Task<IEnumerable<Staff?>> GetStaffByBusinessIdAsync(int businessId)
     {
         return await _context.Staffs.Where(s => s.BusinessId == businessId).ToListAsync();
     }

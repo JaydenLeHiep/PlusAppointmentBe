@@ -13,12 +13,12 @@ public class BusinessService: IBusinessService
         _businessRepository = businessRepository;
     }
 
-    public async Task<IEnumerable<Business>> GetAllBusinessesAsync()
+    public async Task<IEnumerable<Business?>> GetAllBusinessesAsync()
     {
         return await _businessRepository.GetAllAsync();
     }
 
-    public async Task<Business> GetBusinessByIdAsync(int id)
+    public async Task<Business?> GetBusinessByIdAsync(int id)
     {
         return await _businessRepository.GetByIdAsync(id);
     }
@@ -38,12 +38,12 @@ public class BusinessService: IBusinessService
         await _businessRepository.DeleteAsync(id);
     }
 
-    public async Task<IEnumerable<Service>> GetServicesByBusinessIdAsync(int businessId)
+    public async Task<IEnumerable<Service?>> GetServicesByBusinessIdAsync(int businessId)
     {
         return await _businessRepository.GetServicesByBusinessIdAsync(businessId);
     }
 
-    public async Task<IEnumerable<Staff>> GetStaffByBusinessIdAsync(int businessId)
+    public async Task<IEnumerable<Staff?>> GetStaffByBusinessIdAsync(int businessId)
     {
         return await _businessRepository.GetStaffByBusinessIdAsync(businessId);
     }

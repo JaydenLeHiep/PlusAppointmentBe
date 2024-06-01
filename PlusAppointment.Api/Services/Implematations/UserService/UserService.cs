@@ -20,22 +20,34 @@ namespace WebApplication1.Services.Implematations.UserService
             _configuration = configuration;
         }
 
-        public async Task<IEnumerable<User>> GetAllUsersAsync()
+        public async Task<IEnumerable<User?>> GetAllUsersAsync()
         {
             return await _userRepository.GetAllAsync();
         }
 
-        public async Task<User> GetUserByIdAsync(int id)
+        public async Task<User?> GetUserByIdAsync(int id)
         {
             return await _userRepository.GetByIdAsync(id);
         }
 
-        public async Task RegisterUserAsync(string username, string password, string email)
+        public async Task RegisterUserAsync(string username, string password, string email, string phone)
         {
-            var existingUser = await _userRepository.GetUserByUsernameAsync(username);
-            if (existingUser != null)
+            var existingUserByUsername = await _userRepository.GetUserByUsernameAsync(username);
+            if (existingUserByUsername != null)
             {
                 throw new Exception("Username already exists");
+            }
+
+            var existingUserByEmail = await _userRepository.GetUserByEmailAsync(email);
+            if (existingUserByEmail != null)
+            {
+                throw new Exception("Email already exists");
+            }
+
+            var existingUserByPhone = await _userRepository.GetUserByPhoneAsync(phone);
+            if (existingUserByPhone != null)
+            {
+                throw new Exception("Phone number already exists");
             }
 
             var user = new User
@@ -43,8 +55,9 @@ namespace WebApplication1.Services.Implematations.UserService
                 Username = username,
                 Password = HashUtility.HashPassword(password), // Use HashUtility
                 Email = email,
+                Phone = phone,
                 CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow, 
+                UpdatedAt = DateTime.UtcNow,
                 Role = Role.Owner
             };
 
@@ -61,7 +74,7 @@ namespace WebApplication1.Services.Implematations.UserService
             await _userRepository.DeleteAsync(id);
         }
 
-        public async Task<string> LoginAsync(string usernameOrEmail, string password)
+        public async Task<string?> LoginAsync(string usernameOrEmail, string password)
         {
             var user = await _userRepository.GetUserByUsernameOrEmailAsync(usernameOrEmail);
             if (user == null || !HashUtility.VerifyPassword(user.Password, password))

@@ -14,12 +14,12 @@ public class UserRepository: IUserRepository
         _context = context;
     }
 
-    public async Task<IEnumerable<User>> GetAllAsync()
+    public async Task<IEnumerable<User?>> GetAllAsync()
     {
         return await _context.Users.ToListAsync();
     }
 
-    public async Task<User> GetByIdAsync(int id)
+    public async Task<User?> GetByIdAsync(int id)
     {
         return await _context.Users.FindAsync(id);
     }
@@ -46,14 +46,24 @@ public class UserRepository: IUserRepository
         }
     }
 
-    public async Task<User> GetUserByUsernameAsync(string username)
+    public async Task<User?> GetUserByUsernameAsync(string username)
     {
         return await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
     }
 
-    public async Task<User> GetUserByUsernameOrEmailAsync(string usernameOrEmail)
+    public async Task<User?> GetUserByUsernameOrEmailAsync(string usernameOrEmail)
     {
         return await _context.Users
             .FirstOrDefaultAsync(u => u.Username == usernameOrEmail || u.Email == usernameOrEmail);
+    }
+
+    public async Task<User?> GetUserByEmailAsync(string email)
+    {
+        return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+    }
+
+    public async Task<User?> GetUserByPhoneAsync(string phone)
+    {
+        return await _context.Users.FirstOrDefaultAsync(u => u.Phone == phone);
     }
 }

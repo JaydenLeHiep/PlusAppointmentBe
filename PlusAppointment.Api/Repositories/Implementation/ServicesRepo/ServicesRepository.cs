@@ -14,23 +14,27 @@ public class ServicesRepository: IServicesRepository
         _context = context;
     }
     
-    public async Task<IEnumerable<Service>> GetAllAsync()
+    public async Task<IEnumerable<Service?>> GetAllAsync()
     {
         return await _context.Services.ToListAsync();
     }
 
-    public async Task<Service> GetByIdAsync(int id)
+    public async Task<Service?> GetByIdAsync(int id)
     {
         return await _context.Services.FindAsync(id);
     }
     
     // add one service in a time (for the business owner)
-    public async Task AddServiceAsync(Service service, int businessId)
+    public async Task AddServiceAsync(Service? service, int businessId)
     {
         var business = await _context.Businesses.FindAsync(businessId);
         if (business == null)
         {
             throw new Exception("Business not found");
+        }
+        if (service == null)
+        {
+            throw new Exception("Service not found");
         }
 
         await _context.Services.AddAsync(service);
@@ -40,15 +44,15 @@ public class ServicesRepository: IServicesRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task AddListServicesAsync(IEnumerable<Service> services, int businessId)
+    public async Task AddListServicesAsync(IEnumerable<Service?> services, int businessId)
     {
         var business = await _context.Businesses.FindAsync(businessId);
         if (business == null)
         {
             throw new Exception("Business not found");
         }
-
-        await _context.Services.AddRangeAsync(services);
+        
+        await _context.Services.AddRangeAsync(services!);
         await _context.SaveChangesAsync();
 
 

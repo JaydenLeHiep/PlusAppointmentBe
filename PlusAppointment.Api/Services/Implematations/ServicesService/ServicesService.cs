@@ -13,27 +13,27 @@ public class ServicesService: IServicesService
         _servicesRepository = servicesRepository;
     }
     
-    public async Task<IEnumerable<Service>> GetAllServicesAsync()
+    public async Task<IEnumerable<Service?>> GetAllServicesAsync()
     {
         return await _servicesRepository.GetAllAsync();
     }
 
-    public async Task<Service> GetServiceByIdAsync(int id)
+    public async Task<Service?> GetServiceByIdAsync(int id)
     {
         return await _servicesRepository.GetByIdAsync(id);
     }
 
-    public async Task AddServiceAsync(Service service, int businessId)
+    public async Task AddServiceAsync(Service? service, int businessId)
     {
         await _servicesRepository.AddServiceAsync(service, businessId);
     }
 
-    public async Task AddListServicesAsync(IEnumerable<Service> services,int businessId)
+    public async Task AddListServicesAsync(IEnumerable<Service?> services,int businessId)
     {
         await _servicesRepository.AddListServicesAsync(services, businessId);
     }
 
-    public async Task UpdateServiceAsync(Service service)
+    public async Task UpdateServiceAsync(Service? service)
     {
         await _servicesRepository.UpdateAsync(service);
     }

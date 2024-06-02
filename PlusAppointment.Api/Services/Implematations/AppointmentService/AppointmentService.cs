@@ -1,6 +1,5 @@
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
-using WebApplication1.Models;
 using WebApplication1.Repositories.Interfaces.AppointmentRepo;
 using WebApplication1.Repositories.Interfaces.BusinessRepo;
 using WebApplication1.Services.Interfaces.AppointmentService;

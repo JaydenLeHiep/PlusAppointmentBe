@@ -1,4 +1,4 @@
-using WebApplication1.Models;
+using PlusAppointment.Models.Classes;
 
 namespace WebApplication1.Services.Interfaces.BusinessService;
 

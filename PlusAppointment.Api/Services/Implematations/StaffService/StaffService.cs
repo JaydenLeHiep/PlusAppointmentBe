@@ -1,4 +1,4 @@
-using WebApplication1.Models;
+using PlusAppointment.Models.Classes;
 using WebApplication1.Repositories.Interfaces.StaffRepo;
 using WebApplication1.Services.Interfaces.StaffService;
 using PlusAppointment.Models.DTOs;
@@ -52,7 +52,14 @@ namespace WebApplication1.Services.Implematations.StaffService
 
         public async Task AddListStaffsAsync(IEnumerable<StaffDto> staffDtos, int businessId)
         {
-            foreach (var staffDto in staffDtos)
+            if (staffDtos == null)
+            {
+                throw new ArgumentNullException(nameof(staffDtos), "Staff list cannot be null");
+            }
+
+            var staffDtoList = staffDtos.ToList();
+
+            foreach (var staffDto in staffDtoList)
             {
                 if (await _staffRepository.EmailExistsAsync(staffDto.Email))
                 {
@@ -65,7 +72,7 @@ namespace WebApplication1.Services.Implematations.StaffService
                 }
             }
 
-            var staffs = staffDtos.Select(staffDto => new Staff
+            var staffs = staffDtoList.Select(staffDto => new Staff
             {
                 Name = staffDto.Name,
                 Email = staffDto.Email,
@@ -97,8 +104,18 @@ namespace WebApplication1.Services.Implematations.StaffService
         
         public async Task<string> LoginAsync(string email, string password)
         {
+            if (string.IsNullOrEmpty(email))
+            {
+                throw new ArgumentException("Email cannot be null or empty", nameof(email));
+            }
+
+            if (string.IsNullOrEmpty(password))
+            {
+                throw new ArgumentException("Password cannot be null or empty", nameof(password));
+            }
+
             var staff = await _staffRepository.GetByEmailAsync(email);
-            if (staff == null || !HashUtility.VerifyPassword(staff.Password, password))
+            if (string.IsNullOrEmpty(staff.Password) || !HashUtility.VerifyPassword(staff.Password, password))
             {
                 throw new UnauthorizedAccessException("Invalid email or password");
             }

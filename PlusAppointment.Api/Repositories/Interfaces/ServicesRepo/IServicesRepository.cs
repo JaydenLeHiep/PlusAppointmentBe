@@ -1,4 +1,5 @@
-using WebApplication1.Models;
+using PlusAppointment.Models.Classes;
+
 namespace WebApplication1.Repositories.Interfaces.ServicesRepo;
 
 public interface IServicesRepository

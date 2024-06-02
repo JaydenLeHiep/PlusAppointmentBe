@@ -1,5 +1,4 @@
 using PlusAppointment.Models.DTOs;
-using WebApplication1.Models;
 
 namespace WebApplication1.Services.Interfaces.AppointmentService;
 

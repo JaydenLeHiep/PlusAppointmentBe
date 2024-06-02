@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
 using WebApplication1.Data;
-using WebApplication1.Models;
 using WebApplication1.Repositories.Interfaces.AppointmentRepo;
 
 namespace WebApplication1.Repositories.Implementation.AppointmentRepo;

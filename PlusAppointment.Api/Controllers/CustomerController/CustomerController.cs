@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
 using WebApplication1.Services.Interfaces.CustomerService;
 
@@ -54,8 +55,13 @@ namespace WebApplication1.Controllers.CustomerController
 
         [HttpPut("{id}")]
         [Authorize]
-        public async Task<IActionResult> UpdateCustomer(int id, [FromBody] CustomerDto customerDto)
+        public async Task<IActionResult> UpdateCustomer(int id, [FromBody] CustomerDto? customerDto)
         {
+            if (customerDto == null)
+            {
+                return BadRequest(new { message = "No data provided." });
+            }
+
             try
             {
                 await _customerService.UpdateCustomerAsync(id, customerDto);
@@ -68,6 +74,10 @@ namespace WebApplication1.Controllers.CustomerController
             catch (ArgumentException ex)
             {
                 return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = $"Update failed: {ex.Message}" });
             }
         }
 

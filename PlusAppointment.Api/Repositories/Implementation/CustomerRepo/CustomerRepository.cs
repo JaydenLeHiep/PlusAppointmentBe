@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PlusAppointment.Models.Classes;
-using PlusAppointment.Models.DTOs;
+
 using WebApplication1.Data;
 using WebApplication1.Repositories.Interfaces.CustomerRepo;
 
@@ -16,43 +16,26 @@ namespace WebApplication1.Repositories.Implementation.CustomerRepo
             _context = context;
         }
 
-        public async Task<IEnumerable<CustomerDto>> GetAllCustomersAsync()
+        public async Task<IEnumerable<Customer?>> GetAllCustomersAsync()
         {
-            var customers = await _context.Customers.ToListAsync();
+            return await _context.Customers.ToListAsync();
 
-            return customers.Select(a => new CustomerDto
-            {
-                Name = a.Name,
-                Email = a.Email,
-                Phone = a.Phone
-            }).ToList();
         }
 
-        public async Task<CustomerDto> GetCustomerByIdAsync(int customerId)
+        public async Task<Customer?> GetCustomerByIdAsync(int customerId)
         {
-            var customer = await _context.Customers.FirstOrDefaultAsync(a => a.CustomerId == customerId);
-            if (customer == null)
-            {
-                return null;
-            }
-
-            return new CustomerDto
-            {
-                Name = customer.Name,
-                Email = customer.Email,
-                Phone = customer.Phone
-            };
+            return await _context.Customers.FindAsync(customerId);
         }
 
-        public async Task AddCustomerAsync(Customer customer)
+        public async Task AddCustomerAsync(Customer? customer)
         {
             _context.Customers.Add(customer);
             await _context.SaveChangesAsync();
         }
 
-        public async Task UpdateCustomerAsync(Customer customer)
+        public async Task UpdateCustomerAsync(Customer? customer)
         {
-            _context.Entry(customer).State = EntityState.Modified;
+            _context.Customers.Update(customer);
             await _context.SaveChangesAsync();
         }
 

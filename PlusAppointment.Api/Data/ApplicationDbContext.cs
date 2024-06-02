@@ -15,7 +15,7 @@ namespace WebApplication1.Data
         public DbSet<Appointment> Appointments { get; set; }
         public DbSet<Service> Services { get; set; }
         public DbSet<Staff> Staffs { get; set; }
-        public DbSet<Customer> Customers { get; set; }
+        public DbSet<Customer?> Customers { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

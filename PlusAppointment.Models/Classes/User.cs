@@ -1,9 +1,7 @@
 using PlusAppointment.Models.Enums;
 using PlusAppointment.Models.Interfaces;
-using System;
-using System.Collections.Generic;
 
-namespace WebApplication1.Models
+namespace PlusAppointment.Models.Classes
 {
     public class User : IUserIdentity
     {

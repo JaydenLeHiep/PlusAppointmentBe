@@ -1,8 +1,8 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
-using WebApplication1.Models;
 using WebApplication1.Services.Interfaces.BusinessService;
 
 namespace WebApplication1.Controllers.BusinessController;

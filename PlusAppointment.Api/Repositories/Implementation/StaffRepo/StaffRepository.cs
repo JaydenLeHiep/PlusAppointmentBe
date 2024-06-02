@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using PlusAppointment.Models.Classes;
 using WebApplication1.Data;
-using WebApplication1.Models;
 using WebApplication1.Repositories.Interfaces.StaffRepo;
 
 namespace WebApplication1.Repositories.Implementation.StaffRepo;
@@ -21,7 +21,12 @@ public class StaffRepository: IStaffRepository
 
     public async Task<Staff> GetByIdAsync(int id)
     {
-        return await _context.Staffs.FindAsync(id);
+        var staff = await _context.Staffs.FindAsync(id);
+        if (staff == null)
+        {
+            throw new KeyNotFoundException($"Staff with ID {id} not found");
+        }
+        return staff;
     }
 
     public async Task AddStaffAsync(Staff staff, int businessId)
@@ -39,14 +44,21 @@ public class StaffRepository: IStaffRepository
 
     public async Task AddListStaffsAsync(IEnumerable<Staff> staffs)
     {
-        var businessId = staffs.FirstOrDefault()?.BusinessId ?? 0;
+        var enumerable = staffs.ToList();
+        if (staffs == null || !enumerable.Any())
+        {
+            throw new ArgumentException("Staffs collection cannot be null or empty", nameof(staffs));
+        }
+
+        var staffList = enumerable.ToList();
+        var businessId = staffList.First().BusinessId;
         var business = await _context.Businesses.FindAsync(businessId);
         if (business == null)
         {
             throw new Exception("Business not found");
         }
 
-        await _context.Staffs.AddRangeAsync(staffs);
+        await _context.Staffs.AddRangeAsync(staffList);
         await _context.SaveChangesAsync();
     }
 
@@ -69,7 +81,12 @@ public class StaffRepository: IStaffRepository
     
     public async Task<Staff> GetByEmailAsync(string email)
     {
-        return await _context.Staffs.SingleOrDefaultAsync(s => s.Email == email);
+        var staff = await _context.Staffs.SingleOrDefaultAsync(s => s.Email == email);
+        if (staff == null)
+        {
+            throw new KeyNotFoundException($"Staff with email {email} not found");
+        }
+        return staff;
     }
     
     public async Task<bool> EmailExistsAsync(string email)

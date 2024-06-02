@@ -1,6 +1,6 @@
 
+using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.Enums;
-using WebApplication1.Models;
 using WebApplication1.Repositories.Interfaces.UserRepo;
 using WebApplication1.Services.Interfaces.UserService;
 

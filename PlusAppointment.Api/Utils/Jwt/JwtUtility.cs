@@ -3,7 +3,6 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using PlusAppointment.Models.Interfaces;
-using WebApplication1.Models;
 
 namespace WebApplication1.Utils.Jwt;
 

@@ -1,4 +1,4 @@
-using WebApplication1.Models;
+using PlusAppointment.Models.Classes;
 using WebApplication1.Repositories.Interfaces.BusinessRepo;
 using WebApplication1.Services.Interfaces.BusinessService;
 

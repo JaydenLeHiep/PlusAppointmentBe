@@ -139,6 +139,7 @@ namespace WebApplication1.Services.Implementations.AppointmentService
                 AppointmentId = appointment.AppointmentId,
                 CustomerId = appointment.CustomerId,
                 CustomerName = appointment.Customer?.Name ?? "Unknown Customer Name",
+                CustomerPhone = appointment.Customer?.Phone ?? "Unknown Customer Phone",
                 BusinessId = appointment.BusinessId,
                 BusinessName = appointment.Business?.Name ?? "Unknown Business Name",
                 ServiceId = appointment.ServiceId,

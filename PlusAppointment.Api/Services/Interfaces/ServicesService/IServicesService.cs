@@ -1,15 +1,15 @@
 using PlusAppointment.Models.Classes;
+using PlusAppointment.Models.DTOs;
 
-namespace WebApplication1.Services.Interfaces.ServicesService;
-
-public interface IServicesService
+namespace WebApplication1.Services.Interfaces.ServicesService
 {
-    Task<IEnumerable<Service?>> GetAllServicesAsync();
-    Task<Service?> GetServiceByIdAsync(int id);
-    Task AddServiceAsync(Service? service, int businessId);
-    Task AddListServicesAsync(IEnumerable<Service?> services, int businessId);
-    Task UpdateServiceAsync(Service? service);
-    Task DeleteServiceAsync(int id);
-    
-
+    public interface IServicesService
+    {
+        Task<IEnumerable<Service?>> GetAllServicesAsync();
+        Task<Service?> GetServiceByIdAsync(int id);
+        Task AddServiceAsync(ServiceDto? serviceDto, int businessId, string userId, string userRole);
+        Task AddListServicesAsync(ServicesDto? servicesDto, int businessId, string userId, string userRole);
+        Task UpdateServiceAsync(int id, ServiceDto? serviceDto, string userId);
+        Task DeleteServiceAsync(int id, string userId);
+    }
 }

@@ -5,6 +5,7 @@ public class AppointmentDto
     public int AppointmentId { get; set; }
     public int CustomerId { get; set; }
     public string? CustomerName { get; set; }
+    public string? CustomerPhone { get; set; }
     public int BusinessId { get; set; }
     public string? BusinessName { get; set; }
     public int ServiceId { get; set; }

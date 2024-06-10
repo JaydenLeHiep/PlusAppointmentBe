@@ -4,7 +4,7 @@ using WebApplication1.Repositories.Interfaces.AppointmentRepo;
 using WebApplication1.Repositories.Interfaces.BusinessRepo;
 using WebApplication1.Services.Interfaces.AppointmentService;
 
-namespace WebApplication1.Services.Implementations.AppointmentService
+namespace WebApplication1.Services.Implematations.AppointmentService
 {
     public class AppointmentService : IAppointmentService
     {
@@ -40,14 +40,14 @@ namespace WebApplication1.Services.Implementations.AppointmentService
 
             // Validate the ServiceId
             var services = await _businessRepository.GetServicesByBusinessIdAsync(appointmentDto.BusinessId);
-            if (services == null || !services.Any(s => s.ServiceId == appointmentDto.ServiceId))
+            if (services == null || !services.Any(s => s != null && s.ServiceId == appointmentDto.ServiceId))
             {
                 throw new ArgumentException("Invalid ServiceId for the given BusinessId");
             }
 
             // Validate the StaffId
             var staff = await _businessRepository.GetStaffByBusinessIdAsync(appointmentDto.BusinessId);
-            if (staff == null || !staff.Any(s => s.StaffId == appointmentDto.StaffId))
+            if (staff == null || !staff.Any(s => s != null && s.StaffId == appointmentDto.StaffId))
             {
                 throw new ArgumentException("Invalid StaffId for the given BusinessId");
             }
@@ -79,14 +79,14 @@ namespace WebApplication1.Services.Implementations.AppointmentService
 
             // Validate the ServiceId
             var services = await _businessRepository.GetServicesByBusinessIdAsync(appointmentDto.BusinessId);
-            if (!services.Any(s => s.ServiceId == appointmentDto.ServiceId))
+            if (!services.Any(s => s != null && s.ServiceId == appointmentDto.ServiceId))
             {
                 throw new ArgumentException("Invalid ServiceId for the given BusinessId");
             }
 
             // Validate the StaffId
             var staff = await _businessRepository.GetStaffByBusinessIdAsync(appointmentDto.BusinessId);
-            if (!staff.Any(s => s.StaffId == appointmentDto.StaffId))
+            if (!staff.Any(s => s != null && s.StaffId == appointmentDto.StaffId))
             {
                 throw new ArgumentException("Invalid StaffId for the given BusinessId");
             }

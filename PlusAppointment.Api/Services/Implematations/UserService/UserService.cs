@@ -77,7 +77,9 @@ namespace WebApplication1.Services.Implematations.UserService
         public async Task<string?> LoginAsync(string usernameOrEmail, string password)
         {
             var user = await _userRepository.GetUserByUsernameOrEmailAsync(usernameOrEmail);
-            if (user == null || !HashUtility.VerifyPassword(user.Password, password))
+    
+            // Check if the user or the user's password is null
+            if (user == null || string.IsNullOrEmpty(user.Password) || !HashUtility.VerifyPassword(user.Password, password))
             {
                 return null;
             }

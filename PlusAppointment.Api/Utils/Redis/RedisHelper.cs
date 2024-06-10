@@ -1,16 +1,23 @@
 using StackExchange.Redis;
 using System.Text.Json;
-
+using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 
 namespace WebApplication1.Utils.Redis
 {
     public class RedisHelper
     {
         private readonly IConnectionMultiplexer _connectionMultiplexer;
+        private readonly JsonSerializerOptions _serializerOptions;
 
         public RedisHelper(IConnectionMultiplexer connectionMultiplexer)
         {
             _connectionMultiplexer = connectionMultiplexer;
+            _serializerOptions = new JsonSerializerOptions
+            {
+                ReferenceHandler = ReferenceHandler.Preserve,
+                WriteIndented = true
+            };
         }
 
         public async Task<T?> GetCacheAsync<T>(string key) where T : class
@@ -19,7 +26,7 @@ namespace WebApplication1.Utils.Redis
             var cachedData = await db.StringGetAsync(key);
             if (!cachedData.IsNullOrEmpty)
             {
-                return JsonSerializer.Deserialize<T>(cachedData);
+                return JsonSerializer.Deserialize<T>(cachedData, _serializerOptions);
             }
             return null;
         }
@@ -27,11 +34,11 @@ namespace WebApplication1.Utils.Redis
         public async Task SetCacheAsync<T>(string key, T value, TimeSpan? expiry = null)
         {
             var db = _connectionMultiplexer.GetDatabase();
-            var serializedData = JsonSerializer.Serialize(value);
+            var serializedData = JsonSerializer.Serialize(value, _serializerOptions);
             await db.StringSetAsync(key, serializedData, expiry);
         }
 
-        public async Task DeleteCacheAsync(RedisKey key)
+        public async Task DeleteCacheAsync(string key)
         {
             var db = _connectionMultiplexer.GetDatabase();
             await db.KeyDeleteAsync(key);

@@ -1,9 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
-using PlusAppointment.Models.Enums;
 using WebApplication1.Services.Interfaces.ServicesService;
 
 namespace WebApplication1.Controllers.ServiceController
@@ -47,44 +45,14 @@ namespace WebApplication1.Controllers.ServiceController
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var userRole = User.FindFirstValue(ClaimTypes.Role);
 
-            if (string.IsNullOrEmpty(userId) || userRole != Role.Owner.ToString())
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(userRole))
             {
                 return Unauthorized(new { message = "User not authorized" });
             }
-    
-            if (serviceDto == null)
-            {
-                return BadRequest(new { message = "No data provided." });
-            }
-
-            if (string.IsNullOrEmpty(serviceDto.Name))
-            {
-                return BadRequest(new { message = "Service name is required." });
-            }
-
-            if (!serviceDto.Duration.HasValue)
-            {
-                return BadRequest(new { message = "Service duration is required." });
-            }
-
-            if (!serviceDto.Price.HasValue)
-            {
-                return BadRequest(new { message = "Service price is required." });
-            }
-
-            var businessId = id;
-            var service = new Service
-            {
-                Name = serviceDto.Name,
-                Description = serviceDto.Description,
-                Duration = serviceDto.Duration.Value,
-                Price = serviceDto.Price.Value,
-                BusinessId = businessId
-            };
 
             try
             {
-                await _servicesService.AddServiceAsync(service, businessId);
+                await _servicesService.AddServiceAsync(serviceDto, id, userId, userRole);
                 return Ok(new { message = "Service created successfully" });
             }
             catch (Exception ex)
@@ -100,51 +68,14 @@ namespace WebApplication1.Controllers.ServiceController
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var userRole = User.FindFirstValue(ClaimTypes.Role);
 
-            if (string.IsNullOrEmpty(userId) || userRole != Role.Owner.ToString())
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(userRole))
             {
                 return Unauthorized(new { message = "User not authorized" });
             }
 
-            if (servicesDto == null || !servicesDto.Services.Any())
-            {
-                return BadRequest(new { message = "No data provided." });
-            }
-
-            var businessId = id;
-            var services = new List<Service>();
-
-            foreach (var serviceDto in servicesDto.Services)
-            {
-                if (string.IsNullOrEmpty(serviceDto.Name))
-                {
-                    return BadRequest(new { message = "Service name is required." });
-                }
-
-                if (!serviceDto.Duration.HasValue)
-                {
-                    return BadRequest(new { message = "Service duration is required." });
-                }
-
-                if (!serviceDto.Price.HasValue)
-                {
-                    return BadRequest(new { message = "Service price is required." });
-                }
-
-                var service = new Service
-                {
-                    Name = serviceDto.Name,
-                    Description = serviceDto.Description,
-                    Duration = serviceDto.Duration.Value,
-                    Price = serviceDto.Price.Value,
-                    BusinessId = businessId
-                };
-
-                services.Add(service);
-            }
-
             try
             {
-                await _servicesService.AddListServicesAsync(services, businessId);
+                await _servicesService.AddListServicesAsync(servicesDto, id, userId, userRole);
                 return Ok(new { message = "Services created successfully" });
             }
             catch (Exception ex)
@@ -157,46 +88,16 @@ namespace WebApplication1.Controllers.ServiceController
         [Authorize]
         public async Task<IActionResult> Update(int id, [FromBody] ServiceDto? serviceDto)
         {
-            if (serviceDto == null)
-            {
-                return BadRequest(new { message = "No data provided." });
-            }
-
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized(new { message = "User not authorized" });
             }
 
-            var service = await _servicesService.GetServiceByIdAsync(id);
-            if (service == null)
-            {
-                return NotFound(new { message = "Service not found" });
-            }
-
-            if (!string.IsNullOrEmpty(serviceDto.Name))
-            {
-                service.Name = serviceDto.Name;
-            }
-
-            if (!string.IsNullOrEmpty(serviceDto.Description))
-            {
-                service.Description = serviceDto.Description;
-            }
-
-            if (serviceDto.Duration.HasValue)
-            {
-                service.Duration = serviceDto.Duration.Value;
-            }
-
-            if (serviceDto.Price.HasValue)
-            {
-                service.Price = serviceDto.Price.Value;
-            }
-
             try
             {
-                await _servicesService.UpdateServiceAsync(service);
+                await _servicesService.UpdateServiceAsync(id, serviceDto, userId);
                 return Ok(new { message = "Service updated successfully." });
             }
             catch (Exception ex)
@@ -210,18 +111,21 @@ namespace WebApplication1.Controllers.ServiceController
         public async Task<IActionResult> Delete(int id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized(new { message = "User not authorized" });
             }
 
-            var service = await _servicesService.GetServiceByIdAsync(id);
-            if (service == null)
+            try
             {
-                return NotFound(new { message = "Service not found" });
+                await _servicesService.DeleteServiceAsync(id, userId);
+                return Ok(new { message = "Service deleted successfully" });
             }
-            await _servicesService.DeleteServiceAsync(id);
-            return Ok(new { message = "Service deleted successfully" });
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = $"Delete failed: {ex.Message}" });
+            }
         }
     }
 }

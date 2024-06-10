@@ -31,10 +31,6 @@ namespace WebApplication1.Controllers.StaffController
         public async Task<IActionResult> GetById(int id)
         {
             var staff = await _staffService.GetStaffIdAsync(id);
-            if (staff == null)
-            {
-                return NotFound(new { message = "Staff not found" });
-            }
 
             return Ok(staff);
         }

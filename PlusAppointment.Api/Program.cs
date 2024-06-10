@@ -32,6 +32,11 @@ using WebApplication1.Services.Interfaces.CustomerService;
 using WebApplication1.Services.Interfaces.ServicesService;
 using WebApplication1.Services.Interfaces.StaffService;
 
+using StackExchange.Redis;
+using WebApplication1.Utils.Redis;
+
+// Other using directives
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Ensure the Logs directory exists
@@ -64,6 +69,19 @@ builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
+
+builder.Services.AddSingleton<RedisHelper>();
+
+// Configure Redis
+var redisConnectionString = builder.Configuration.GetConnectionString("RedisConnection");
+
+if (string.IsNullOrEmpty(redisConnectionString))
+{
+    throw new InvalidOperationException("Redis connection string is not configured.");
+}
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnectionString));
+
 // Add JWT Authentication
 var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"]);
 builder.Services.AddAuthentication(x =>

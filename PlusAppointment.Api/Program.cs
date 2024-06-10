@@ -25,7 +25,6 @@ using WebApplication1.Services.Implematations.BusinessService;
 using WebApplication1.Services.Implematations.CustomerService;
 using WebApplication1.Services.Implematations.ServicesService;
 using WebApplication1.Services.Implematations.StaffService;
-using WebApplication1.Services.Implementations.AppointmentService;
 using WebApplication1.Services.Interfaces.AppointmentService;
 using WebApplication1.Services.Interfaces.BusinessService;
 using WebApplication1.Services.Interfaces.CustomerService;
@@ -33,6 +32,7 @@ using WebApplication1.Services.Interfaces.ServicesService;
 using WebApplication1.Services.Interfaces.StaffService;
 
 using StackExchange.Redis;
+using WebApplication1.Services.Implematations.AppointmentService;
 using WebApplication1.Utils.Redis;
 
 // Other using directives
@@ -83,7 +83,7 @@ if (string.IsNullOrEmpty(redisConnectionString))
 builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnectionString));
 
 // Add JWT Authentication
-var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"]);
+var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"] ?? string.Empty);
 builder.Services.AddAuthentication(x =>
 {
     x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

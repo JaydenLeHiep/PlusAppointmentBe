@@ -21,14 +21,16 @@ namespace WebApplication1.Repositories.Implementation.ServicesRepo
         public async Task<IEnumerable<Service?>> GetAllAsync()
         {
             const string cacheKey = "all_services";
-            var services = await _redisHelper.GetCacheAsync<IEnumerable<Service>>(cacheKey);
-            if (services != null && services.Any())
+            var cachedServices = await _redisHelper.GetCacheAsync<List<Service?>>(cacheKey);
+
+            if (cachedServices != null && cachedServices.Any())
             {
-                return services;
+                return cachedServices;
             }
 
-            services = await _context.Services.ToListAsync();
+            var services = await _context.Services.ToListAsync();
             await _redisHelper.SetCacheAsync(cacheKey, services, TimeSpan.FromMinutes(10));
+
             return services;
         }
 

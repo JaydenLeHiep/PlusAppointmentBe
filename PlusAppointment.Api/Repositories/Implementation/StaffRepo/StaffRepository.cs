@@ -20,14 +20,16 @@ namespace WebApplication1.Repositories.Implementation.StaffRepo
         public async Task<IEnumerable<Staff>> GetAllAsync()
         {
             const string cacheKey = "all_staffs";
-            var staffs = await _redisHelper.GetCacheAsync<IEnumerable<Staff>>(cacheKey);
-            if (staffs != null && staffs.Any())
+            var cachedStaffs = await _redisHelper.GetCacheAsync<List<Staff>>(cacheKey);
+
+            if (cachedStaffs != null && cachedStaffs.Any())
             {
-                return staffs;
+                return cachedStaffs;
             }
 
-            staffs = await _context.Staffs.ToListAsync();
+            var staffs = await _context.Staffs.ToListAsync();
             await _redisHelper.SetCacheAsync(cacheKey, staffs, TimeSpan.FromMinutes(10));
+
             return staffs;
         }
 

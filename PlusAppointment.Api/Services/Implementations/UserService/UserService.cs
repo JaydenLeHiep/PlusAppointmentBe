@@ -72,17 +72,19 @@ namespace WebApplication1.Services.Implementations.UserService
             await _userRepository.DeleteAsync(id);
         }
 
-        public async Task<string?> LoginAsync(string usernameOrEmail, string password)
+        public async Task<(string? token, User? user)> LoginAsync(string usernameOrEmail, string password)
         {
             var user = await _userRepository.GetUserByUsernameOrEmailAsync(usernameOrEmail);
-    
+
             // Check if the user or the user's password is null
             if (user == null || string.IsNullOrEmpty(user.Password) || !HashUtility.VerifyPassword(user.Password, password))
             {
-                return null;
+                return (null, null);
             }
 
-            return JwtUtility.GenerateJwtToken(user, _configuration); // Use JwtUtility
+            var token = JwtUtility.GenerateJwtToken(user, _configuration);
+            return (token, user); // Return the token and user
         }
+
     }
 }

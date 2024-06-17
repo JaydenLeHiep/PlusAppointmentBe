@@ -22,11 +22,12 @@ public class UsersController: ControllerBase
     public async Task<IActionResult> GetAll()
     {
         var users = await _userService.GetAllUsersAsync();
-        if (!users.Any())
+        var enumerable = users.ToList();
+        if (!enumerable.Any())
         {
             return NotFound(new { message = "No users found." });
         }
-        return Ok(new { message = "Users retrieved successfully.", data = users });
+        return Ok(new { message = "Users retrieved successfully.", data = enumerable });
     }
 
     [HttpGet("{id}")]
@@ -58,14 +59,29 @@ public class UsersController: ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
     {
-        var token = await _userService.LoginAsync(loginDto.UsernameOrEmail, loginDto.Password);
-        if (token == null)
+        if (string.IsNullOrEmpty(loginDto.UsernameOrEmail) || string.IsNullOrEmpty(loginDto.Password))
+        {
+            return BadRequest(new { message = "Username or Email and Password are required." });
+        }
+
+        var (token, user) = await _userService.LoginAsync(loginDto.UsernameOrEmail, loginDto.Password);
+
+        if (token == null || user == null)
         {
             return Unauthorized(new { message = "Invalid credentials." });
         }
 
-        return Ok(new { token });
+        var response = new LoginResponseDto
+        {
+            Token = token,
+            Username = user.Username,
+            Role = user.Role.ToString()  // Convert Role enum to string
+        };
+
+        return Ok(response);
     }
+
+
 
     // Use for change the whole user or change only one thing like Password***
     [HttpPut("{id}")]

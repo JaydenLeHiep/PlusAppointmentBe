@@ -3,7 +3,7 @@ using PlusAppointment.Models.DTOs;
 using WebApplication1.Repositories.Interfaces.CustomerRepo;
 using WebApplication1.Services.Interfaces.CustomerService;
 
-namespace WebApplication1.Services.Implematations.CustomerService;
+namespace WebApplication1.Services.Implementations.CustomerService;
 
 public class CustomerService: ICustomerService
 {

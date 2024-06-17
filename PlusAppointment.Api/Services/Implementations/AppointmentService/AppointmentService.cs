@@ -4,7 +4,7 @@ using WebApplication1.Repositories.Interfaces.AppointmentRepo;
 using WebApplication1.Repositories.Interfaces.BusinessRepo;
 using WebApplication1.Services.Interfaces.AppointmentService;
 
-namespace WebApplication1.Services.Implematations.AppointmentService
+namespace WebApplication1.Services.Implementations.AppointmentService
 {
     public class AppointmentService : IAppointmentService
     {

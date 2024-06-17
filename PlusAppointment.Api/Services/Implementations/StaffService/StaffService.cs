@@ -1,11 +1,11 @@
 using PlusAppointment.Models.Classes;
+using PlusAppointment.Models.DTOs;
 using WebApplication1.Repositories.Interfaces.StaffRepo;
 using WebApplication1.Services.Interfaces.StaffService;
-using PlusAppointment.Models.DTOs;
 using WebApplication1.Utils.Hash;
 using WebApplication1.Utils.Jwt;
 
-namespace WebApplication1.Services.Implematations.StaffService
+namespace WebApplication1.Services.Implementations.StaffService
 {
     public class StaffService : IStaffService
     {

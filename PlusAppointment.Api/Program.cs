@@ -9,7 +9,6 @@ using WebApplication1.Middleware;
 using WebApplication1.Repositories.Implementation.AppointmentRepo;
 using WebApplication1.Repositories.Implementation.UserRepo;
 using WebApplication1.Repositories.Interfaces.UserRepo;
-using WebApplication1.Services.Implematations.UserService;
 using WebApplication1.Services.Interfaces.UserService;
 using WebApplication1.Repositories.Implementation.BusinessRepo;
 using WebApplication1.Repositories.Implementation.CustomerRepo;
@@ -20,11 +19,6 @@ using WebApplication1.Repositories.Interfaces.BusinessRepo;
 using WebApplication1.Repositories.Interfaces.CustomerRepo;
 using WebApplication1.Repositories.Interfaces.ServicesRepo;
 using WebApplication1.Repositories.Interfaces.StaffRepo;
-
-using WebApplication1.Services.Implematations.BusinessService;
-using WebApplication1.Services.Implematations.CustomerService;
-using WebApplication1.Services.Implematations.ServicesService;
-using WebApplication1.Services.Implematations.StaffService;
 using WebApplication1.Services.Interfaces.AppointmentService;
 using WebApplication1.Services.Interfaces.BusinessService;
 using WebApplication1.Services.Interfaces.CustomerService;
@@ -32,7 +26,12 @@ using WebApplication1.Services.Interfaces.ServicesService;
 using WebApplication1.Services.Interfaces.StaffService;
 
 using StackExchange.Redis;
-using WebApplication1.Services.Implematations.AppointmentService;
+using WebApplication1.Services.Implementations.AppointmentService;
+using WebApplication1.Services.Implementations.BusinessService;
+using WebApplication1.Services.Implementations.CustomerService;
+using WebApplication1.Services.Implementations.ServicesService;
+using WebApplication1.Services.Implementations.StaffService;
+using WebApplication1.Services.Implementations.UserService;
 using WebApplication1.Utils.Redis;
 
 // Other using directives

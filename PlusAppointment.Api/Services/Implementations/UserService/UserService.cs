@@ -1,13 +1,11 @@
-
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.Enums;
 using WebApplication1.Repositories.Interfaces.UserRepo;
 using WebApplication1.Services.Interfaces.UserService;
-
 using WebApplication1.Utils.Hash;
 using WebApplication1.Utils.Jwt;
 
-namespace WebApplication1.Services.Implematations.UserService
+namespace WebApplication1.Services.Implementations.UserService
 {
     public class UserService : IUserService
     {

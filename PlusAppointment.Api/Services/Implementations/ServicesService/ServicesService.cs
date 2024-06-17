@@ -1,11 +1,10 @@
-using System.Security.Claims;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
 using PlusAppointment.Models.Enums;
 using WebApplication1.Repositories.Interfaces.ServicesRepo;
 using WebApplication1.Services.Interfaces.ServicesService;
 
-namespace WebApplication1.Services.Implematations.ServicesService
+namespace WebApplication1.Services.Implementations.ServicesService
 {
     public class ServicesService : IServicesService
     {

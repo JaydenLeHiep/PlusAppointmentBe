@@ -29,6 +29,10 @@ namespace WebApplication1.Services.Implementations.StaffService
 
         public async Task AddStaffAsync(StaffDto staffDto)
         {
+            if (string.IsNullOrEmpty(staffDto.Email) || string.IsNullOrEmpty(staffDto.Phone) || string.IsNullOrEmpty(staffDto.Password))
+            {
+                throw new Exception("Email, Phone, and Password cannot be null or empty.");
+            }
             if (await _staffRepository.EmailExistsAsync(staffDto.Email))
             {
                 throw new Exception("Email already exists");
@@ -61,6 +65,11 @@ namespace WebApplication1.Services.Implementations.StaffService
 
             foreach (var staffDto in staffDtoList)
             {
+                if (string.IsNullOrEmpty(staffDto.Email) || string.IsNullOrEmpty(staffDto.Phone) || string.IsNullOrEmpty(staffDto.Password))
+                {
+                    throw new Exception("Email, Phone, and Password cannot be null or empty.");
+                }
+
                 if (await _staffRepository.EmailExistsAsync(staffDto.Email))
                 {
                     throw new Exception($"Email {staffDto.Email} already exists");
@@ -72,13 +81,21 @@ namespace WebApplication1.Services.Implementations.StaffService
                 }
             }
 
-            var staffs = staffDtoList.Select(staffDto => new Staff
+            var staffs = staffDtoList.Select(staffDto =>
             {
-                Name = staffDto.Name,
-                Email = staffDto.Email,
-                Phone = staffDto.Phone,
-                Password = HashUtility.HashPassword(staffDto.Password),
-                BusinessId = businessId
+                if (staffDto.Password == null)
+                {
+                    throw new ArgumentNullException(nameof(staffDto.Password), "Password cannot be null.");
+                }
+
+                return new Staff
+                {
+                    Name = staffDto.Name,
+                    Email = staffDto.Email,
+                    Phone = staffDto.Phone,
+                    Password = HashUtility.HashPassword(staffDto.Password),
+                    BusinessId = businessId
+                };
             }).ToList();
 
             await _staffRepository.AddListStaffsAsync(staffs);

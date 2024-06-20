@@ -133,6 +133,10 @@ namespace WebApplication1.Controllers.StaffController
         {
             try
             {
+                if (string.IsNullOrEmpty(loginDto.Email) || string.IsNullOrEmpty(loginDto.Password))
+                {
+                    return BadRequest(new { message = "Email and Password cannot be null or empty." });
+                }
                 var token = await _staffService.LoginAsync(loginDto.Email, loginDto.Password);
                 return Ok(new { token });
             }

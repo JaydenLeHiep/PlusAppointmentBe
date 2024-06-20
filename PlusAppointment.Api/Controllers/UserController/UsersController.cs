@@ -47,6 +47,10 @@ public class UsersController: ControllerBase
     {
         try
         {
+            if (string.IsNullOrEmpty(userRegisterDto.Username) || string.IsNullOrEmpty(userRegisterDto.Password))
+            {
+                return BadRequest(new { message = "Username and Password cannot be null or empty." });
+            }
             await _userService.RegisterUserAsync(userRegisterDto.Username, userRegisterDto.Password, userRegisterDto.Email, userRegisterDto.Phone);
             return Ok(new { message = "User registered successfully!" });
         }

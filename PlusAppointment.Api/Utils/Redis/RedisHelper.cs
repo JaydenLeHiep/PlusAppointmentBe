@@ -1,7 +1,6 @@
 using StackExchange.Redis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using PlusAppointment.Models.Classes;
 
 namespace WebApplication1.Utils.Redis
 {
@@ -16,11 +15,7 @@ namespace WebApplication1.Utils.Redis
             _serializerOptions = new JsonSerializerOptions
             {
                 ReferenceHandler = ReferenceHandler.IgnoreCycles,
-                WriteIndented = true,
-                Converters =
-                {
-                    new BusinessCollectionConverter()
-                }
+                WriteIndented = true
             };
         }
 
@@ -28,16 +23,19 @@ namespace WebApplication1.Utils.Redis
         {
             var db = _connectionMultiplexer.GetDatabase();
             var cachedData = await db.StringGetAsync(key);
-    
+
             if (!cachedData.IsNullOrEmpty)
             {
+                // Convert RedisValue to string before deserialization
                 var jsonData = cachedData.ToString();
+
+                // Additional null check to satisfy the compiler
                 if (!string.IsNullOrEmpty(jsonData))
                 {
                     return JsonSerializer.Deserialize<T>(jsonData, _serializerOptions);
                 }
             }
-    
+
             return null;
         }
 
@@ -63,20 +61,6 @@ namespace WebApplication1.Utils.Redis
             {
                 await DeleteCacheAsync(key);
             }
-        }
-    }
-
-    public class BusinessCollectionConverter : JsonConverter<ICollection<Business>>
-    {
-        public override ICollection<Business>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            var businesses = JsonSerializer.Deserialize<List<Business>>(ref reader, options);
-            return businesses ?? new List<Business>();
-        }
-
-        public override void Write(Utf8JsonWriter writer, ICollection<Business> value, JsonSerializerOptions options)
-        {
-            JsonSerializer.Serialize(writer, value, options);
         }
     }
 }

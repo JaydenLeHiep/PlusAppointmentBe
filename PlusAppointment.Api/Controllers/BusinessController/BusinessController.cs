@@ -75,13 +75,14 @@ public class BusinessController : ControllerBase
         }
 
         var business = new Business
-        {
-            Name = businessDto.Name,
-            Address = businessDto.Address,
-            Phone = businessDto.Phone,
-            Email = businessDto.Email,
-            UserID = int.Parse(userId)
-        };
+        (
+            name: businessDto.Name,
+            address: businessDto.Address,
+            phone: businessDto.Phone,
+            email: businessDto.Email,
+            userID : int.Parse(userId)
+            
+        );
 
         await _businessService.AddBusinessAsync(business);
         return Ok(new { message = "Business created successfully." });

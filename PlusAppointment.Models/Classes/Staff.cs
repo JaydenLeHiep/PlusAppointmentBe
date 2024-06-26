@@ -14,7 +14,7 @@ namespace PlusAppointment.Models.Classes
         public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
 
         int IUserIdentity.Id => StaffId;
-        string IUserIdentity.Username => Name;
+        string? IUserIdentity.Username => Name;
         string IUserIdentity.Role => "Staff"; // Assuming Staff has a fixed role
     }
 }

@@ -47,7 +47,7 @@ public class UsersController: ControllerBase
     {
         try
         {
-            if (string.IsNullOrEmpty(userRegisterDto.Username) || string.IsNullOrEmpty(userRegisterDto.Password))
+            if (string.IsNullOrEmpty(userRegisterDto.Username) || string.IsNullOrEmpty(userRegisterDto.Password)|| string.IsNullOrEmpty(userRegisterDto.Email)|| string.IsNullOrEmpty(userRegisterDto.Phone))
             {
                 return BadRequest(new { message = "Username and Password cannot be null or empty." });
             }

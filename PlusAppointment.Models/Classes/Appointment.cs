@@ -13,7 +13,7 @@ namespace PlusAppointment.Models.Classes
         public Staff? Staff { get; set; }
         public DateTime AppointmentTime { get; set; }
         public TimeSpan Duration { get; set; }
-        public string? Status { get; set; }
+        public string Status { get; set; } = String.Empty;
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
     }

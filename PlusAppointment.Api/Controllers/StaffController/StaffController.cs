@@ -26,7 +26,7 @@ namespace WebApplication1.Controllers.StaffController
             return Ok(staffs);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("staff_id={id}")]
         [Authorize]
         public async Task<IActionResult> GetById(int id)
         {
@@ -35,9 +35,9 @@ namespace WebApplication1.Controllers.StaffController
             return Ok(staff);
         }
 
-        [HttpPost("{id}/add")]
+        [HttpPost("business_id={id}/add")]
         [Authorize]
-        public async Task<IActionResult> AddStaff([FromRoute] int id,[FromBody] StaffDto staffDto)
+        public async Task<IActionResult> AddStaff([FromRoute] int businessId,[FromBody] StaffDto staffDto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var userRole = User.FindFirstValue(ClaimTypes.Role);
@@ -47,7 +47,7 @@ namespace WebApplication1.Controllers.StaffController
                 return Unauthorized(new { message = "User not authorized" });
             }
 
-            staffDto.BusinessId = id;
+            staffDto.BusinessId = businessId;
             try
             {
                 await _staffService.AddStaffAsync(staffDto);
@@ -59,9 +59,9 @@ namespace WebApplication1.Controllers.StaffController
             }
         }
 
-        [HttpPost("{id}/addList")]
+        [HttpPost("business_id={id}/addList")]
         [Authorize]
-        public async Task<IActionResult> AddStaffs([FromRoute] int id, [FromBody] IEnumerable<StaffDto> staffDtos)
+        public async Task<IActionResult> AddStaffs([FromRoute] int businessId, [FromBody] IEnumerable<StaffDto> staffDtos)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var userRole = User.FindFirstValue(ClaimTypes.Role);
@@ -73,7 +73,7 @@ namespace WebApplication1.Controllers.StaffController
 
             try
             {
-                await _staffService.AddListStaffsAsync(staffDtos, id);
+                await _staffService.AddListStaffsAsync(staffDtos, businessId);
                 return Ok(new { message = "Staffs added successfully" });
             }
             catch (Exception ex)
@@ -82,9 +82,9 @@ namespace WebApplication1.Controllers.StaffController
             }
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("business_id={id}")]
         [Authorize]
-        public async Task<IActionResult> Update(int id, [FromBody] StaffDto staffDto)
+        public async Task<IActionResult> Update(int businessId, [FromBody] StaffDto staffDto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
@@ -94,7 +94,7 @@ namespace WebApplication1.Controllers.StaffController
 
             try
             {
-                await _staffService.UpdateStaffAsync(id, staffDto);
+                await _staffService.UpdateStaffAsync(businessId, staffDto);
                 return Ok(new { message = "Staff updated successfully" });
             }
             catch (KeyNotFoundException ex)
@@ -107,9 +107,9 @@ namespace WebApplication1.Controllers.StaffController
             }
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("business_id={id}")]
         [Authorize]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(int businessId)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
@@ -119,7 +119,7 @@ namespace WebApplication1.Controllers.StaffController
 
             try
             {
-                await _staffService.DeleteStaffAsync(id);
+                await _staffService.DeleteStaffAsync(businessId);
                 return Ok(new { message = "Staff deleted successfully" });
             }
             catch (Exception ex)

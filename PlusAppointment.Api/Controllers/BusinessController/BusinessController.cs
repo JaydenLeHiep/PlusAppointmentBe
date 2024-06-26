@@ -26,7 +26,7 @@ public class BusinessController : ControllerBase
         return Ok(businesses);
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("business_id={id}")]
     [Authorize]
     public async Task<IActionResult> GetById(int id)
     {
@@ -88,9 +88,9 @@ public class BusinessController : ControllerBase
         return Ok(new { message = "Business created successfully." });
     }
 
-    [HttpPut("{id}")]
+    [HttpPut("business_id={id}")]
     [Authorize]
-    public async Task<IActionResult> Update(int id, [FromBody] BusinessDto? businessDto)
+    public async Task<IActionResult> Update(int businessId, [FromBody] BusinessDto? businessDto)
     {
         if (businessDto == null)
         {
@@ -103,7 +103,7 @@ public class BusinessController : ControllerBase
             return Unauthorized(new { message = "User not authorized." });
         }
 
-        var business = await _businessService.GetBusinessByIdAsync(id);
+        var business = await _businessService.GetBusinessByIdAsync(businessId);
         if (business == null)
         {
             return NotFound(new { message = "Business not found." });
@@ -145,7 +145,7 @@ public class BusinessController : ControllerBase
         }
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("business_id={id}")]
     [Authorize]
     public async Task<IActionResult> Delete(int id)
     {
@@ -165,7 +165,7 @@ public class BusinessController : ControllerBase
         return Ok(new { message = "Business deleted successfully" });
     }
 
-    [HttpGet("{id}/services")]
+    [HttpGet("business_id={id}/services")]
     [Authorize]
     public async Task<IActionResult> GetServices(int id)
     {
@@ -178,7 +178,7 @@ public class BusinessController : ControllerBase
         return Ok(services);
     }
 
-    [HttpGet("{id}/staff")]
+    [HttpGet("business_id={id}/staff")]
     [Authorize]
     public async Task<IActionResult> GetStaff(int id)
     {

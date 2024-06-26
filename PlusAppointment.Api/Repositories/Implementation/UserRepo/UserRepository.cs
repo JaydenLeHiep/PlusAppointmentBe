@@ -92,7 +92,7 @@ namespace WebApplication1.Repositories.Implementation.UserRepo
             user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
             if (user == null)
             {
-                throw new KeyNotFoundException($"User with username {username} not found");
+                return null; // Return null if the user is not found
             }
 
             await _redisHelper.SetCacheAsync(cacheKey, user, TimeSpan.FromMinutes(10));
@@ -131,7 +131,7 @@ namespace WebApplication1.Repositories.Implementation.UserRepo
             user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
             if (user == null)
             {
-                throw new KeyNotFoundException($"User with email {email} not found");
+                return null; // Return null if the user is not found
             }
 
             await _redisHelper.SetCacheAsync(cacheKey, user, TimeSpan.FromMinutes(10));
@@ -150,12 +150,13 @@ namespace WebApplication1.Repositories.Implementation.UserRepo
             user = await _context.Users.FirstOrDefaultAsync(u => u.Phone == phone);
             if (user == null)
             {
-                throw new KeyNotFoundException($"User with phone {phone} not found");
+                return null; // Return null if the user is not found
             }
 
             await _redisHelper.SetCacheAsync(cacheKey, user, TimeSpan.FromMinutes(10));
             return user;
         }
+
 
         private async Task InvalidateCache()
         {

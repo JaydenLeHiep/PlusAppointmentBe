@@ -25,7 +25,7 @@ namespace WebApplication1.Controllers.ServiceController
             return Ok(services);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("service_id={id}")]
         [Authorize]
         public async Task<IActionResult> GetById(int id)
         {
@@ -38,9 +38,9 @@ namespace WebApplication1.Controllers.ServiceController
             return Ok(service);
         }
 
-        [HttpPost("{id}/add")]
+        [HttpPost("business_id={id}/add")]
         [Authorize]
-        public async Task<IActionResult> AddService([FromRoute] int id, [FromBody] ServiceDto? serviceDto)
+        public async Task<IActionResult> AddService([FromRoute] int businessId, [FromBody] ServiceDto? serviceDto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var userRole = User.FindFirstValue(ClaimTypes.Role);
@@ -52,7 +52,7 @@ namespace WebApplication1.Controllers.ServiceController
 
             try
             {
-                await _servicesService.AddServiceAsync(serviceDto, id, userId, userRole);
+                await _servicesService.AddServiceAsync(serviceDto, businessId, userId, userRole);
                 return Ok(new { message = "Service created successfully" });
             }
             catch (Exception ex)
@@ -61,9 +61,9 @@ namespace WebApplication1.Controllers.ServiceController
             }
         }
 
-        [HttpPost("{id}/addList")]
+        [HttpPost("business_id={id}/addList")]
         [Authorize]
-        public async Task<IActionResult> AddServices([FromRoute] int id, [FromBody] ServicesDto? servicesDto)
+        public async Task<IActionResult> AddServices([FromRoute] int businessId, [FromBody] ServicesDto? servicesDto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var userRole = User.FindFirstValue(ClaimTypes.Role);
@@ -75,7 +75,7 @@ namespace WebApplication1.Controllers.ServiceController
 
             try
             {
-                await _servicesService.AddListServicesAsync(servicesDto, id, userId, userRole);
+                await _servicesService.AddListServicesAsync(servicesDto, businessId, userId, userRole);
                 return Ok(new { message = "Services created successfully" });
             }
             catch (Exception ex)
@@ -84,9 +84,9 @@ namespace WebApplication1.Controllers.ServiceController
             }
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("business_id={id}")]
         [Authorize]
-        public async Task<IActionResult> Update(int id, [FromBody] ServiceDto? serviceDto)
+        public async Task<IActionResult> Update(int businessId, [FromBody] ServiceDto? serviceDto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -97,7 +97,7 @@ namespace WebApplication1.Controllers.ServiceController
 
             try
             {
-                await _servicesService.UpdateServiceAsync(id, serviceDto, userId);
+                await _servicesService.UpdateServiceAsync(businessId, serviceDto, userId);
                 return Ok(new { message = "Service updated successfully." });
             }
             catch (Exception ex)
@@ -106,9 +106,9 @@ namespace WebApplication1.Controllers.ServiceController
             }
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("business_id={id}")]
         [Authorize]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(int businessId)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -119,7 +119,7 @@ namespace WebApplication1.Controllers.ServiceController
 
             try
             {
-                await _servicesService.DeleteServiceAsync(id, userId);
+                await _servicesService.DeleteServiceAsync(businessId, userId);
                 return Ok(new { message = "Service deleted successfully" });
             }
             catch (Exception ex)

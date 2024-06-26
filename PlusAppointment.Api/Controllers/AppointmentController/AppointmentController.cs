@@ -26,7 +26,7 @@ public class AppointmentsController : ControllerBase
         return Ok(appointments);
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("appointment_id={id}")]
     [Authorize]
     public async Task<IActionResult> GetById(int id)
     {
@@ -39,7 +39,7 @@ public class AppointmentsController : ControllerBase
         return Ok(appointment);
     }
 
-    [HttpGet("customer/{customerId}")]
+    [HttpGet("customer/customer_id={customerId}")]
     [Authorize]
     public async Task<IActionResult> GetByCustomerId(int customerId)
     {
@@ -47,7 +47,7 @@ public class AppointmentsController : ControllerBase
         return Ok(appointments);
     }
 
-    [HttpGet("business/{businessId}")]
+    [HttpGet("business/business_id={businessId}")]
     [Authorize]
     public async Task<IActionResult> GetByBusinessId(int businessId)
     {
@@ -61,7 +61,7 @@ public class AppointmentsController : ControllerBase
         return Ok(appointments);
     }
 
-    [HttpGet("staff/{staffId}")]
+    [HttpGet("staff/staff_id={staffId}")]
     [Authorize]
     public async Task<IActionResult> GetByStaffId(int staffId)
     {
@@ -92,7 +92,7 @@ public class AppointmentsController : ControllerBase
         }
     }
 
-    [HttpPut("{id}")]
+    [HttpPut("appointment_id={id}")]
     [Authorize]
     public async Task<IActionResult> UpdateAppointment(int id, [FromBody] AppointmentDto appointmentDto)
     {
@@ -117,7 +117,7 @@ public class AppointmentsController : ControllerBase
         }
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("appointment_id={id}")]
     [Authorize]
     public async Task<IActionResult> DeleteAppointment(int id)
     {

@@ -30,7 +30,7 @@ public class UsersController: ControllerBase
         return Ok(new { message = "Users retrieved successfully.", data = enumerable });
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("user_id={id}")]
     [Authorize]
     public async Task<IActionResult> GetById(int id)
     {
@@ -88,7 +88,7 @@ public class UsersController: ControllerBase
 
 
     // Use for change the whole user or change only one thing like Password***
-    [HttpPut("{id}")]
+    [HttpPut("user_id={id}")]
     [Authorize]
     public async Task<IActionResult> Update(int id, [FromBody] UserUpdateDto? userUpdateDto)
     {
@@ -133,7 +133,7 @@ public class UsersController: ControllerBase
         }
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("user_id={id}")]
     [Authorize]
     public async Task<IActionResult> Delete(int id)
     {

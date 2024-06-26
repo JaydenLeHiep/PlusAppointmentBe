@@ -2,12 +2,14 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlusAppointment.Models.DTOs;
+using PlusAppointment.Models.Enums;
 using WebApplication1.Services.Interfaces.ServicesService;
 
 namespace WebApplication1.Controllers.ServiceController
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]  // Ensure all actions require authentication
     public class ServiceController : ControllerBase
     {
         private readonly IServicesService _servicesService;
@@ -18,17 +20,27 @@ namespace WebApplication1.Controllers.ServiceController
         }
 
         [HttpGet]
-        [Authorize]
         public async Task<IActionResult> GetAll()
         {
+            var userRole = HttpContext.Items["UserRole"]?.ToString();
+            if (userRole != Role.Admin.ToString())
+            {
+                return NotFound(new { message = "You are not authorized to view all services." });
+            }
+
             var services = await _servicesService.GetAllServicesAsync();
             return Ok(services);
         }
 
         [HttpGet("service_id={id}")]
-        [Authorize]
         public async Task<IActionResult> GetById(int id)
         {
+            var userRole = HttpContext.Items["UserRole"]?.ToString();
+            if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
+            {
+                return NotFound(new { message = "You are not authorized to view this service." });
+            }
+
             var service = await _servicesService.GetServiceByIdAsync(id);
             if (service == null)
             {
@@ -39,13 +51,16 @@ namespace WebApplication1.Controllers.ServiceController
         }
 
         [HttpPost("business_id={id}/add")]
-        [Authorize]
         public async Task<IActionResult> AddService([FromRoute] int businessId, [FromBody] ServiceDto? serviceDto)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var userRole = User.FindFirstValue(ClaimTypes.Role);
+            var userRole = HttpContext.Items["UserRole"]?.ToString();
+            if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
+            {
+                return NotFound(new { message = "You are not authorized to add a service." });
+            }
 
-            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(userRole))
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized(new { message = "User not authorized" });
             }
@@ -62,13 +77,16 @@ namespace WebApplication1.Controllers.ServiceController
         }
 
         [HttpPost("business_id={id}/addList")]
-        [Authorize]
         public async Task<IActionResult> AddServices([FromRoute] int businessId, [FromBody] ServicesDto? servicesDto)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var userRole = User.FindFirstValue(ClaimTypes.Role);
+            var userRole = HttpContext.Items["UserRole"]?.ToString();
+            if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
+            {
+                return NotFound(new { message = "You are not authorized to add services." });
+            }
 
-            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(userRole))
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized(new { message = "User not authorized" });
             }
@@ -85,11 +103,15 @@ namespace WebApplication1.Controllers.ServiceController
         }
 
         [HttpPut("business_id={id}")]
-        [Authorize]
         public async Task<IActionResult> Update(int businessId, [FromBody] ServiceDto? serviceDto)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRole = HttpContext.Items["UserRole"]?.ToString();
+            if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
+            {
+                return NotFound(new { message = "You are not authorized to update this service." });
+            }
 
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized(new { message = "User not authorized" });
@@ -107,11 +129,15 @@ namespace WebApplication1.Controllers.ServiceController
         }
 
         [HttpDelete("business_id={id}")]
-        [Authorize]
         public async Task<IActionResult> Delete(int businessId)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userRole = HttpContext.Items["UserRole"]?.ToString();
+            if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
+            {
+                return NotFound(new { message = "You are not authorized to delete this service." });
+            }
 
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized(new { message = "User not authorized" });

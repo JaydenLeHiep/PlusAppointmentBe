@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlusAppointment.Models.DTOs;
+using PlusAppointment.Models.Enums;
 using WebApplication1.Services.Interfaces.UserService;
 using WebApplication1.Utils.Hash;
 
@@ -21,6 +22,11 @@ public class UsersController: ControllerBase
     [Authorize]
     public async Task<IActionResult> GetAll()
     {
+        var userRole = HttpContext.Items["UserRole"]?.ToString();
+        if (userRole != Role.Admin.ToString())
+        {
+            return NotFound(new { message = "You are not authorized to view all users." });
+        }
         var users = await _userService.GetAllUsersAsync();
         var enumerable = users.ToList();
         if (!enumerable.Any())

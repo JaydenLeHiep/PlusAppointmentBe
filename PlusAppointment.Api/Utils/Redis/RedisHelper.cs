@@ -2,7 +2,6 @@ using StackExchange.Redis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-
 namespace WebApplication1.Utils.Redis
 {
     public class RedisHelper
@@ -15,7 +14,7 @@ namespace WebApplication1.Utils.Redis
             _connectionMultiplexer = connectionMultiplexer;
             _serializerOptions = new JsonSerializerOptions
             {
-                ReferenceHandler = ReferenceHandler.Preserve,
+                ReferenceHandler = ReferenceHandler.IgnoreCycles,
                 WriteIndented = true
             };
         }
@@ -24,19 +23,19 @@ namespace WebApplication1.Utils.Redis
         {
             var db = _connectionMultiplexer.GetDatabase();
             var cachedData = await db.StringGetAsync(key);
-    
+
             if (!cachedData.IsNullOrEmpty)
             {
                 // Convert RedisValue to string before deserialization
                 var jsonData = cachedData.ToString();
-        
+
                 // Additional null check to satisfy the compiler
                 if (!string.IsNullOrEmpty(jsonData))
                 {
                     return JsonSerializer.Deserialize<T>(jsonData, _serializerOptions);
                 }
             }
-    
+
             return null;
         }
 
@@ -60,7 +59,6 @@ namespace WebApplication1.Utils.Redis
 
             foreach (var key in keys)
             {
-                
                 await DeleteCacheAsync(key);
             }
         }

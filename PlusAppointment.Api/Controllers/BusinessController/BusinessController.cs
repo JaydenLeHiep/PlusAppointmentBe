@@ -115,7 +115,7 @@ public class BusinessController : ControllerBase
     }
 
     [HttpPut("business_id={id}")]
-    public async Task<IActionResult> Update(int businessId, [FromBody] BusinessDto? businessDto)
+    public async Task<IActionResult> Update(int id, [FromBody] BusinessDto? businessDto)
     {
         var userRole = HttpContext.Items["UserRole"]?.ToString();
         var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
@@ -129,7 +129,7 @@ public class BusinessController : ControllerBase
             return BadRequest(new { message = "No data provided." });
         }
 
-        var business = await _businessService.GetBusinessByIdAsync(businessId);
+        var business = await _businessService.GetBusinessByIdAsync(id);
         if (business == null)
         {
             return NotFound(new { message = "Business not found." });

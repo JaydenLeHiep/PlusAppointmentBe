@@ -9,6 +9,7 @@ namespace WebApplication1.Controllers.AppointmentController;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class AppointmentsController : ControllerBase
 {
     private readonly IAppointmentService _appointmentService;
@@ -19,17 +20,26 @@ public class AppointmentsController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize]
     public async Task<IActionResult> GetAll()
     {
+        var userRole = HttpContext.Items["UserRole"]?.ToString();
+        if (userRole != Role.Admin.ToString())
+        {
+            return NotFound(new { message = "You are not authorized to view all businesses." });
+        }
         var appointments = await _appointmentService.GetAllAppointmentsAsync();
         return Ok(appointments);
     }
 
     [HttpGet("appointment_id={id}")]
-    [Authorize]
     public async Task<IActionResult> GetById(int id)
     {
+        var userRole = HttpContext.Items["UserRole"]?.ToString();
+        var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
+        if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
+        {
+            return NotFound(new { message = "You are not authorized to view this business." });
+        }
         var appointment = await _appointmentService.GetAppointmentByIdAsync(id);
         if (appointment == null)
         {
@@ -40,21 +50,27 @@ public class AppointmentsController : ControllerBase
     }
 
     [HttpGet("customer/customer_id={customerId}")]
-    [Authorize]
     public async Task<IActionResult> GetByCustomerId(int customerId)
     {
+        var userRole = HttpContext.Items["UserRole"]?.ToString();
+        var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
+        if (userRole != Role.Admin.ToString() && userRole != Role.Customer.ToString() && userRole != Role.Owner.ToString())
+        {
+            return NotFound(new { message = "You are not authorized to view this business." });
+        }
         var appointments = await _appointmentService.GetAppointmentsByCustomerIdAsync(customerId);
         return Ok(appointments);
     }
 
     [HttpGet("business/business_id={businessId}")]
-    [Authorize]
     public async Task<IActionResult> GetByBusinessId(int businessId)
     {
-        var userRole = User.FindFirstValue(ClaimTypes.Role);
-        if (userRole != Role.Owner.ToString())
+        
+        var userRole = HttpContext.Items["UserRole"]?.ToString();
+        var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
+        if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
         {
-            return Unauthorized(new { message = "User not authorized" });
+            return NotFound(new { message = "You are not authorized to view this business." });
         }
 
         var appointments = await _appointmentService.GetAppointmentsByBusinessIdAsync(businessId);
@@ -62,13 +78,13 @@ public class AppointmentsController : ControllerBase
     }
 
     [HttpGet("staff/staff_id={staffId}")]
-    [Authorize]
     public async Task<IActionResult> GetByStaffId(int staffId)
     {
-        var userRole = User.FindFirstValue(ClaimTypes.Role);
-        if (userRole == Role.Customer.ToString() || userRole == null)
+        var userRole = HttpContext.Items["UserRole"]?.ToString();
+        var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
+        if (userRole != Role.Admin.ToString() && userRole != Role.Staff.ToString() && userRole != Role.Owner.ToString())
         {
-            return Unauthorized(new { message = "User not authorized" });
+            return NotFound(new { message = "You are not authorized to view this business." });
         }
 
         var appointments = await _appointmentService.GetAppointmentsByStaffIdAsync(staffId);
@@ -76,7 +92,6 @@ public class AppointmentsController : ControllerBase
     }
 
     [HttpPost("add")]
-    [Authorize]
     public async Task<IActionResult> AddAppointment([FromBody] AppointmentDto appointmentDto)
     {
         try
@@ -93,7 +108,6 @@ public class AppointmentsController : ControllerBase
     }
 
     [HttpPut("appointment_id={id}")]
-    [Authorize]
     public async Task<IActionResult> UpdateAppointment(int id, [FromBody] AppointmentDto appointmentDto)
     {
         try
@@ -118,7 +132,6 @@ public class AppointmentsController : ControllerBase
     }
 
     [HttpDelete("appointment_id={id}")]
-    [Authorize]
     public async Task<IActionResult> DeleteAppointment(int id)
     {
         try

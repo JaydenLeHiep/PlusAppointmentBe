@@ -7,6 +7,7 @@ public interface IStaffService
 {
     Task<IEnumerable<Staff>> GetAllStaffsAsync();
     Task<Staff> GetStaffIdAsync(int id);
+    Task<IEnumerable<Staff?>> GetAllStaffByBusinessIdAsync(int businessId);
     Task AddStaffAsync(StaffDto staffDto);
     public  Task AddListStaffsAsync(IEnumerable<StaffDto> staffDtos, int businessId);
     Task UpdateStaffAsync(int id, StaffDto staffDto);

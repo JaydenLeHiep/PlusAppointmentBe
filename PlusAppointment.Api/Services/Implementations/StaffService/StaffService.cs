@@ -26,6 +26,10 @@ namespace WebApplication1.Services.Implementations.StaffService
         {
             return await _staffRepository.GetByIdAsync(id);
         }
+        public async Task<IEnumerable<Staff?>> GetAllStaffByBusinessIdAsync(int businessId)
+        {
+            return await _staffRepository.GetAllByBusinessIdAsync(businessId);
+        }
 
         public async Task AddStaffAsync(StaffDto staffDto)
         {

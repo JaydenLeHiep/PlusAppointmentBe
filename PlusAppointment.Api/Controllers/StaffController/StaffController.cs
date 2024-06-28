@@ -31,7 +31,6 @@ namespace WebApplication1.Controllers.StaffController
             var staffs = await _staffService.GetAllStaffsAsync();
             return Ok(staffs);
         }
-
         [HttpGet("staff_id={id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -45,8 +44,26 @@ namespace WebApplication1.Controllers.StaffController
             return Ok(staff);
         }
 
+        // Get all staff by business ID
+        [HttpGet("business_id={id}")]
+        public async Task<IActionResult> GetAllStaffByBusinessId(int id)
+        {
+            var userRole = HttpContext.Items["UserRole"]?.ToString();
+            if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
+            {
+                return NotFound(new { message = "You are not authorized to view this staff." });
+            }
+
+            var staff = await _staffService.GetAllStaffByBusinessIdAsync(id);
+            if (!staff.Any())
+            {
+                return NotFound(new { message = "No staff found for this business." });
+            }
+            return Ok(staff);
+        }
+
         [HttpPost("business_id={id}/add")]
-        public async Task<IActionResult> AddStaff([FromRoute] int businessId, [FromBody] StaffDto staffDto)
+        public async Task<IActionResult> AddStaff(int id, [FromBody] StaffDto staffDto)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -60,7 +77,7 @@ namespace WebApplication1.Controllers.StaffController
                 return Unauthorized(new { message = "User not authorized" });
             }
 
-            staffDto.BusinessId = businessId;
+            staffDto.BusinessId = id;
             try
             {
                 await _staffService.AddStaffAsync(staffDto);
@@ -73,7 +90,7 @@ namespace WebApplication1.Controllers.StaffController
         }
 
         [HttpPost("business_id={id}/addList")]
-        public async Task<IActionResult> AddStaffs([FromRoute] int businessId, [FromBody] IEnumerable<StaffDto> staffDtos)
+        public async Task<IActionResult> AddStaffs(int id, [FromBody] IEnumerable<StaffDto> staffDtos)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -89,7 +106,7 @@ namespace WebApplication1.Controllers.StaffController
 
             try
             {
-                await _staffService.AddListStaffsAsync(staffDtos, businessId);
+                await _staffService.AddListStaffsAsync(staffDtos, id);
                 return Ok(new { message = "Staffs added successfully" });
             }
             catch (Exception ex)
@@ -99,7 +116,7 @@ namespace WebApplication1.Controllers.StaffController
         }
 
         [HttpPut("business_id={id}")]
-        public async Task<IActionResult> Update(int businessId, [FromBody] StaffDto staffDto)
+        public async Task<IActionResult> Update(int id, [FromBody] StaffDto staffDto)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -115,7 +132,7 @@ namespace WebApplication1.Controllers.StaffController
 
             try
             {
-                await _staffService.UpdateStaffAsync(businessId, staffDto);
+                await _staffService.UpdateStaffAsync(id, staffDto);
                 return Ok(new { message = "Staff updated successfully" });
             }
             catch (KeyNotFoundException ex)
@@ -129,7 +146,7 @@ namespace WebApplication1.Controllers.StaffController
         }
 
         [HttpDelete("business_id={id}")]
-        public async Task<IActionResult> Delete(int businessId)
+        public async Task<IActionResult> Delete(int id)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -145,7 +162,7 @@ namespace WebApplication1.Controllers.StaffController
 
             try
             {
-                await _staffService.DeleteStaffAsync(businessId);
+                await _staffService.DeleteStaffAsync(id);
                 return Ok(new { message = "Staff deleted successfully" });
             }
             catch (Exception ex)

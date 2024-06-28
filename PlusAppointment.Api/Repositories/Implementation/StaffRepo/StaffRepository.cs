@@ -51,7 +51,22 @@ namespace WebApplication1.Repositories.Implementation.StaffRepo
             await _redisHelper.SetCacheAsync(cacheKey, staff, TimeSpan.FromMinutes(10));
             return staff;
         }
+        
+        public async Task<IEnumerable<Staff?>> GetAllByBusinessIdAsync(int businessId)
+        {
+            string cacheKey = $"staff_business_{businessId}";
+            var cachedStaff = await _redisHelper.GetCacheAsync<List<Staff>>(cacheKey);
 
+            if (cachedStaff != null && cachedStaff.Any())
+            {
+                return cachedStaff;
+            }
+
+            var staff = await _context.Staffs.Where(s => s.BusinessId == businessId).ToListAsync();
+            await _redisHelper.SetCacheAsync(cacheKey, staff, TimeSpan.FromMinutes(10));
+
+            return staff;
+        }
         public async Task AddStaffAsync(Staff staff, int businessId)
         {
             var business = await _context.Businesses.FindAsync(businessId);

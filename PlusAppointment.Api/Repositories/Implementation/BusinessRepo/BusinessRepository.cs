@@ -116,7 +116,18 @@ namespace WebApplication1.Repositories.Implementation.BusinessRepo
         
         public async Task<IEnumerable<Business?>> GetAllByUserIdAsync(int userId)
         {
-            return await _context.Businesses.Where(b => b.UserID == userId).ToListAsync();
+            string cacheKey = $"business_user_{userId}";
+            var cachedBusinesses = await _redisHelper.GetCacheAsync<List<Business>>(cacheKey);
+
+            if (cachedBusinesses != null && cachedBusinesses.Any())
+            {
+                return cachedBusinesses;
+            }
+
+            var businesses = await _context.Businesses.Where(b => b.UserID == userId).ToListAsync();
+            await _redisHelper.SetCacheAsync(cacheKey, businesses, TimeSpan.FromMinutes(10));
+
+            return businesses;
         }
 
         private async Task InvalidateCache()

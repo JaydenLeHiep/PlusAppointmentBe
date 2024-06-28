@@ -84,6 +84,7 @@ public class UsersController: ControllerBase
         var response = new LoginResponseDto
         {
             Token = token,
+            
             Username = user.Username,
             Role = user.Role.ToString()  // Convert Role enum to string
         };

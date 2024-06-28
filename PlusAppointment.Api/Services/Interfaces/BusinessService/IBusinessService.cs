@@ -11,4 +11,6 @@ public interface IBusinessService
     Task DeleteBusinessAsync(int id);
     Task<IEnumerable<Service?>> GetServicesByBusinessIdAsync(int businessId);
     Task<IEnumerable<Staff?>> GetStaffByBusinessIdAsync(int businessId);
+    
+    Task<IEnumerable<Business?>> GetAllBusinessesByUserIdAsync(int userId);
 }

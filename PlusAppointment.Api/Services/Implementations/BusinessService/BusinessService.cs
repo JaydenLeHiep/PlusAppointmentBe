@@ -47,4 +47,9 @@ public class BusinessService: IBusinessService
     {
         return await _businessRepository.GetStaffByBusinessIdAsync(businessId);
     }
+    
+    public async Task<IEnumerable<Business?>> GetAllBusinessesByUserIdAsync(int userId)
+    {
+        return await _businessRepository.GetAllByUserIdAsync(userId);
+    }
 }

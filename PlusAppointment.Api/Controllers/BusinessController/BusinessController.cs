@@ -19,9 +19,10 @@ public class BusinessController : ControllerBase
     {
         _businessService = businessService;
     }
-
+    
+    // get all can only admin and develop use it
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAllAdmin()
     {
         var userRole = HttpContext.Items["UserRole"]?.ToString();
         if (userRole != Role.Admin.ToString())
@@ -33,6 +34,25 @@ public class BusinessController : ControllerBase
         if (!businesses.Any())
         {
             return NotFound(new { message = "No businesses found." });
+        }
+        return Ok(businesses);
+    }
+    
+    // get all businesses for that user
+    // Get all businesses for the logged-in user
+    [HttpGet("byUser")]
+    public async Task<IActionResult> GetAllByUser()
+    {
+        var userRole = HttpContext.Items["UserRole"]?.ToString();
+        var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
+        if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
+        {
+            return NotFound(new { message = "You are not authorized to view this business." });
+        }
+        var businesses = await _businessService.GetAllBusinessesByUserIdAsync(currentUserId);
+        if (!businesses.Any())
+        {
+            return NotFound(new { message = "No businesses found for this user." });
         }
         return Ok(businesses);
     }
@@ -231,4 +251,6 @@ public class BusinessController : ControllerBase
 
         return Ok(staff);
     }
+    
+    
 }

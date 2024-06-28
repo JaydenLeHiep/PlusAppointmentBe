@@ -113,6 +113,11 @@ namespace WebApplication1.Repositories.Implementation.BusinessRepo
 
             return staff;
         }
+        
+        public async Task<IEnumerable<Business?>> GetAllByUserIdAsync(int userId)
+        {
+            return await _context.Businesses.Where(b => b.UserID == userId).ToListAsync();
+        }
 
         private async Task InvalidateCache()
         {

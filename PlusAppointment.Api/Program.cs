@@ -34,9 +34,14 @@ using WebApplication1.Services.Implementations.StaffService;
 using WebApplication1.Services.Implementations.UserService;
 using WebApplication1.Utils.Redis;
 
-// Other using directives
-
 var builder = WebApplication.CreateBuilder(args);
+
+// Load environment-specific configuration
+builder.Configuration
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
+    .AddEnvironmentVariables();
 
 // Ensure the Logs directory exists
 EnsureLogsDirectory();
@@ -79,7 +84,11 @@ if (string.IsNullOrEmpty(redisConnectionString))
     throw new InvalidOperationException("Redis connection string is not configured.");
 }
 
-builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnectionString));
+var configurationOptions = ConfigurationOptions.Parse(redisConnectionString);
+configurationOptions.AbortOnConnectFail = false;
+var redis = ConnectionMultiplexer.Connect(configurationOptions);
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
 
 // Add JWT Authentication
 var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"] ?? string.Empty);

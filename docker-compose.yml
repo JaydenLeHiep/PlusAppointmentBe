@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: hieple
       POSTGRES_PASSWORD: hieple
     ports:
-      - "5434:5432"  # Maps port 5434 on the host to port 5432 in the container
+      - "5434:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
 
@@ -17,9 +17,24 @@ services:
     image: redis:6
     container_name: plus_appointments_redis
     ports:
-      - "6379:6379"  # Maps port 6379 on the host to port 6379 in the container
+      - "6379:6379"
     volumes:
       - redis_data:/data
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: plus_appointments_web
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+      - redis
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=db;Database=plus_appointments_database;Username=hieple;Password=hieple
+      - ConnectionStrings__RedisConnection=plus_appointments_redis:6379
 
 volumes:
   db_data:

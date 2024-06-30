@@ -52,6 +52,17 @@ namespace WebApplication1.Services.Implementations.AppointmentService
                 throw new ArgumentException("Invalid StaffId for the given BusinessId");
             }
 
+            // Check if the staff is available
+            var isAvailable = await _appointmentRepository.IsStaffAvailable(
+                appointmentDto.StaffId,
+                appointmentDto.AppointmentTime,
+                appointmentDto.Duration);
+            
+            if (!isAvailable)
+            {
+                throw new InvalidOperationException("The staff is not available at the requested time.");
+            }
+
             var appointment = new Appointment
             {
                 CustomerId = appointmentDto.CustomerId,
@@ -67,6 +78,8 @@ namespace WebApplication1.Services.Implementations.AppointmentService
 
             await _appointmentRepository.AddAppointmentAsync(appointment);
         }
+
+
 
         public async Task UpdateAppointmentAsync(int id, AppointmentDto appointmentDto)
         {

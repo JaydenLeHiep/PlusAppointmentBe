@@ -85,14 +85,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
             return true; // No overlap
         }
 
-
-
-
-
-
-
-
-
+        
         public async Task AddAppointmentAsync(Appointment appointment)
         {
             await _context.Appointments.AddAsync(appointment);

@@ -62,6 +62,36 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
             await _redisHelper.SetCacheAsync(cacheKey, appointment, TimeSpan.FromMinutes(10));
             return appointment;
         }
+        public async Task<bool> IsStaffAvailable(int staffId, DateTime appointmentTime, TimeSpan duration)
+        {
+            // Calculate the end time of the new appointment in C#
+            var endTime = appointmentTime.Add(duration);
+
+            // Retrieve all appointments for the staff
+            var appointments = await _context.Appointments
+                .Where(a => a.StaffId == staffId)
+                .ToListAsync();
+
+            // Check for overlapping appointments
+            foreach (var appointment in appointments)
+            {
+                var existingAppointmentEndTime = appointment.AppointmentTime.Add(appointment.Duration);
+                if (appointment.AppointmentTime < endTime && existingAppointmentEndTime > appointmentTime)
+                {
+                    return false; // Overlap found
+                }
+            }
+
+            return true; // No overlap
+        }
+
+
+
+
+
+
+
+
 
         public async Task AddAppointmentAsync(Appointment appointment)
         {

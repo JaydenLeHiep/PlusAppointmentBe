@@ -9,9 +9,11 @@ namespace WebApplication1.Utils.Redis
         private readonly IConnectionMultiplexer _connectionMultiplexer;
         private readonly JsonSerializerOptions _serializerOptions;
 
-        public RedisHelper(IConnectionMultiplexer connectionMultiplexer)
+        public RedisHelper(IConfiguration configuration)
         {
-            _connectionMultiplexer = connectionMultiplexer;
+            var redisConnectionString = configuration.GetConnectionString("RedisConnection");
+            _connectionMultiplexer = ConnectionMultiplexer.Connect(redisConnectionString);
+
             _serializerOptions = new JsonSerializerOptions
             {
                 ReferenceHandler = ReferenceHandler.IgnoreCycles,

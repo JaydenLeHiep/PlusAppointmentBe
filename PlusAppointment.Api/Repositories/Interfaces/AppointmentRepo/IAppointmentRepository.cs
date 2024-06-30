@@ -12,5 +12,7 @@ namespace WebApplication1.Repositories.Interfaces.AppointmentRepo
         Task<IEnumerable<Appointment>> GetAppointmentsByCustomerIdAsync(int customerId);
         Task<IEnumerable<Appointment>> GetAppointmentsByBusinessIdAsync(int businessId);
         Task<IEnumerable<Appointment>> GetAppointmentsByStaffIdAsync(int staffId);
+
+        Task<bool> IsStaffAvailable(int staffId, DateTime appointmentTime, TimeSpan duration);
     }
 }

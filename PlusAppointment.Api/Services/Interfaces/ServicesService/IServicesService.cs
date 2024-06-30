@@ -10,6 +10,6 @@ namespace WebApplication1.Services.Interfaces.ServicesService
         Task AddServiceAsync(ServiceDto? serviceDto, int businessId, string userId, string userRole);
         Task AddListServicesAsync(ServicesDto? servicesDto, int businessId, string userId, string userRole);
         Task UpdateServiceAsync(int id, ServiceDto? serviceDto, string userId);
-        Task DeleteServiceAsync(int id, string userId);
+        Task DeleteServiceAsync(int businessId, int serviceId);
     }
 }

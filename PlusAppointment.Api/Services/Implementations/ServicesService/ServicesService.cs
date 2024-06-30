@@ -151,20 +151,11 @@ namespace WebApplication1.Services.Implementations.ServicesService
             await _servicesRepository.UpdateAsync(service);
         }
 
-        public async Task DeleteServiceAsync(int id, string userId)
+        public async Task DeleteServiceAsync(int businessId, int serviceId)
         {
-            if (string.IsNullOrEmpty(userId))
-            {
-                throw new UnauthorizedAccessException("User not authorized");
-            }
-
-            var service = await _servicesRepository.GetByIdAsync(id);
-            if (service == null)
-            {
-                throw new Exception("Service not found");
-            }
-
-            await _servicesRepository.DeleteAsync(id);
+            await _servicesRepository.DeleteAsync(businessId, serviceId);
         }
+
+
     }
 }

@@ -52,12 +52,15 @@ namespace WebApplication1.Services.Implementations.AppointmentService
                 throw new ArgumentException("Invalid StaffId for the given BusinessId");
             }
 
+            // Adjust the appointment time by subtracting 2 hours
+            var adjustedAppointmentTime = appointmentDto.AppointmentTime.AddHours(-2);
+
             // Check if the staff is available
             var isAvailable = await _appointmentRepository.IsStaffAvailable(
                 appointmentDto.StaffId,
-                appointmentDto.AppointmentTime,
+                adjustedAppointmentTime,
                 appointmentDto.Duration);
-            
+    
             if (!isAvailable)
             {
                 throw new InvalidOperationException("The staff is not available at the requested time.");
@@ -69,7 +72,7 @@ namespace WebApplication1.Services.Implementations.AppointmentService
                 BusinessId = appointmentDto.BusinessId,
                 ServiceId = appointmentDto.ServiceId,
                 StaffId = appointmentDto.StaffId,
-                AppointmentTime = DateTime.SpecifyKind(appointmentDto.AppointmentTime, DateTimeKind.Utc),
+                AppointmentTime = DateTime.SpecifyKind(adjustedAppointmentTime, DateTimeKind.Utc),
                 Duration = appointmentDto.Duration,
                 Status = appointmentDto.Status,
                 CreatedAt = DateTime.UtcNow,
@@ -78,6 +81,7 @@ namespace WebApplication1.Services.Implementations.AppointmentService
 
             await _appointmentRepository.AddAppointmentAsync(appointment);
         }
+
 
 
 

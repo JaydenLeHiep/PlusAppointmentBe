@@ -145,8 +145,8 @@ namespace WebApplication1.Controllers.StaffController
             }
         }
 
-        [HttpDelete("business_id={id}")]
-        public async Task<IActionResult> Delete(int id)
+        [HttpDelete("business_id={businessId}/staff_id={staffId}")]
+        public async Task<IActionResult> Delete(int businessId, int staffId)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -162,7 +162,7 @@ namespace WebApplication1.Controllers.StaffController
 
             try
             {
-                await _staffService.DeleteStaffAsync(id);
+                await _staffService.DeleteStaffAsync(businessId, staffId);
                 return Ok(new { message = "Staff deleted successfully" });
             }
             catch (Exception ex)
@@ -170,6 +170,7 @@ namespace WebApplication1.Controllers.StaffController
                 return BadRequest(new { message = ex.Message });
             }
         }
+
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] StaffLoginDto loginDto)

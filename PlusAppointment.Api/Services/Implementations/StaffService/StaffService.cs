@@ -118,9 +118,9 @@ namespace WebApplication1.Services.Implementations.StaffService
             await _staffRepository.UpdateAsync(staff);
         }
 
-        public async Task DeleteStaffAsync(int id)
+        public async Task DeleteStaffAsync(int businessId, int staffId)
         {
-            await _staffRepository.DeleteAsync(id);
+            await _staffRepository.DeleteAsync(businessId, staffId);
         }
         
         public async Task<string> LoginAsync(string email, string password)

@@ -128,8 +128,8 @@ namespace WebApplication1.Controllers.ServiceController
             }
         }
 
-        [HttpDelete("business_id={id}")]
-        public async Task<IActionResult> Delete(int businessId)
+        [HttpDelete("business_id={businessId}/service_id={serviceId}")]
+        public async Task<IActionResult> DeleteService(int businessId, int serviceId)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -145,7 +145,7 @@ namespace WebApplication1.Controllers.ServiceController
 
             try
             {
-                await _servicesService.DeleteServiceAsync(businessId, userId);
+                await _servicesService.DeleteServiceAsync(businessId, serviceId);
                 return Ok(new { message = "Service deleted successfully" });
             }
             catch (Exception ex)
@@ -153,5 +153,6 @@ namespace WebApplication1.Controllers.ServiceController
                 return BadRequest(new { message = $"Delete failed: {ex.Message}" });
             }
         }
+
     }
 }

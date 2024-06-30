@@ -111,17 +111,20 @@ namespace WebApplication1.Repositories.Implementation.StaffRepo
             await InvalidateCache();
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task DeleteAsync(int businessId, int staffId)
         {
-            var staff = await _context.Staffs.FindAsync(id);
+            var staff = await _context.Staffs
+                .Where(s => s.BusinessId == businessId && s.StaffId == staffId)
+                .FirstOrDefaultAsync();
+
             if (staff != null)
             {
                 _context.Staffs.Remove(staff);
                 await _context.SaveChangesAsync();
+                await InvalidateCache();
             }
-
-            await InvalidateCache();
         }
+
 
         public async Task<Staff> GetByEmailAsync(string email)
         {

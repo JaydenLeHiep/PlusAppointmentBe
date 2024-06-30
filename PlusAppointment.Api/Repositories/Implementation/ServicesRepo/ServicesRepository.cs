@@ -93,17 +93,20 @@ namespace WebApplication1.Repositories.Implementation.ServicesRepo
             await InvalidateCache();
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task DeleteAsync(int businessId, int serviceId)
         {
-            var service = await _context.Services.FindAsync(id);
+            var service = await _context.Services
+                .Where(s => s.BusinessId == businessId && s.ServiceId == serviceId)
+                .FirstOrDefaultAsync();
+
             if (service != null)
             {
                 _context.Services.Remove(service);
                 await _context.SaveChangesAsync();
+                await InvalidateCache();
             }
-
-            await InvalidateCache();
         }
+
 
         private async Task InvalidateCache()
         {

@@ -4,7 +4,6 @@ using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
 using WebApplication1.Services.Interfaces.CustomerService;
 
-
 namespace WebApplication1.Controllers.CustomerController
 {
     [ApiController]
@@ -26,11 +25,11 @@ namespace WebApplication1.Controllers.CustomerController
             return Ok(customers);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("customer_id={customerId}")]
         [Authorize]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<IActionResult> GetById(int customerId)
         {
-            var customer = await _customerService.GetCustomerByIdAsync(id);
+            var customer = await _customerService.GetCustomerByIdAsync(customerId);
             if (customer == null)
             {
                 return NotFound(new { message = "Customer not found" });
@@ -40,6 +39,7 @@ namespace WebApplication1.Controllers.CustomerController
         }
 
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> AddCustomer([FromBody] CustomerDto customerDto)
         {
             try
@@ -53,9 +53,9 @@ namespace WebApplication1.Controllers.CustomerController
             }
         }
 
-        [HttpPut("{id}")]
+        [HttpPut("customer_id={customerId}")]
         [Authorize]
-        public async Task<IActionResult> UpdateCustomer(int id, [FromBody] CustomerDto? customerDto)
+        public async Task<IActionResult> UpdateCustomer(int customerId, [FromBody] CustomerDto? customerDto)
         {
             if (customerDto == null)
             {
@@ -64,7 +64,7 @@ namespace WebApplication1.Controllers.CustomerController
 
             try
             {
-                await _customerService.UpdateCustomerAsync(id, customerDto);
+                await _customerService.UpdateCustomerAsync(customerId, customerDto);
                 return Ok(new { message = "Customer updated successfully" });
             }
             catch (KeyNotFoundException ex)
@@ -81,13 +81,13 @@ namespace WebApplication1.Controllers.CustomerController
             }
         }
 
-        [HttpDelete("{id}")]
+        [HttpDelete("customer_id={customerId}")]
         [Authorize]
-        public async Task<IActionResult> DeleteCustomer(int id)
+        public async Task<IActionResult> DeleteCustomer(int customerId)
         {
             try
             {
-                await _customerService.DeleteCustomerAsync(id);
+                await _customerService.DeleteCustomerAsync(customerId);
                 return Ok(new { message = "Customer deleted successfully" });
             }
             catch (KeyNotFoundException ex)

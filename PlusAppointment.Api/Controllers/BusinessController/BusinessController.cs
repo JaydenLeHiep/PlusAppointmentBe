@@ -19,7 +19,7 @@ public class BusinessController : ControllerBase
     {
         _businessService = businessService;
     }
-    
+
     // get all can only admin and develop use it
     [HttpGet]
     public async Task<IActionResult> GetAllAdmin()
@@ -29,7 +29,7 @@ public class BusinessController : ControllerBase
         {
             return NotFound(new { message = "You are not authorized to view all businesses." });
         }
-        
+
         var businesses = await _businessService.GetAllBusinessesAsync();
         if (!businesses.Any())
         {
@@ -37,7 +37,7 @@ public class BusinessController : ControllerBase
         }
         return Ok(businesses);
     }
-    
+
     // get all businesses for that user
     // Get all businesses for the logged-in user
     [HttpGet("byUser")]
@@ -57,8 +57,8 @@ public class BusinessController : ControllerBase
         return Ok(businesses);
     }
 
-    [HttpGet("business_id={id}")]
-    public async Task<IActionResult> GetById(int id)
+    [HttpGet("business_id={businessId}")]
+    public async Task<IActionResult> GetById(int businessId)
     {
         var userRole = HttpContext.Items["UserRole"]?.ToString();
         var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
@@ -67,7 +67,7 @@ public class BusinessController : ControllerBase
             return NotFound(new { message = "You are not authorized to view this business." });
         }
 
-        var business = await _businessService.GetBusinessByIdAsync(id);
+        var business = await _businessService.GetBusinessByIdAsync(businessId);
         if (business == null)
         {
             return NotFound(new { message = "Business not found." });
@@ -134,8 +134,8 @@ public class BusinessController : ControllerBase
         return Ok(new { message = "Business created successfully." });
     }
 
-    [HttpPut("business_id={id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] BusinessDto? businessDto)
+    [HttpPut("business_id={businessId}")]
+    public async Task<IActionResult> Update(int businessId, [FromBody] BusinessDto? businessDto)
     {
         var userRole = HttpContext.Items["UserRole"]?.ToString();
         var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
@@ -149,7 +149,7 @@ public class BusinessController : ControllerBase
             return BadRequest(new { message = "No data provided." });
         }
 
-        var business = await _businessService.GetBusinessByIdAsync(id);
+        var business = await _businessService.GetBusinessByIdAsync(businessId);
         if (business == null)
         {
             return NotFound(new { message = "Business not found." });
@@ -191,8 +191,8 @@ public class BusinessController : ControllerBase
         }
     }
 
-    [HttpDelete("business_id={id}")]
-    public async Task<IActionResult> Delete(int id)
+    [HttpDelete("business_id={businessId}")]
+    public async Task<IActionResult> Delete(int businessId)
     {
         var userRole = HttpContext.Items["UserRole"]?.ToString();
         var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
@@ -201,7 +201,7 @@ public class BusinessController : ControllerBase
             return NotFound(new { message = "You are not authorized to delete this business." });
         }
 
-        var business = await _businessService.GetBusinessByIdAsync(id);
+        var business = await _businessService.GetBusinessByIdAsync(businessId);
         if (business == null)
         {
             return NotFound(new { message = "Business not found." });
@@ -212,12 +212,12 @@ public class BusinessController : ControllerBase
             return NotFound(new { message = "You are not authorized to delete this business." });
         }
 
-        await _businessService.DeleteBusinessAsync(id);
+        await _businessService.DeleteBusinessAsync(businessId);
         return Ok(new { message = "Business deleted successfully." });
     }
 
-    [HttpGet("business_id={id}/services")]
-    public async Task<IActionResult> GetServices(int id)
+    [HttpGet("business_id={businessId}/services")]
+    public async Task<IActionResult> GetServices(int businessId)
     {
         var userRole = HttpContext.Items["UserRole"]?.ToString();
         if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -225,7 +225,7 @@ public class BusinessController : ControllerBase
             return NotFound(new { message = "You are not authorized to view the services of this business." });
         }
 
-        var services = await _businessService.GetServicesByBusinessIdAsync(id);
+        var services = await _businessService.GetServicesByBusinessIdAsync(businessId);
         if (!services.Any())
         {
             return NotFound(new { message = "No services found for this business." });
@@ -234,8 +234,8 @@ public class BusinessController : ControllerBase
         return Ok(services);
     }
 
-    [HttpGet("business_id={id}/staff")]
-    public async Task<IActionResult> GetStaff(int id)
+    [HttpGet("business_id={businessId}/staff")]
+    public async Task<IActionResult> GetStaff(int businessId)
     {
         var userRole = HttpContext.Items["UserRole"]?.ToString();
         if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -243,7 +243,7 @@ public class BusinessController : ControllerBase
             return NotFound(new { message = "You are not authorized to view the staff of this business." });
         }
 
-        var staff = await _businessService.GetStaffByBusinessIdAsync(id);
+        var staff = await _businessService.GetStaffByBusinessIdAsync(businessId);
         if (!staff.Any())
         {
             return NotFound(new { message = "No staff found for this business." });
@@ -251,6 +251,4 @@ public class BusinessController : ControllerBase
 
         return Ok(staff);
     }
-    
-    
 }

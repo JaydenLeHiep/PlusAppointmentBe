@@ -32,8 +32,8 @@ namespace WebApplication1.Controllers.ServiceController
             return Ok(services);
         }
 
-        [HttpGet("service_id={id}")]
-        public async Task<IActionResult> GetById(int id)
+        [HttpGet("service_id={serviceId}")]
+        public async Task<IActionResult> GetById(int serviceId)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -41,7 +41,7 @@ namespace WebApplication1.Controllers.ServiceController
                 return NotFound(new { message = "You are not authorized to view this service." });
             }
 
-            var service = await _servicesService.GetServiceByIdAsync(id);
+            var service = await _servicesService.GetServiceByIdAsync(serviceId);
             if (service == null)
             {
                 return NotFound(new { message = "Service not found" });
@@ -50,8 +50,8 @@ namespace WebApplication1.Controllers.ServiceController
             return Ok(service);
         }
 
-        [HttpPost("business_id={id}/add")]
-        public async Task<IActionResult> AddService([FromRoute] int businessId, [FromBody] ServiceDto? serviceDto)
+        [HttpPost("business_id={businessId}/add")]
+        public async Task<IActionResult> AddService(int businessId, [FromBody] ServiceDto? serviceDto)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -76,8 +76,8 @@ namespace WebApplication1.Controllers.ServiceController
             }
         }
 
-        [HttpPost("business_id={id}/addList")]
-        public async Task<IActionResult> AddServices([FromRoute] int businessId, [FromBody] ServicesDto? servicesDto)
+        [HttpPost("business_id={businessId}/addList")]
+        public async Task<IActionResult> AddServices(int businessId, [FromBody] ServicesDto? servicesDto)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -102,7 +102,7 @@ namespace WebApplication1.Controllers.ServiceController
             }
         }
 
-        [HttpPut("business_id={id}")]
+        [HttpPut("business_id={businessId}")]
         public async Task<IActionResult> Update(int businessId, [FromBody] ServiceDto? serviceDto)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
@@ -153,6 +153,5 @@ namespace WebApplication1.Controllers.ServiceController
                 return BadRequest(new { message = $"Delete failed: {ex.Message}" });
             }
         }
-
     }
 }

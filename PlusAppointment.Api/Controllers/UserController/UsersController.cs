@@ -9,7 +9,7 @@ namespace WebApplication1.Controllers.UserController;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UsersController: ControllerBase
+public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
 
@@ -36,14 +36,14 @@ public class UsersController: ControllerBase
         return Ok(new { message = "Users retrieved successfully.", data = enumerable });
     }
 
-    [HttpGet("user_id={id}")]
+    [HttpGet("user_id={userId}")]
     [Authorize]
-    public async Task<IActionResult> GetById(int id)
+    public async Task<IActionResult> GetById(int userId)
     {
-        var user = await _userService.GetUserByIdAsync(id);
+        var user = await _userService.GetUserByIdAsync(userId);
         if (user == null)
         {
-            return NotFound(new { message = $"User with ID {id} not found." });
+            return NotFound(new { message = $"User with ID {userId} not found." });
         }
         return Ok(new { message = "User retrieved successfully.", data = user });
     }
@@ -53,9 +53,9 @@ public class UsersController: ControllerBase
     {
         try
         {
-            if (string.IsNullOrEmpty(userRegisterDto.Username) || string.IsNullOrEmpty(userRegisterDto.Password)|| string.IsNullOrEmpty(userRegisterDto.Email)|| string.IsNullOrEmpty(userRegisterDto.Phone))
+            if (string.IsNullOrEmpty(userRegisterDto.Username) || string.IsNullOrEmpty(userRegisterDto.Password) || string.IsNullOrEmpty(userRegisterDto.Email) || string.IsNullOrEmpty(userRegisterDto.Phone))
             {
-                return BadRequest(new { message = "Username and Password cannot be null or empty." });
+                return BadRequest(new { message = "Username, Password, Email, and Phone cannot be null or empty." });
             }
             await _userService.RegisterUserAsync(userRegisterDto.Username, userRegisterDto.Password, userRegisterDto.Email, userRegisterDto.Phone);
             return Ok(new { message = "User registered successfully!" });
@@ -65,7 +65,7 @@ public class UsersController: ControllerBase
             return BadRequest(new { message = $"Registration failed: {ex.Message}" });
         }
     }
-    
+
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
     {
@@ -84,7 +84,6 @@ public class UsersController: ControllerBase
         var response = new LoginResponseDto
         {
             Token = token,
-            
             Username = user.Username,
             Role = user.Role.ToString()  // Convert Role enum to string
         };
@@ -92,19 +91,17 @@ public class UsersController: ControllerBase
         return Ok(response);
     }
 
-
-
-    // Use for change the whole user or change only one thing like Password***
-    [HttpPut("user_id={id}")]
+    // Use for changing the whole user or changing only one thing like Password
+    [HttpPut("user_id={userId}")]
     [Authorize]
-    public async Task<IActionResult> Update(int id, [FromBody] UserUpdateDto? userUpdateDto)
+    public async Task<IActionResult> Update(int userId, [FromBody] UserUpdateDto? userUpdateDto)
     {
         if (userUpdateDto == null)
         {
             return BadRequest(new { message = "No data provided." });
         }
 
-        var existingUser = await _userService.GetUserByIdAsync(id);
+        var existingUser = await _userService.GetUserByIdAsync(userId);
         if (existingUser == null)
         {
             return NotFound(new { message = "User not found." });
@@ -124,6 +121,7 @@ public class UsersController: ControllerBase
         {
             existingUser.Email = userUpdateDto.Email;
         }
+
         if (!string.IsNullOrEmpty(userUpdateDto.Phone))
         {
             existingUser.Phone = userUpdateDto.Phone;
@@ -140,13 +138,13 @@ public class UsersController: ControllerBase
         }
     }
 
-    [HttpDelete("user_id={id}")]
+    [HttpDelete("user_id={userId}")]
     [Authorize]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> Delete(int userId)
     {
         try
         {
-            await _userService.DeleteUserAsync(id);
+            await _userService.DeleteUserAsync(userId);
             return Ok(new { message = "User deleted successfully." });
         }
         catch (Exception ex)
@@ -154,5 +152,4 @@ public class UsersController: ControllerBase
             return BadRequest(new { message = $"Delete failed: {ex.Message}" });
         }
     }
-
 }

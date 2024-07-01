@@ -31,8 +31,8 @@ public class AppointmentsController : ControllerBase
         return Ok(appointments);
     }
 
-    [HttpGet("appointment_id={id}")]
-    public async Task<IActionResult> GetById(int id)
+    [HttpGet("appointment_id={appointmentId}")]
+    public async Task<IActionResult> GetById(int appointmentId)
     {
         var userRole = HttpContext.Items["UserRole"]?.ToString();
         var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
@@ -40,7 +40,7 @@ public class AppointmentsController : ControllerBase
         {
             return NotFound(new { message = "You are not authorized to view this business." });
         }
-        var appointment = await _appointmentService.GetAppointmentByIdAsync(id);
+        var appointment = await _appointmentService.GetAppointmentByIdAsync(appointmentId);
         if (appointment == null)
         {
             return NotFound(new { message = "Appointment not found" });
@@ -65,7 +65,6 @@ public class AppointmentsController : ControllerBase
     [HttpGet("business/business_id={businessId}")]
     public async Task<IActionResult> GetByBusinessId(int businessId)
     {
-        
         var userRole = HttpContext.Items["UserRole"]?.ToString();
         var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
         if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -107,14 +106,14 @@ public class AppointmentsController : ControllerBase
         }
     }
 
-    [HttpPut("appointment_id={id}")]
-    public async Task<IActionResult> UpdateAppointment(int id, [FromBody] AppointmentDto appointmentDto)
+    [HttpPut("appointment_id={appointmentId}")]
+    public async Task<IActionResult> UpdateAppointment(int appointmentId, [FromBody] AppointmentDto appointmentDto)
     {
         try
         {
             // Ensure the provided AppointmentTime is treated as UTC
             appointmentDto.AppointmentTime = DateTime.SpecifyKind(appointmentDto.AppointmentTime, DateTimeKind.Utc);
-            await _appointmentService.UpdateAppointmentAsync(id, appointmentDto);
+            await _appointmentService.UpdateAppointmentAsync(appointmentId, appointmentDto);
             return Ok(new { message = "Appointment updated successfully" });
         }
         catch (KeyNotFoundException ex)
@@ -131,12 +130,12 @@ public class AppointmentsController : ControllerBase
         }
     }
 
-    [HttpDelete("appointment_id={id}")]
-    public async Task<IActionResult> DeleteAppointment(int id)
+    [HttpDelete("appointment_id={appointmentId}")]
+    public async Task<IActionResult> DeleteAppointment(int appointmentId)
     {
         try
         {
-            await _appointmentService.DeleteAppointmentAsync(id);
+            await _appointmentService.DeleteAppointmentAsync(appointmentId);
             return Ok(new { message = "Appointment deleted successfully" });
         }
         catch (Exception ex)

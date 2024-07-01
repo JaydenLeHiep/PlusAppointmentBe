@@ -125,7 +125,9 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
 
             if (cachedAppointments != null && cachedAppointments.Any())
             {
-                return cachedAppointments.Select(dto => MapFromCacheDto(dto));
+                return cachedAppointments
+                    .Where(dto => dto.AppointmentTime >= DateTime.UtcNow)
+                    .Select(dto => MapFromCacheDto(dto));
             }
 
             var appointments = await _context.Appointments
@@ -133,7 +135,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 .Include(a => a.Business)
                 .Include(a => a.Service)
                 .Include(a => a.Staff)
-                .Where(a => a.CustomerId == customerId)
+                .Where(a => a.CustomerId == customerId && a.AppointmentTime >= DateTime.UtcNow)
                 .ToListAsync();
 
             var appointmentCacheDtos = appointments.Select(MapToCacheDto).ToList();
@@ -141,6 +143,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
 
             return appointments;
         }
+
 
         public async Task<IEnumerable<Appointment>> GetAppointmentsByBusinessIdAsync(int businessId)
         {
@@ -149,7 +152,9 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
 
             if (cachedAppointments != null && cachedAppointments.Any())
             {
-                return cachedAppointments.Select(dto => MapFromCacheDto(dto));
+                return cachedAppointments
+                    .Where(dto => dto.AppointmentTime >= DateTime.UtcNow)
+                    .Select(dto => MapFromCacheDto(dto));
             }
 
             var appointments = await _context.Appointments
@@ -157,7 +162,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 .Include(a => a.Business)
                 .Include(a => a.Service)
                 .Include(a => a.Staff)
-                .Where(a => a.BusinessId == businessId)
+                .Where(a => a.BusinessId == businessId && a.AppointmentTime >= DateTime.UtcNow)
                 .ToListAsync();
 
             var appointmentCacheDtos = appointments.Select(MapToCacheDto).ToList();
@@ -165,6 +170,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
 
             return appointments;
         }
+
 
         public async Task<IEnumerable<Appointment>> GetAppointmentsByStaffIdAsync(int staffId)
         {
@@ -173,7 +179,9 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
 
             if (cachedAppointments != null && cachedAppointments.Any())
             {
-                return cachedAppointments.Select(dto => MapFromCacheDto(dto));
+                return cachedAppointments
+                    .Where(dto => dto.AppointmentTime >= DateTime.UtcNow)
+                    .Select(dto => MapFromCacheDto(dto));
             }
 
             var appointments = await _context.Appointments
@@ -181,7 +189,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 .Include(a => a.Business)
                 .Include(a => a.Service)
                 .Include(a => a.Staff)
-                .Where(a => a.StaffId == staffId)
+                .Where(a => a.StaffId == staffId && a.AppointmentTime >= DateTime.UtcNow)
                 .ToListAsync();
 
             var appointmentCacheDtos = appointments.Select(MapToCacheDto).ToList();
@@ -189,6 +197,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
 
             return appointments;
         }
+
 
         private async Task InvalidateCache(Appointment appointment)
         {

@@ -54,13 +54,20 @@ namespace WebApplication1.Services.Implementations.AppointmentService
 
             // Adjust the appointment time by subtracting 2 hours
             var adjustedAppointmentTime = appointmentDto.AppointmentTime.AddHours(-2);
+            var timeNow = DateTime.UtcNow;
+
+            // Check if the appointment time is in the past
+            if (adjustedAppointmentTime < timeNow)
+            {
+                throw new InvalidOperationException("Cannot book an appointment in the past.");
+            }
 
             // Check if the staff is available
             var isAvailable = await _appointmentRepository.IsStaffAvailable(
                 appointmentDto.StaffId,
                 adjustedAppointmentTime,
                 appointmentDto.Duration);
-    
+
             if (!isAvailable)
             {
                 throw new InvalidOperationException("The staff is not available at the requested time.");
@@ -81,8 +88,6 @@ namespace WebApplication1.Services.Implementations.AppointmentService
 
             await _appointmentRepository.AddAppointmentAsync(appointment);
         }
-
-
 
 
         public async Task UpdateAppointmentAsync(int id, AppointmentDto appointmentDto)

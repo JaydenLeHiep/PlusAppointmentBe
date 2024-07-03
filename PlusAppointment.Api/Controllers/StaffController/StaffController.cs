@@ -9,7 +9,7 @@ namespace WebApplication1.Controllers.StaffController
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]  // Ensure all actions require authentication
+     // Ensure all actions require authentication
     public class StaffController : ControllerBase
     {
         private readonly IStaffService _staffService;
@@ -18,7 +18,7 @@ namespace WebApplication1.Controllers.StaffController
         {
             _staffService = staffService;
         }
-
+        [Authorize] 
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -31,7 +31,7 @@ namespace WebApplication1.Controllers.StaffController
             var staffs = await _staffService.GetAllStaffsAsync();
             return Ok(staffs);
         }
-
+        [Authorize] 
         [HttpGet("staff_id={staffId}")]
         public async Task<IActionResult> GetById(int staffId)
         {
@@ -49,11 +49,11 @@ namespace WebApplication1.Controllers.StaffController
         [HttpGet("business_id={businessId}")]
         public async Task<IActionResult> GetAllStaffByBusinessId(int businessId)
         {
-            var userRole = HttpContext.Items["UserRole"]?.ToString();
-            if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
-            {
-                return NotFound(new { message = "You are not authorized to view this staff." });
-            }
+            // var userRole = HttpContext.Items["UserRole"]?.ToString();
+            // if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
+            // {
+            //     return NotFound(new { message = "You are not authorized to view this staff." });
+            // }
 
             var staff = await _staffService.GetAllStaffByBusinessIdAsync(businessId);
             if (!staff.Any())
@@ -62,7 +62,7 @@ namespace WebApplication1.Controllers.StaffController
             }
             return Ok(staff);
         }
-
+        [Authorize] 
         [HttpPost("business_id={businessId}/add")]
         public async Task<IActionResult> AddStaff(int businessId, [FromBody] StaffDto staffDto)
         {
@@ -89,7 +89,7 @@ namespace WebApplication1.Controllers.StaffController
                 return BadRequest(new { message = ex.Message });
             }
         }
-
+        [Authorize] 
         [HttpPost("business_id={businessId}/addList")]
         public async Task<IActionResult> AddStaffs(int businessId, [FromBody] IEnumerable<StaffDto> staffDtos)
         {
@@ -115,7 +115,7 @@ namespace WebApplication1.Controllers.StaffController
                 return BadRequest(new { message = ex.Message });
             }
         }
-
+        [Authorize] 
         [HttpPut("business_id={businessId}")]
         public async Task<IActionResult> Update(int businessId, [FromBody] StaffDto staffDto)
         {
@@ -145,7 +145,7 @@ namespace WebApplication1.Controllers.StaffController
                 return BadRequest(new { message = ex.Message });
             }
         }
-
+        [Authorize] 
         [HttpDelete("business_id={businessId}/staff_id={staffId}")]
         public async Task<IActionResult> Delete(int businessId, int staffId)
         {
@@ -171,7 +171,7 @@ namespace WebApplication1.Controllers.StaffController
                 return BadRequest(new { message = ex.Message });
             }
         }
-
+        [Authorize] 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] StaffLoginDto loginDto)
         {

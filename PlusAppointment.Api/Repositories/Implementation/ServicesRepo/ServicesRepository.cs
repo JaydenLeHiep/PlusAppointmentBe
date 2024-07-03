@@ -53,6 +53,22 @@ namespace WebApplication1.Repositories.Implementation.ServicesRepo
             return service;
         }
 
+        public async Task<IEnumerable<Service?>> GetAllByBusinessIdAsync(int businessId)
+        {
+            string cacheKey = $"service_business_{businessId}";
+            var cachedStaff = await _redisHelper.GetCacheAsync<List<Service>>(cacheKey);
+
+            if (cachedStaff != null && cachedStaff.Any())
+            {
+                return cachedStaff;
+            }
+
+            var service = await _context.Services.Where(s => s.BusinessId == businessId).ToListAsync();
+            await _redisHelper.SetCacheAsync(cacheKey, service, TimeSpan.FromMinutes(10));
+
+            return service;
+        }
+
         public async Task AddServiceAsync(Service? service, int businessId)
         {
             var business = await _context.Businesses.FindAsync(businessId);

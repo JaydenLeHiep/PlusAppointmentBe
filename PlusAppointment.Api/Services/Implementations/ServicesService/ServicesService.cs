@@ -25,6 +25,11 @@ namespace WebApplication1.Services.Implementations.ServicesService
             return await _servicesRepository.GetByIdAsync(id);
         }
 
+        public async Task<IEnumerable<Service?>> GetAllServiceByBusinessIdAsync(int businessId)
+        {
+            return await _servicesRepository.GetAllByBusinessIdAsync(businessId);
+        }
+
         public async Task AddServiceAsync(ServiceDto? serviceDto, int businessId, string userId, string userRole)
         {
             if (string.IsNullOrEmpty(userId) || userRole != Role.Owner.ToString())

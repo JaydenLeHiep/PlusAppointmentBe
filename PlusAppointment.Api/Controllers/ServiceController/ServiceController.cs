@@ -9,7 +9,7 @@ namespace WebApplication1.Controllers.ServiceController
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]  // Ensure all actions require authentication
+     // Ensure all actions require authentication
     public class ServiceController : ControllerBase
     {
         private readonly IServicesService _servicesService;
@@ -18,7 +18,7 @@ namespace WebApplication1.Controllers.ServiceController
         {
             _servicesService = servicesService;
         }
-
+        [Authorize] 
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -31,7 +31,7 @@ namespace WebApplication1.Controllers.ServiceController
             var services = await _servicesService.GetAllServicesAsync();
             return Ok(services);
         }
-
+        [Authorize] 
         [HttpGet("service_id={serviceId}")]
         public async Task<IActionResult> GetById(int serviceId)
         {
@@ -54,20 +54,20 @@ namespace WebApplication1.Controllers.ServiceController
         [HttpGet("business_id={businessId}")]
         public async Task<IActionResult> GetAllServiceByBusinessId(int businessId)
         {
-            var userRole = HttpContext.Items["UserRole"]?.ToString();
-            if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
-            {
-                return NotFound(new { message = "You are not authorized to view this staff." });
-            }
+            // var userRole = HttpContext.Items["UserRole"]?.ToString();
+            // if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
+            // {
+            //     return NotFound(new { message = "You are not authorized to view this service." });
+            // }
 
             var services = await _servicesService.GetAllServiceByBusinessIdAsync(businessId);
             if (!services.Any())
             {
-                return NotFound(new { message = "No staff found for this business." });
+                return NotFound(new { message = "No service found for this business." });
             }
             return Ok(services);
         }
-        
+        [Authorize] 
         [HttpPost("business_id={businessId}/add")]
         public async Task<IActionResult> AddService(int businessId, [FromBody] ServiceDto? serviceDto)
         {
@@ -93,7 +93,7 @@ namespace WebApplication1.Controllers.ServiceController
                 return BadRequest(new { message = ex.Message });
             }
         }
-
+        [Authorize] 
         [HttpPost("business_id={businessId}/addList")]
         public async Task<IActionResult> AddServices(int businessId, [FromBody] ServicesDto? servicesDto)
         {
@@ -119,7 +119,7 @@ namespace WebApplication1.Controllers.ServiceController
                 return BadRequest(new { message = ex.Message });
             }
         }
-
+        [Authorize] 
         [HttpPut("business_id={businessId}")]
         public async Task<IActionResult> Update(int businessId, [FromBody] ServiceDto? serviceDto)
         {
@@ -145,7 +145,7 @@ namespace WebApplication1.Controllers.ServiceController
                 return BadRequest(new { message = $"Update failed: {ex.Message}" });
             }
         }
-
+        [Authorize] 
         [HttpDelete("business_id={businessId}/service_id={serviceId}")]
         public async Task<IActionResult> DeleteService(int businessId, int serviceId)
         {

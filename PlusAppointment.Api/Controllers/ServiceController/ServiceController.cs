@@ -49,7 +49,25 @@ namespace WebApplication1.Controllers.ServiceController
 
             return Ok(service);
         }
+        
+        // Get all service by business ID
+        [HttpGet("business_id={businessId}")]
+        public async Task<IActionResult> GetAllServiceByBusinessId(int businessId)
+        {
+            var userRole = HttpContext.Items["UserRole"]?.ToString();
+            if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
+            {
+                return NotFound(new { message = "You are not authorized to view this staff." });
+            }
 
+            var services = await _servicesService.GetAllServiceByBusinessIdAsync(businessId);
+            if (!services.Any())
+            {
+                return NotFound(new { message = "No staff found for this business." });
+            }
+            return Ok(services);
+        }
+        
         [HttpPost("business_id={businessId}/add")]
         public async Task<IActionResult> AddService(int businessId, [FromBody] ServiceDto? serviceDto)
         {

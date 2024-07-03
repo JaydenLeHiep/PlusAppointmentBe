@@ -8,6 +8,7 @@ namespace WebApplication1.Services.Interfaces.AppointmentService
         Task<AppointmentDto?> GetAppointmentByIdAsync(int id);
         Task AddAppointmentAsync(AppointmentDto appointmentDto);
         Task UpdateAppointmentAsync(int id, AppointmentDto appointmentDto);
+        Task UpdateAppointmentStatusAsync(int id, string status);
         Task DeleteAppointmentAsync(int id);
         Task<IEnumerable<AppointmentDto>> GetAppointmentsByCustomerIdAsync(int customerId);
         Task<IEnumerable<AppointmentDto>> GetAppointmentsByBusinessIdAsync(int businessId);

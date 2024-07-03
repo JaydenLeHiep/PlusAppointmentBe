@@ -126,7 +126,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
             if (cachedAppointments != null && cachedAppointments.Any())
             {
                 return cachedAppointments
-                    .Where(dto => dto.AppointmentTime >= DateTime.UtcNow)
+                    .Where(dto => dto.AppointmentTime >= DateTime.UtcNow && dto.Status != "Delete")
                     .Select(dto => MapFromCacheDto(dto));
             }
 
@@ -153,7 +153,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
             if (cachedAppointments != null && cachedAppointments.Any())
             {
                 return cachedAppointments
-                    .Where(dto => dto.AppointmentTime >= DateTime.UtcNow)
+                    .Where(dto => dto.AppointmentTime >= DateTime.UtcNow && dto.Status != "Delete")
                     .Select(dto => MapFromCacheDto(dto));
             }
 
@@ -180,7 +180,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
             if (cachedAppointments != null && cachedAppointments.Any())
             {
                 return cachedAppointments
-                    .Where(dto => dto.AppointmentTime >= DateTime.UtcNow)
+                    .Where(dto => dto.AppointmentTime >= DateTime.UtcNow && dto.Status != "Delete")
                     .Select(dto => MapFromCacheDto(dto));
             }
 

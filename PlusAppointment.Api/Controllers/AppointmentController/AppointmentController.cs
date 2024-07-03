@@ -129,7 +129,26 @@ public class AppointmentsController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+    
+    [HttpPut("appointment_id={appointmentId}/status")]
+    public async Task<IActionResult> UpdateAppointmentStatus(int appointmentId, [FromBody] UpdateStatusDto updateStatusDto)
+    {
+        try
+        {
+            await _appointmentService.UpdateAppointmentStatusAsync(appointmentId, updateStatusDto.Status);
+            return Ok(new { message = "Appointment status updated successfully" });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 
+    
     [HttpDelete("appointment_id={appointmentId}")]
     public async Task<IActionResult> DeleteAppointment(int appointmentId)
     {

@@ -81,7 +81,7 @@ namespace WebApplication1.Services.Implementations.AppointmentService
                 StaffId = appointmentDto.StaffId,
                 AppointmentTime = DateTime.SpecifyKind(adjustedAppointmentTime, DateTimeKind.Utc),
                 Duration = appointmentDto.Duration,
-                Status = appointmentDto.Status,
+                Status = "Pending",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -130,7 +130,20 @@ namespace WebApplication1.Services.Implementations.AppointmentService
 
             await _appointmentRepository.UpdateAppointmentAsync(appointment);
         }
+        public async Task UpdateAppointmentStatusAsync(int id, string status)
+        {
+            var appointment = await _appointmentRepository.GetAppointmentByIdAsync(id);
+            if (appointment == null)
+            {
+                throw new KeyNotFoundException("Appointment not found");
+            }
 
+            appointment.Status = status;
+            appointment.UpdatedAt = DateTime.UtcNow;
+
+            await _appointmentRepository.UpdateAppointmentAsync(appointment);
+        }
+        
         public async Task DeleteAppointmentAsync(int id)
         {
             await _appointmentRepository.DeleteAppointmentAsync(id);

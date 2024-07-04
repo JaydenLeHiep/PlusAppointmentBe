@@ -10,7 +10,7 @@ namespace WebApplication1.Controllers.BusinessController;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]  // Ensure all actions require authentication
+  // Ensure all actions require authentication
 public class BusinessController : ControllerBase
 {
     private readonly IBusinessService _businessService;
@@ -21,6 +21,7 @@ public class BusinessController : ControllerBase
     }
 
     // get all can only admin and develop use it
+    [Authorize]
     [HttpGet]
     public async Task<IActionResult> GetAllAdmin()
     {
@@ -40,6 +41,7 @@ public class BusinessController : ControllerBase
 
     // get all businesses for that user
     // Get all businesses for the logged-in user
+    [Authorize]
     [HttpGet("byUser")]
     public async Task<IActionResult> GetAllByUser()
     {
@@ -60,27 +62,27 @@ public class BusinessController : ControllerBase
     [HttpGet("business_id={businessId}")]
     public async Task<IActionResult> GetById(int businessId)
     {
-        var userRole = HttpContext.Items["UserRole"]?.ToString();
-        var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
-        if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
-        {
-            return NotFound(new { message = "You are not authorized to view this business." });
-        }
+        // var userRole = HttpContext.Items["UserRole"]?.ToString();
+        // var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
+        // if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
+        // {
+        //     return NotFound(new { message = "You are not authorized to view this business." });
+        // }
 
         var business = await _businessService.GetBusinessByIdAsync(businessId);
         if (business == null)
         {
             return NotFound(new { message = "Business not found." });
         }
-
-        if (userRole != Role.Admin.ToString() && business.UserID != currentUserId)
-        {
-            return NotFound(new { message = "You are not authorized to view this business." });
-        }
+        //
+        // if (userRole != Role.Admin.ToString() && business.UserID != currentUserId)
+        // {
+        //     return NotFound(new { message = "You are not authorized to view this business." });
+        // }
 
         return Ok(business);
     }
-
+    [Authorize]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] BusinessDto? businessDto)
     {
@@ -133,7 +135,7 @@ public class BusinessController : ControllerBase
         await _businessService.AddBusinessAsync(business);
         return Ok(new { message = "Business created successfully." });
     }
-
+    [Authorize]
     [HttpPut("business_id={businessId}")]
     public async Task<IActionResult> Update(int businessId, [FromBody] BusinessDto? businessDto)
     {
@@ -190,7 +192,7 @@ public class BusinessController : ControllerBase
             return BadRequest(new { message = $"Update failed: {ex.Message}" });
         }
     }
-
+    [Authorize]
     [HttpDelete("business_id={businessId}")]
     public async Task<IActionResult> Delete(int businessId)
     {
@@ -215,7 +217,7 @@ public class BusinessController : ControllerBase
         await _businessService.DeleteBusinessAsync(businessId);
         return Ok(new { message = "Business deleted successfully." });
     }
-
+    [Authorize]
     [HttpGet("business_id={businessId}/services")]
     public async Task<IActionResult> GetServices(int businessId)
     {
@@ -233,7 +235,7 @@ public class BusinessController : ControllerBase
 
         return Ok(services);
     }
-
+    [Authorize]
     [HttpGet("business_id={businessId}/staff")]
     public async Task<IActionResult> GetStaff(int businessId)
     {

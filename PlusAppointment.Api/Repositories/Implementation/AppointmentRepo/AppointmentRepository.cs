@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using PlusAppointment.Models.Classes;
-
 using PlusAppointment.Models.DTOs;
 using WebApplication1.Data;
 using WebApplication1.Repositories.Interfaces.AppointmentRepo;
@@ -135,7 +134,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 .Include(a => a.Business)
                 .Include(a => a.Service)
                 .Include(a => a.Staff)
-                .Where(a => a.CustomerId == customerId && a.AppointmentTime >= DateTime.UtcNow)
+                .Where(a => a.CustomerId == customerId && a.AppointmentTime >= DateTime.UtcNow && a.Status != "Delete")
                 .ToListAsync();
 
             var appointmentCacheDtos = appointments.Select(MapToCacheDto).ToList();
@@ -143,7 +142,6 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
 
             return appointments;
         }
-
 
         public async Task<IEnumerable<Appointment>> GetAppointmentsByBusinessIdAsync(int businessId)
         {
@@ -162,7 +160,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 .Include(a => a.Business)
                 .Include(a => a.Service)
                 .Include(a => a.Staff)
-                .Where(a => a.BusinessId == businessId && a.AppointmentTime >= DateTime.UtcNow)
+                .Where(a => a.BusinessId == businessId && a.AppointmentTime >= DateTime.UtcNow && a.Status != "Delete")
                 .ToListAsync();
 
             var appointmentCacheDtos = appointments.Select(MapToCacheDto).ToList();
@@ -170,7 +168,6 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
 
             return appointments;
         }
-
 
         public async Task<IEnumerable<Appointment>> GetAppointmentsByStaffIdAsync(int staffId)
         {
@@ -189,7 +186,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 .Include(a => a.Business)
                 .Include(a => a.Service)
                 .Include(a => a.Staff)
-                .Where(a => a.StaffId == staffId && a.AppointmentTime >= DateTime.UtcNow)
+                .Where(a => a.StaffId == staffId && a.AppointmentTime >= DateTime.UtcNow && a.Status != "Delete")
                 .ToListAsync();
 
             var appointmentCacheDtos = appointments.Select(MapToCacheDto).ToList();

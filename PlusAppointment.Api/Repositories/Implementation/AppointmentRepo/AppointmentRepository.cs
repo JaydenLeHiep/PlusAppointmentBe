@@ -68,15 +68,12 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
 
         public async Task<bool> IsStaffAvailable(int staffId, DateTime appointmentTime, TimeSpan duration)
         {
-            // Calculate the end time of the new appointment in C#
             var endTime = appointmentTime.Add(duration);
 
-            // Retrieve all appointments for the staff
             var appointments = await _context.Appointments
                 .Where(a => a.StaffId == staffId)
                 .ToListAsync();
 
-            // Check for overlapping appointments
             foreach (var appointment in appointments)
             {
                 var existingAppointmentEndTime = appointment.AppointmentTime.Add(appointment.Duration);
@@ -94,7 +91,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
             await _context.Appointments.AddAsync(appointment);
             await _context.SaveChangesAsync();
 
-            await InvalidateCache(appointment);
+            await UpdateAppointmentCacheAsync(appointment);
         }
 
         public async Task UpdateAppointmentAsync(Appointment appointment)
@@ -102,7 +99,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
             _context.Appointments.Update(appointment);
             await _context.SaveChangesAsync();
 
-            await InvalidateCache(appointment);
+            await UpdateAppointmentCacheAsync(appointment);
         }
 
         public async Task DeleteAppointmentAsync(int appointmentId)
@@ -113,7 +110,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 _context.Appointments.Remove(appointment);
                 await _context.SaveChangesAsync();
 
-                await InvalidateCache(appointment);
+                await InvalidateAppointmentCacheAsync(appointment);
             }
         }
 
@@ -125,7 +122,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
             if (cachedAppointments != null && cachedAppointments.Any())
             {
                 return cachedAppointments
-                    .Where(dto => dto.AppointmentTime >= DateTime.UtcNow && dto.Status != "Delete")
+                    .Where(dto => dto.AppointmentTime >= DateTime.UtcNow)
                     .Select(dto => MapFromCacheDto(dto));
             }
 
@@ -151,7 +148,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
             if (cachedAppointments != null && cachedAppointments.Any())
             {
                 return cachedAppointments
-                    .Where(dto => dto.AppointmentTime >= DateTime.UtcNow && dto.Status != "Delete")
+                    .Where(dto => dto.AppointmentTime >= DateTime.UtcNow)
                     .Select(dto => MapFromCacheDto(dto));
             }
 
@@ -186,7 +183,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 .Include(a => a.Business)
                 .Include(a => a.Service)
                 .Include(a => a.Staff)
-                .Where(a => a.StaffId == staffId && a.AppointmentTime >= DateTime.UtcNow && a.Status != "Delete")
+                .Where(a => a.StaffId == staffId && a.AppointmentTime >= DateTime.UtcNow)
                 .ToListAsync();
 
             var appointmentCacheDtos = appointments.Select(MapToCacheDto).ToList();
@@ -195,22 +192,85 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
             return appointments;
         }
 
-
-        private async Task InvalidateCache(Appointment appointment)
+        private async Task UpdateAppointmentCacheAsync(Appointment appointment)
         {
-            await _redisHelper.DeleteKeysByPatternAsync("appointment_*");
-            await _redisHelper.DeleteCacheAsync("all_appointments");
+            var appointmentCacheKey = $"appointment_{appointment.AppointmentId}";
+            var appointmentCacheDto = MapToCacheDto(appointment);
+            await _redisHelper.SetCacheAsync(appointmentCacheKey, appointmentCacheDto, TimeSpan.FromMinutes(10));
 
-            if (appointment != null)
-            {
-                await _redisHelper.DeleteCacheAsync($"appointments_customer_{appointment.CustomerId}");
-                await _redisHelper.DeleteCacheAsync($"appointments_business_{appointment.BusinessId}");
-                await _redisHelper.DeleteCacheAsync($"appointments_staff_{appointment.StaffId}");
-            }
+            // Since AppointmentCacheDto includes fields like CustomerName, StaffName, etc., we don't need to update those separately.
+
+            await _redisHelper.UpdateListCacheAsync<AppointmentCacheDto>(
+                $"appointments_customer_{appointment.CustomerId}", 
+                list =>
+                {
+                    list.RemoveAll(a => a.AppointmentId == appointment.AppointmentId);
+                    list.Add(appointmentCacheDto);
+                    return list;
+                }, 
+                TimeSpan.FromMinutes(10));
+
+            await _redisHelper.UpdateListCacheAsync<AppointmentCacheDto>(
+                $"appointments_business_{appointment.BusinessId}", 
+                list =>
+                {
+                    list.RemoveAll(a => a.AppointmentId == appointment.AppointmentId);
+                    list.Add(appointmentCacheDto);
+                    return list;
+                }, 
+                TimeSpan.FromMinutes(10));
+
+            await _redisHelper.UpdateListCacheAsync<AppointmentCacheDto>(
+                $"appointments_staff_{appointment.StaffId}", 
+                list =>
+                {
+                    list.RemoveAll(a => a.AppointmentId == appointment.AppointmentId);
+                    list.Add(appointmentCacheDto);
+                    return list;
+                }, 
+                TimeSpan.FromMinutes(10));
+        }
+
+        private async Task InvalidateAppointmentCacheAsync(Appointment appointment)
+        {
+            var appointmentCacheKey = $"appointment_{appointment.AppointmentId}";
+            await _redisHelper.DeleteCacheAsync(appointmentCacheKey);
+
+            await _redisHelper.RemoveFromListCacheAsync<AppointmentCacheDto>(
+                $"appointments_customer_{appointment.CustomerId}",
+                list =>
+                {
+                    list.RemoveAll(a => a.AppointmentId == appointment.AppointmentId);
+                    return list;
+                },
+                TimeSpan.FromMinutes(10));
+
+            await _redisHelper.RemoveFromListCacheAsync<AppointmentCacheDto>(
+                $"appointments_business_{appointment.BusinessId}",
+                list =>
+                {
+                    list.RemoveAll(a => a.AppointmentId == appointment.AppointmentId);
+                    return list;
+                },
+                TimeSpan.FromMinutes(10));
+
+            await _redisHelper.RemoveFromListCacheAsync<AppointmentCacheDto>(
+                $"appointments_staff_{appointment.StaffId}",
+                list =>
+                {
+                    list.RemoveAll(a => a.AppointmentId == appointment.AppointmentId);
+                    return list;
+                },
+                TimeSpan.FromMinutes(10));
         }
 
         private AppointmentCacheDto MapToCacheDto(Appointment appointment)
         {
+            // Ensure related entities are loaded
+            _context.Entry(appointment).Reference(a => a.Customer).Load();
+            _context.Entry(appointment).Reference(a => a.Service).Load();
+            _context.Entry(appointment).Reference(a => a.Staff).Load();
+
             return new AppointmentCacheDto
             {
                 AppointmentId = appointment.AppointmentId,
@@ -230,6 +290,8 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 Status = appointment.Status
             };
         }
+
+
 
         private Appointment MapFromCacheDto(AppointmentCacheDto dto)
         {

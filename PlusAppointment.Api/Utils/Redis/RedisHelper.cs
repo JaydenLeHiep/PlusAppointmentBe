@@ -64,5 +64,51 @@ namespace WebApplication1.Utils.Redis
                 await DeleteCacheAsync(key);
             }
         }
+
+        public async Task UpdateListCacheAsync<T>(string key, Func<List<T>, List<T>> updateFunc,
+            TimeSpan? expiry = null) where T : class
+        {
+            var db = _connectionMultiplexer.GetDatabase();
+            var cachedData = await db.StringGetAsync(key);
+
+            List<T> list;
+            if (!cachedData.IsNullOrEmpty)
+            {
+                var jsonData = cachedData.ToString();
+                list = JsonSerializer.Deserialize<List<T>>(jsonData, _serializerOptions) ?? new List<T>();
+            }
+            else
+            {
+                list = new List<T>();
+            }
+
+            list = updateFunc(list);
+
+            var serializedData = JsonSerializer.Serialize(list, _serializerOptions);
+            await db.StringSetAsync(key, serializedData, expiry);
+        }
+
+        public async Task RemoveFromListCacheAsync<T>(string key, Func<List<T>, List<T>> removeFunc,
+            TimeSpan? expiry = null) where T : class
+        {
+            var db = _connectionMultiplexer.GetDatabase();
+            var cachedData = await db.StringGetAsync(key);
+
+            List<T> list;
+            if (!cachedData.IsNullOrEmpty)
+            {
+                var jsonData = cachedData.ToString();
+                list = JsonSerializer.Deserialize<List<T>>(jsonData, _serializerOptions) ?? new List<T>();
+            }
+            else
+            {
+                return; // If there's no data in cache, nothing to remove
+            }
+
+            list = removeFunc(list);
+
+            var serializedData = JsonSerializer.Serialize(list, _serializerOptions);
+            await db.StringSetAsync(key, serializedData, expiry);
+        }
     }
 }

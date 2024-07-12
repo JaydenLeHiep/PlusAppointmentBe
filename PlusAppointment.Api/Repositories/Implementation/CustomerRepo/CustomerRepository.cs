@@ -52,7 +52,12 @@ namespace WebApplication1.Repositories.Implementation.CustomerRepo
             await _redisHelper.SetCacheAsync(cacheKey, customer, TimeSpan.FromMinutes(10));
             return customer;
         }
-
+        
+        public async Task<Customer?> GetCustomerByEmailOrPhoneAsync(string emailOrPhone)
+        {
+            return await _context.Customers
+                .FirstOrDefaultAsync(c => c.Email == emailOrPhone || c.Phone == emailOrPhone);
+        }
         public async Task AddCustomerAsync(Customer? customer)
         {
             if (customer == null)

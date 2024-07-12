@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
 using WebApplication1.Services.Interfaces.CustomerService;
 
@@ -37,7 +36,19 @@ namespace WebApplication1.Controllers.CustomerController
 
             return Ok(customer);
         }
+        
+        [HttpGet("find-customer")]
+        public async Task<IActionResult> FindByEmailOrPhone([FromBody] FindCustomerDto findCustomerDto)
+        {
+            var customer = await _customerService.GetCustomerByEmailOrPhoneAsync(findCustomerDto.EmailOrPhone);
+            if (customer == null)
+            {
+                return NotFound(new { message = "Customer not found. Phone or Email is not correct" });
+            }
 
+            return Ok(new { customer.CustomerId });
+        }
+        
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> AddCustomer([FromBody] CustomerDto customerDto)

@@ -29,6 +29,17 @@ public class CustomerService: ICustomerService
 
         return customer;
     }
+    
+    public async Task<Customer?> GetCustomerByEmailOrPhoneAsync(string emailOrPhone)
+    {
+        var customer = await _customerRepository.GetCustomerByEmailOrPhoneAsync(emailOrPhone);
+        if (customer == null)
+        {
+            return null;
+        }
+
+        return customer;
+    }
 
     public async Task AddCustomerAsync(CustomerDto customerDto)
     {

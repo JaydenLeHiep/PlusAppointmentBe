@@ -125,7 +125,7 @@ namespace WebApplication1.Services.Implementations.AppointmentService
             appointment.StaffId = appointmentDto.StaffId;
             appointment.AppointmentTime = DateTime.SpecifyKind(appointmentDto.AppointmentTime, DateTimeKind.Utc);
             appointment.Duration = appointmentDto.Duration;
-            appointment.Status = appointmentDto.Status;
+            if (appointmentDto.Status != null) appointment.Status = appointmentDto.Status;
             appointment.UpdatedAt = DateTime.UtcNow;
 
             await _appointmentRepository.UpdateAppointmentAsync(appointment);

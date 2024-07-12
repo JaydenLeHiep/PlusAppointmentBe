@@ -24,8 +24,14 @@ namespace WebApplication1.Services.Implementations.StaffService
 
         public async Task<Staff> GetStaffIdAsync(int id)
         {
-            return await _staffRepository.GetByIdAsync(id);
+            var staff = await _staffRepository.GetByIdAsync(id);
+            if (staff == null)
+            {
+                throw new KeyNotFoundException("Staff not found");
+            }
+            return staff;
         }
+
         public async Task<IEnumerable<Staff?>> GetAllStaffByBusinessIdAsync(int businessId)
         {
             return await _staffRepository.GetAllByBusinessIdAsync(businessId);
@@ -33,27 +39,19 @@ namespace WebApplication1.Services.Implementations.StaffService
 
         public async Task AddStaffAsync(StaffDto staffDto)
         {
-            if (string.IsNullOrEmpty(staffDto.Email) || string.IsNullOrEmpty(staffDto.Phone) || string.IsNullOrEmpty(staffDto.Password))
-            {
-                throw new Exception("Email, Phone, and Password cannot be null or empty.");
-            }
-            if (await _staffRepository.EmailExistsAsync(staffDto.Email))
+            ValidateStaffDto(staffDto);
+
+            if (staffDto.Email != null && await _staffRepository.EmailExistsAsync(staffDto.Email))
             {
                 throw new Exception("Email already exists");
             }
 
-            if (await _staffRepository.PhoneExistsAsync(staffDto.Phone))
+            if (staffDto.Phone != null && await _staffRepository.PhoneExistsAsync(staffDto.Phone))
             {
                 throw new Exception("Phone number already exists");
             }
 
-            var staff = new Staff
-            {
-                Name = staffDto.Name,
-                Email = staffDto.Email,
-                Phone = staffDto.Phone,
-                Password = HashUtility.HashPassword(staffDto.Password)
-            };
+            var staff = CreateStaffFromDto(staffDto, staffDto.BusinessId);
 
             await _staffRepository.AddStaffAsync(staff, staffDto.BusinessId);
         }
@@ -69,41 +67,24 @@ namespace WebApplication1.Services.Implementations.StaffService
 
             foreach (var staffDto in staffDtoList)
             {
-                if (string.IsNullOrEmpty(staffDto.Email) || string.IsNullOrEmpty(staffDto.Phone) || string.IsNullOrEmpty(staffDto.Password))
-                {
-                    throw new Exception("Email, Phone, and Password cannot be null or empty.");
-                }
+                ValidateStaffDto(staffDto);
 
-                if (await _staffRepository.EmailExistsAsync(staffDto.Email))
+                if (staffDto.Email != null && await _staffRepository.EmailExistsAsync(staffDto.Email))
                 {
                     throw new Exception($"Email {staffDto.Email} already exists");
                 }
 
-                if (await _staffRepository.PhoneExistsAsync(staffDto.Phone))
+                if (staffDto.Phone != null && await _staffRepository.PhoneExistsAsync(staffDto.Phone))
                 {
                     throw new Exception($"Phone number {staffDto.Phone} already exists");
                 }
             }
 
-            var staffs = staffDtoList.Select(staffDto =>
-            {
-                if (staffDto.Password == null)
-                {
-                    throw new ArgumentNullException(nameof(staffDto.Password), "Password cannot be null.");
-                }
-
-                return new Staff
-                {
-                    Name = staffDto.Name,
-                    Email = staffDto.Email,
-                    Phone = staffDto.Phone,
-                    Password = HashUtility.HashPassword(staffDto.Password),
-                    BusinessId = businessId
-                };
-            }).ToList();
+            var staffs = staffDtoList.Select(staffDto => CreateStaffFromDto(staffDto, businessId)).ToList();
 
             await _staffRepository.AddListStaffsAsync(staffs);
         }
+
         public async Task UpdateStaffAsync(int id, StaffDto staffDto)
         {
             var staff = await _staffRepository.GetByIdAsync(id);
@@ -112,9 +93,14 @@ namespace WebApplication1.Services.Implementations.StaffService
                 throw new KeyNotFoundException("Staff not found");
             }
 
-            staff.Name = staffDto.Name;
-            staff.Email = staffDto.Email;
-            staff.Phone = staffDto.Phone;
+            staff.Name = staffDto.Name ?? throw new ArgumentNullException(nameof(staffDto.Name), "Name cannot be null.");
+            staff.Email = staffDto.Email ?? throw new ArgumentNullException(nameof(staffDto.Email), "Email cannot be null.");
+            staff.Phone = staffDto.Phone ?? throw new ArgumentNullException(nameof(staffDto.Phone), "Phone cannot be null.");
+            if (!string.IsNullOrEmpty(staffDto.Password))
+            {
+                staff.Password = HashUtility.HashPassword(staffDto.Password);
+            }
+
             await _staffRepository.UpdateAsync(staff);
         }
 
@@ -122,7 +108,7 @@ namespace WebApplication1.Services.Implementations.StaffService
         {
             await _staffRepository.DeleteAsync(businessId, staffId);
         }
-        
+
         public async Task<string> LoginAsync(string email, string password)
         {
             if (string.IsNullOrEmpty(email))
@@ -142,6 +128,56 @@ namespace WebApplication1.Services.Implementations.StaffService
             }
 
             return JwtUtility.GenerateJwtToken(staff, _configuration);
+        }
+
+        private void ValidateStaffDto(StaffDto staffDto)
+        {
+            if (staffDto == null)
+            {
+                throw new ArgumentNullException(nameof(staffDto), "Staff DTO cannot be null");
+            }
+
+            if (string.IsNullOrEmpty(staffDto.Email))
+            {
+                throw new ArgumentException("Email cannot be null or empty.", nameof(staffDto.Email));
+            }
+
+            if (string.IsNullOrEmpty(staffDto.Phone))
+            {
+                throw new ArgumentException("Phone cannot be null or empty.", nameof(staffDto.Phone));
+            }
+
+            if (string.IsNullOrEmpty(staffDto.Password))
+            {
+                throw new ArgumentException("Password cannot be null or empty.", nameof(staffDto.Password));
+            }
+        }
+
+        private Staff CreateStaffFromDto(StaffDto staffDto, int businessId)
+        {
+            if (string.IsNullOrEmpty(staffDto.Email))
+            {
+                throw new ArgumentNullException(nameof(staffDto.Email), "Email cannot be null or empty.");
+            }
+
+            if (string.IsNullOrEmpty(staffDto.Phone))
+            {
+                throw new ArgumentNullException(nameof(staffDto.Phone), "Phone cannot be null or empty.");
+            }
+
+            if (string.IsNullOrEmpty(staffDto.Password))
+            {
+                throw new ArgumentNullException(nameof(staffDto.Password), "Password cannot be null or empty.");
+            }
+
+            return new Staff
+            {
+                Name = staffDto.Name ?? throw new ArgumentNullException(nameof(staffDto.Name), "Name cannot be null."),
+                Email = staffDto.Email,
+                Phone = staffDto.Phone,
+                Password = HashUtility.HashPassword(staffDto.Password),
+                BusinessId = businessId
+            };
         }
     }
 }

@@ -57,49 +57,8 @@ namespace WebApplication1.Services.Implementations.ServicesService
                 throw new ArgumentException("Service price is required.");
             }
 
-            var service = new Service
+            if (serviceDto.Description != null)
             {
-                Name = serviceDto.Name,
-                Description = serviceDto.Description,
-                Duration = serviceDto.Duration.Value,
-                Price = serviceDto.Price.Value,
-                BusinessId = businessId
-            };
-
-            await _servicesRepository.AddServiceAsync(service, businessId);
-        }
-
-        public async Task AddListServicesAsync(ServicesDto? servicesDto, int businessId, string userId, string userRole)
-        {
-            if (string.IsNullOrEmpty(userId) || userRole != Role.Owner.ToString())
-            {
-                throw new UnauthorizedAccessException("User not authorized");
-            }
-
-            if (servicesDto == null || !servicesDto.Services.Any())
-            {
-                throw new ArgumentException("No data provided.");
-            }
-
-            var services = new List<Service>();
-
-            foreach (var serviceDto in servicesDto.Services)
-            {
-                if (string.IsNullOrEmpty(serviceDto.Name))
-                {
-                    throw new ArgumentException("Service name is required.");
-                }
-
-                if (!serviceDto.Duration.HasValue)
-                {
-                    throw new ArgumentException("Service duration is required.");
-                }
-
-                if (!serviceDto.Price.HasValue)
-                {
-                    throw new ArgumentException("Service price is required.");
-                }
-
                 var service = new Service
                 {
                     Name = serviceDto.Name,
@@ -109,8 +68,56 @@ namespace WebApplication1.Services.Implementations.ServicesService
                     BusinessId = businessId
                 };
 
-                services.Add(service);
+                await _servicesRepository.AddServiceAsync(service, businessId);
             }
+        }
+
+        public async Task AddListServicesAsync(ServicesDto? servicesDto, int businessId, string userId, string userRole)
+        {
+            if (string.IsNullOrEmpty(userId) || userRole != Role.Owner.ToString())
+            {
+                throw new UnauthorizedAccessException("User not authorized");
+            }
+
+            if (servicesDto?.Services != null && (servicesDto == null || !servicesDto.Services.Any()))
+            {
+                throw new ArgumentException("No data provided.");
+            }
+
+            var services = new List<Service>();
+
+            if (servicesDto != null && servicesDto.Services != null)
+                foreach (var serviceDto in servicesDto.Services)
+                {
+                    if (string.IsNullOrEmpty(serviceDto.Name))
+                    {
+                        throw new ArgumentException("Service name is required.");
+                    }
+
+                    if (!serviceDto.Duration.HasValue)
+                    {
+                        throw new ArgumentException("Service duration is required.");
+                    }
+
+                    if (!serviceDto.Price.HasValue)
+                    {
+                        throw new ArgumentException("Service price is required.");
+                    }
+
+                    if (serviceDto.Description != null)
+                    {
+                        var service = new Service
+                        {
+                            Name = serviceDto.Name,
+                            Description = serviceDto.Description,
+                            Duration = serviceDto.Duration.Value,
+                            Price = serviceDto.Price.Value,
+                            BusinessId = businessId
+                        };
+
+                        services.Add(service);
+                    }
+                }
 
             await _servicesRepository.AddListServicesAsync(services, businessId);
         }

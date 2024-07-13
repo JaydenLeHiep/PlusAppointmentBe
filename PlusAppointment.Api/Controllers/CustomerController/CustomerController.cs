@@ -37,7 +37,7 @@ namespace WebApplication1.Controllers.CustomerController
             return Ok(customer);
         }
         
-        [HttpGet("find-customer")]
+        [HttpPost("find-customer")]
         public async Task<IActionResult> FindByEmailOrPhone([FromBody] FindCustomerDto findCustomerDto)
         {
             var customer = await _customerService.GetCustomerByEmailOrPhoneAsync(findCustomerDto.EmailOrPhone);

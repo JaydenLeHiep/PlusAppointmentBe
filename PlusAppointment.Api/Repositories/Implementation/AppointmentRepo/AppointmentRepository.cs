@@ -114,15 +114,22 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
             }
         }
 
+        private DateTime GetStartOfTodayUtc()
+        {
+            return DateTime.UtcNow.Date; // This gives the start of today in UTC (00:00 of the current day)
+        }
+
+
         public async Task<IEnumerable<Appointment>> GetAppointmentsByCustomerIdAsync(int customerId)
         {
             string cacheKey = $"appointments_customer_{customerId}";
             var cachedAppointments = await _redisHelper.GetCacheAsync<List<AppointmentCacheDto>>(cacheKey);
+            var startOfTodayUtc = GetStartOfTodayUtc();
 
             if (cachedAppointments != null && cachedAppointments.Any())
             {
                 return cachedAppointments
-                    .Where(dto => dto.AppointmentTime >= DateTime.UtcNow)
+                    .Where(dto => dto.AppointmentTime >= startOfTodayUtc)
                     .Select(dto => MapFromCacheDto(dto));
             }
 
@@ -131,7 +138,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 .Include(a => a.Business)
                 .Include(a => a.Service)
                 .Include(a => a.Staff)
-                .Where(a => a.CustomerId == customerId && a.AppointmentTime >= DateTime.UtcNow && a.Status != "Delete")
+                .Where(a => a.CustomerId == customerId && a.AppointmentTime >= startOfTodayUtc && a.Status != "Delete")
                 .ToListAsync();
 
             var appointmentCacheDtos = appointments.Select(MapToCacheDto).ToList();
@@ -144,11 +151,12 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
         {
             string cacheKey = $"appointments_business_{businessId}";
             var cachedAppointments = await _redisHelper.GetCacheAsync<List<AppointmentCacheDto>>(cacheKey);
+            var startOfTodayUtc = GetStartOfTodayUtc();
 
             if (cachedAppointments != null && cachedAppointments.Any())
             {
                 return cachedAppointments
-                    .Where(dto => dto.AppointmentTime >= DateTime.UtcNow)
+                    .Where(dto => dto.AppointmentTime >= startOfTodayUtc)
                     .Select(dto => MapFromCacheDto(dto));
             }
 
@@ -157,7 +165,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 .Include(a => a.Business)
                 .Include(a => a.Service)
                 .Include(a => a.Staff)
-                .Where(a => a.BusinessId == businessId && a.AppointmentTime >= DateTime.UtcNow && a.Status != "Delete")
+                .Where(a => a.BusinessId == businessId && a.AppointmentTime >= startOfTodayUtc && a.Status != "Delete")
                 .ToListAsync();
 
             var appointmentCacheDtos = appointments.Select(MapToCacheDto).ToList();
@@ -170,11 +178,12 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
         {
             string cacheKey = $"appointments_staff_{staffId}";
             var cachedAppointments = await _redisHelper.GetCacheAsync<List<AppointmentCacheDto>>(cacheKey);
+            var startOfTodayUtc = GetStartOfTodayUtc();
 
             if (cachedAppointments != null && cachedAppointments.Any())
             {
                 return cachedAppointments
-                    .Where(dto => dto.AppointmentTime >= DateTime.UtcNow && dto.Status != "Delete")
+                    .Where(dto => dto.AppointmentTime >= startOfTodayUtc && dto.Status != "Delete")
                     .Select(dto => MapFromCacheDto(dto));
             }
 
@@ -183,7 +192,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 .Include(a => a.Business)
                 .Include(a => a.Service)
                 .Include(a => a.Staff)
-                .Where(a => a.StaffId == staffId && a.AppointmentTime >= DateTime.UtcNow)
+                .Where(a => a.StaffId == staffId && a.AppointmentTime >= startOfTodayUtc && a.Status != "Delete")
                 .ToListAsync();
 
             var appointmentCacheDtos = appointments.Select(MapToCacheDto).ToList();
@@ -191,6 +200,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
 
             return appointments;
         }
+
 
         private async Task UpdateAppointmentCacheAsync(Appointment appointment)
         {
@@ -201,33 +211,33 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
             // Since AppointmentCacheDto includes fields like CustomerName, StaffName, etc., we don't need to update those separately.
 
             await _redisHelper.UpdateListCacheAsync<AppointmentCacheDto>(
-                $"appointments_customer_{appointment.CustomerId}", 
+                $"appointments_customer_{appointment.CustomerId}",
                 list =>
                 {
                     list.RemoveAll(a => a.AppointmentId == appointment.AppointmentId);
                     list.Add(appointmentCacheDto);
                     return list;
-                }, 
+                },
                 TimeSpan.FromMinutes(10));
 
             await _redisHelper.UpdateListCacheAsync<AppointmentCacheDto>(
-                $"appointments_business_{appointment.BusinessId}", 
+                $"appointments_business_{appointment.BusinessId}",
                 list =>
                 {
                     list.RemoveAll(a => a.AppointmentId == appointment.AppointmentId);
                     list.Add(appointmentCacheDto);
                     return list;
-                }, 
+                },
                 TimeSpan.FromMinutes(10));
 
             await _redisHelper.UpdateListCacheAsync<AppointmentCacheDto>(
-                $"appointments_staff_{appointment.StaffId}", 
+                $"appointments_staff_{appointment.StaffId}",
                 list =>
                 {
                     list.RemoveAll(a => a.AppointmentId == appointment.AppointmentId);
                     list.Add(appointmentCacheDto);
                     return list;
-                }, 
+                },
                 TimeSpan.FromMinutes(10));
         }
 
@@ -290,7 +300,6 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 Status = appointment.Status
             };
         }
-
 
 
         private Appointment MapFromCacheDto(AppointmentCacheDto dto)

@@ -102,6 +102,13 @@ namespace WebApplication1.Repositories.Implementation.StaffRepo
 
             await InvalidateCache();
         }
+        
+        public async Task<Staff?> GetByBusinessIdServiceIdAsync(int businessId, int staffId)
+        {
+            return await _context.Staffs
+                .Where(s => s.BusinessId == businessId && s.StaffId == staffId)
+                .FirstOrDefaultAsync();
+        }
 
         public async Task UpdateAsync(Staff staff)
         {

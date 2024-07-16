@@ -10,7 +10,7 @@ namespace WebApplication1.Services.Interfaces.ServicesService
         Task<IEnumerable<Service?>> GetAllServiceByBusinessIdAsync(int businessId);
         Task AddServiceAsync(ServiceDto? serviceDto, int businessId, string userId, string userRole);
         Task AddListServicesAsync(ServicesDto? servicesDto, int businessId, string userId, string userRole);
-        Task UpdateServiceAsync(int id, ServiceDto? serviceDto, string userId);
+        Task UpdateServiceAsync(int businessId, int serviceId, ServiceDto? serviceDto, string userId);
         Task DeleteServiceAsync(int businessId, int serviceId);
     }
 }

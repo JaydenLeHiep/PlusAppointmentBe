@@ -122,7 +122,7 @@ namespace WebApplication1.Services.Implementations.ServicesService
             await _servicesRepository.AddListServicesAsync(services, businessId);
         }
 
-        public async Task UpdateServiceAsync(int id, ServiceDto? serviceDto, string userId)
+        public async Task UpdateServiceAsync(int businessId, int serviceId, ServiceDto? serviceDto, string userId)
         {
             if (serviceDto == null)
             {
@@ -134,7 +134,7 @@ namespace WebApplication1.Services.Implementations.ServicesService
                 throw new UnauthorizedAccessException("User not authorized");
             }
 
-            var service = await _servicesRepository.GetByIdAsync(id);
+            var service = await _servicesRepository.GetByBusinessIdServiceIdAsync(businessId, serviceId);
             if (service == null)
             {
                 throw new Exception("Service not found");

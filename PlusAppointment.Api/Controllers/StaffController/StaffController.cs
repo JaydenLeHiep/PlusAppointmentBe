@@ -116,8 +116,8 @@ namespace WebApplication1.Controllers.StaffController
             }
         }
         [Authorize] 
-        [HttpPut("business_id={businessId}")]
-        public async Task<IActionResult> Update(int businessId, [FromBody] StaffDto staffDto)
+        [HttpPut("business_id={businessId}/staff_id={staffId}")]
+        public async Task<IActionResult> Update(int businessId, int staffId, [FromBody] StaffDto staffDto)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -133,7 +133,7 @@ namespace WebApplication1.Controllers.StaffController
 
             try
             {
-                await _staffService.UpdateStaffAsync(businessId, staffDto);
+                await _staffService.UpdateStaffAsync(businessId, staffId, staffDto);
                 return Ok(new { message = "Staff updated successfully" });
             }
             catch (KeyNotFoundException ex)

@@ -119,9 +119,9 @@ namespace WebApplication1.Controllers.ServiceController
                 return BadRequest(new { message = ex.Message });
             }
         }
-        [Authorize] 
-        [HttpPut("business_id={businessId}")]
-        public async Task<IActionResult> Update(int businessId, [FromBody] ServiceDto? serviceDto)
+        [Authorize]
+        [HttpPut("business_id={businessId}/service_id={serviceId}")]
+        public async Task<IActionResult> UpdateService(int businessId, int serviceId, [FromBody] ServiceDto? serviceDto)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -137,7 +137,7 @@ namespace WebApplication1.Controllers.ServiceController
 
             try
             {
-                await _servicesService.UpdateServiceAsync(businessId, serviceDto, userId);
+                await _servicesService.UpdateServiceAsync(businessId, serviceId, serviceDto, userId);
                 return Ok(new { message = "Service updated successfully." });
             }
             catch (Exception ex)
@@ -145,6 +145,7 @@ namespace WebApplication1.Controllers.ServiceController
                 return BadRequest(new { message = $"Update failed: {ex.Message}" });
             }
         }
+
         [Authorize] 
         [HttpDelete("business_id={businessId}/service_id={serviceId}")]
         public async Task<IActionResult> DeleteService(int businessId, int serviceId)

@@ -10,7 +10,7 @@ public interface IStaffService
     Task<IEnumerable<Staff?>> GetAllStaffByBusinessIdAsync(int businessId);
     Task AddStaffAsync(StaffDto staffDto);
     public  Task AddListStaffsAsync(IEnumerable<StaffDto> staffDtos, int businessId);
-    Task UpdateStaffAsync(int id, StaffDto staffDto);
+    Task UpdateStaffAsync(int businessId, int staffId, StaffDto staffDto);
     Task DeleteStaffAsync(int businessId, int staffId);
     
     Task<string> LoginAsync(string email, string password);

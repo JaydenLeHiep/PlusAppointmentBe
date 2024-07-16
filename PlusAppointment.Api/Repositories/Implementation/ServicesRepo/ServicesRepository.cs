@@ -100,6 +100,12 @@ namespace WebApplication1.Repositories.Implementation.ServicesRepo
 
             await InvalidateCache();
         }
+        public async Task<Service?> GetByBusinessIdServiceIdAsync(int businessId, int serviceId)
+        {
+            return await _context.Services
+                .Where(s => s.BusinessId == businessId && s.ServiceId == serviceId)
+                .FirstOrDefaultAsync();
+        }
 
         public async Task UpdateAsync(Service service)
         {
@@ -122,7 +128,7 @@ namespace WebApplication1.Repositories.Implementation.ServicesRepo
                 await InvalidateCache();
             }
         }
-
+        
 
         private async Task InvalidateCache()
         {

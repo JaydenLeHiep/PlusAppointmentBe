@@ -11,6 +11,7 @@ namespace WebApplication1.Services.Implementations.StaffService
     {
         private readonly IStaffRepository _staffRepository;
         private readonly IConfiguration _configuration;
+
         public StaffService(IStaffRepository staffRepository, IConfiguration configuration)
         {
             _staffRepository = staffRepository;
@@ -29,6 +30,7 @@ namespace WebApplication1.Services.Implementations.StaffService
             {
                 throw new KeyNotFoundException("Staff not found");
             }
+
             return staff;
         }
 
@@ -85,17 +87,35 @@ namespace WebApplication1.Services.Implementations.StaffService
             await _staffRepository.AddListStaffsAsync(staffs);
         }
 
-        public async Task UpdateStaffAsync(int id, StaffDto staffDto)
+        public async Task UpdateStaffAsync(int businessId, int staffId, StaffDto staffDto)
         {
-            var staff = await _staffRepository.GetByIdAsync(id);
+            if (staffDto == null)
+            {
+                throw new ArgumentException("No data provided.");
+            }
+
+            var staff = await _staffRepository.GetByBusinessIdServiceIdAsync(businessId, staffId);
             if (staff == null)
             {
                 throw new KeyNotFoundException("Staff not found");
             }
 
-            staff.Name = staffDto.Name ?? throw new ArgumentNullException(nameof(staffDto.Name), "Name cannot be null.");
-            staff.Email = staffDto.Email ?? throw new ArgumentNullException(nameof(staffDto.Email), "Email cannot be null.");
-            staff.Phone = staffDto.Phone ?? throw new ArgumentNullException(nameof(staffDto.Phone), "Phone cannot be null.");
+            // Update only if new values are provided
+            if (!string.IsNullOrEmpty(staffDto.Name))
+            {
+                staff.Name = staffDto.Name;
+            }
+
+            if (!string.IsNullOrEmpty(staffDto.Email))
+            {
+                staff.Email = staffDto.Email;
+            }
+
+            if (!string.IsNullOrEmpty(staffDto.Phone))
+            {
+                staff.Phone = staffDto.Phone;
+            }
+
             if (!string.IsNullOrEmpty(staffDto.Password))
             {
                 staff.Password = HashUtility.HashPassword(staffDto.Password);
@@ -103,6 +123,7 @@ namespace WebApplication1.Services.Implementations.StaffService
 
             await _staffRepository.UpdateAsync(staff);
         }
+
 
         public async Task DeleteStaffAsync(int businessId, int staffId)
         {

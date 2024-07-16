@@ -8,6 +8,8 @@ public interface IServicesRepository
     Task<Service?> GetByIdAsync(int id);
     
     Task<IEnumerable<Service?>> GetAllByBusinessIdAsync(int businessId);
+    Task<Service?> GetByBusinessIdServiceIdAsync(int businessId, int serviceId);
+
     public Task AddServiceAsync(Service? service, int businessId);
     public Task AddListServicesAsync(IEnumerable<Service?> services, int businessId);
     Task UpdateAsync(Service service);

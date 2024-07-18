@@ -51,7 +51,7 @@ namespace WebApplication1.Repositories.Implementation.StaffRepo
             await _redisHelper.SetCacheAsync(cacheKey, staff, TimeSpan.FromMinutes(10));
             return staff;
         }
-        
+
         public async Task<IEnumerable<Staff?>> GetAllByBusinessIdAsync(int businessId)
         {
             string cacheKey = $"staff_business_{businessId}";
@@ -67,6 +67,7 @@ namespace WebApplication1.Repositories.Implementation.StaffRepo
 
             return staff;
         }
+
         public async Task AddStaffAsync(Staff staff, int businessId)
         {
             var business = await _context.Businesses.FindAsync(businessId);
@@ -79,7 +80,7 @@ namespace WebApplication1.Repositories.Implementation.StaffRepo
             await _context.Staffs.AddAsync(staff);
             await _context.SaveChangesAsync();
 
-            await InvalidateCache();
+            await UpdateStaffCacheAsync(staff);
         }
 
         public async Task AddListStaffsAsync(IEnumerable<Staff> staffs)
@@ -100,9 +101,15 @@ namespace WebApplication1.Repositories.Implementation.StaffRepo
             await _context.Staffs.AddRangeAsync(staffList);
             await _context.SaveChangesAsync();
 
-            await InvalidateCache();
+            foreach (var staff in staffList)
+            {
+                if (staff != null)
+                {
+                    await UpdateStaffCacheAsync(staff);
+                }
+            }
         }
-        
+
         public async Task<Staff?> GetByBusinessIdServiceIdAsync(int businessId, int staffId)
         {
             return await _context.Staffs
@@ -115,7 +122,7 @@ namespace WebApplication1.Repositories.Implementation.StaffRepo
             _context.Staffs.Update(staff);
             await _context.SaveChangesAsync();
 
-            await InvalidateCache();
+            await UpdateStaffCacheAsync(staff);
         }
 
         public async Task DeleteAsync(int businessId, int staffId)
@@ -128,10 +135,9 @@ namespace WebApplication1.Repositories.Implementation.StaffRepo
             {
                 _context.Staffs.Remove(staff);
                 await _context.SaveChangesAsync();
-                await InvalidateCache();
+                await InvalidateStaffCacheAsync(staff);
             }
         }
-
 
         public async Task<Staff> GetByEmailAsync(string email)
         {
@@ -153,10 +159,35 @@ namespace WebApplication1.Repositories.Implementation.StaffRepo
             return await _context.Staffs.AnyAsync(s => s.Phone == phone);
         }
 
-        private async Task InvalidateCache()
+        private async Task UpdateStaffCacheAsync(Staff staff)
         {
-            await _redisHelper.DeleteKeysByPatternAsync("staff_*");
-            await _redisHelper.DeleteCacheAsync("all_staffs");
+            var staffCacheKey = $"staff_{staff.StaffId}";
+            await _redisHelper.SetCacheAsync(staffCacheKey, staff, TimeSpan.FromMinutes(10));
+
+            await _redisHelper.UpdateListCacheAsync<Staff>(
+                $"staff_business_{staff.BusinessId}",
+                list =>
+                {
+                    list.RemoveAll(s => s.StaffId == staff.StaffId);
+                    list.Add(staff);
+                    return list;
+                },
+                TimeSpan.FromMinutes(10));
+        }
+
+        private async Task InvalidateStaffCacheAsync(Staff staff)
+        {
+            var staffCacheKey = $"staff_{staff.StaffId}";
+            await _redisHelper.DeleteCacheAsync(staffCacheKey);
+
+            await _redisHelper.RemoveFromListCacheAsync<Staff>(
+                $"staff_business_{staff.BusinessId}",
+                list =>
+                {
+                    list.RemoveAll(s => s.StaffId == staff.StaffId);
+                    return list;
+                },
+                TimeSpan.FromMinutes(10));
         }
     }
 }

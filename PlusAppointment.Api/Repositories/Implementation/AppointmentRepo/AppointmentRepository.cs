@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using PlusAppointment.Models.Classes;
-using PlusAppointment.Models.DTOs;
 using WebApplication1.Data;
 using WebApplication1.Repositories.Interfaces.AppointmentRepo;
 using WebApplication1.Utils.Redis;
@@ -18,6 +17,11 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
             _redisHelper = redisHelper;
         }
 
+        private DateTime GetStartOfTodayUtc()
+        {
+            return DateTime.UtcNow.Date; // This gives the start of today in UTC (00:00 of the current day)
+        }
+
         public async Task<IEnumerable<Appointment>> GetAllAppointmentsAsync()
         {
             const string cacheKey = "all_appointments";
@@ -31,8 +35,9 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
             var appointments = await _context.Appointments
                 .Include(a => a.Customer)
                 .Include(a => a.Business)
-                .Include(a => a.Service)
                 .Include(a => a.Staff)
+                .Include(a => a.AppointmentServices)
+                    .ThenInclude(apptService => apptService.Service)
                 .ToListAsync();
 
             var appointmentCacheDtos = appointments.Select(MapToCacheDto).ToList();
@@ -53,8 +58,9 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
             var appointment = await _context.Appointments
                 .Include(a => a.Customer)
                 .Include(a => a.Business)
-                .Include(a => a.Service)
                 .Include(a => a.Staff)
+                .Include(a => a.AppointmentServices)
+                    .ThenInclude(apptService => apptService.Service)
                 .FirstOrDefaultAsync(a => a.AppointmentId == appointmentId);
             if (appointment == null)
             {
@@ -102,6 +108,26 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
             await UpdateAppointmentCacheAsync(appointment);
         }
 
+        public async Task UpdateAppointmentStatusAsync(Appointment appointment)
+        {
+            // Attach the appointment to the context
+            _context.Attach(appointment);
+
+            // Mark only the Status and UpdatedAt properties as modified
+            _context.Entry(appointment).Property(a => a.Status).IsModified = true;
+            _context.Entry(appointment).Property(a => a.UpdatedAt).IsModified = true;
+
+            // Ensure no changes are being tracked for the AppointmentServices collection
+            foreach (var service in appointment.AppointmentServices)
+            {
+                _context.Entry(service).State = EntityState.Unchanged;
+            }
+
+            await _context.SaveChangesAsync();
+
+            await UpdateAppointmentCacheAsync(appointment);
+        }
+
         public async Task DeleteAppointmentAsync(int appointmentId)
         {
             var appointment = await _context.Appointments.FindAsync(appointmentId);
@@ -113,12 +139,6 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 await InvalidateAppointmentCacheAsync(appointment);
             }
         }
-
-        private DateTime GetStartOfTodayUtc()
-        {
-            return DateTime.UtcNow.Date; // This gives the start of today in UTC (00:00 of the current day)
-        }
-
 
         public async Task<IEnumerable<Appointment>> GetAppointmentsByCustomerIdAsync(int customerId)
         {
@@ -136,8 +156,9 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
             var appointments = await _context.Appointments
                 .Include(a => a.Customer)
                 .Include(a => a.Business)
-                .Include(a => a.Service)
                 .Include(a => a.Staff)
+                .Include(a => a.AppointmentServices)
+                    .ThenInclude(apptService => apptService.Service)
                 .Where(a => a.CustomerId == customerId && a.AppointmentTime >= startOfTodayUtc && a.Status != "Delete")
                 .ToListAsync();
 
@@ -163,8 +184,9 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
             var appointments = await _context.Appointments
                 .Include(a => a.Customer)
                 .Include(a => a.Business)
-                .Include(a => a.Service)
                 .Include(a => a.Staff)
+                .Include(a => a.AppointmentServices)
+                    .ThenInclude(apptService => apptService.Service)
                 .Where(a => a.BusinessId == businessId && a.AppointmentTime >= startOfTodayUtc && a.Status != "Delete")
                 .ToListAsync();
 
@@ -190,8 +212,9 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
             var appointments = await _context.Appointments
                 .Include(a => a.Customer)
                 .Include(a => a.Business)
-                .Include(a => a.Service)
                 .Include(a => a.Staff)
+                .Include(a => a.AppointmentServices)
+                    .ThenInclude(apptService => apptService.Service)
                 .Where(a => a.StaffId == staffId && a.AppointmentTime >= startOfTodayUtc && a.Status != "Delete")
                 .ToListAsync();
 
@@ -200,7 +223,6 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
 
             return appointments;
         }
-
 
         private async Task UpdateAppointmentCacheAsync(Appointment appointment)
         {
@@ -278,8 +300,13 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
         {
             // Ensure related entities are loaded
             _context.Entry(appointment).Reference(a => a.Customer).Load();
-            _context.Entry(appointment).Reference(a => a.Service).Load();
             _context.Entry(appointment).Reference(a => a.Staff).Load();
+            _context.Entry(appointment).Collection(a => a.AppointmentServices).Query()
+                .Include(apptService => apptService.Service).Load();
+
+            var totalDuration =
+                appointment.AppointmentServices?.Sum(apptService => apptService.Service?.Duration.TotalMinutes ?? 0) ??
+                0;
 
             return new AppointmentCacheDto
             {
@@ -288,22 +315,21 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 CustomerName = appointment.Customer?.Name ?? string.Empty,
                 CustomerPhone = appointment.Customer?.Phone ?? string.Empty,
                 BusinessId = appointment.BusinessId,
-                ServiceId = appointment.ServiceId,
-                ServiceName = appointment.Service?.Name ?? string.Empty,
-                ServiceDuration = appointment.Service?.Duration ?? TimeSpan.Zero,
-                ServicePrice = appointment.Service?.Price ?? 0,
                 StaffId = appointment.StaffId,
                 StaffName = appointment.Staff?.Name ?? string.Empty,
                 StaffPhone = appointment.Staff?.Phone ?? string.Empty,
                 AppointmentTime = appointment.AppointmentTime,
-                Duration = appointment.Duration,
-                Status = appointment.Status
+                Duration = TimeSpan.FromMinutes(totalDuration),
+                Status = appointment.Status,
+                ServiceIds = appointment.AppointmentServices?.Select(apptService => apptService.ServiceId).ToList() ??
+                             new List<int>()
             };
         }
 
-
         private Appointment MapFromCacheDto(AppointmentCacheDto dto)
         {
+            var services = _context.Services.Where(s => dto.ServiceIds.Contains(s.ServiceId)).ToList();
+
             return new Appointment
             {
                 AppointmentId = dto.AppointmentId,
@@ -315,14 +341,6 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                     Phone = dto.CustomerPhone
                 },
                 BusinessId = dto.BusinessId,
-                ServiceId = dto.ServiceId,
-                Service = new Service
-                {
-                    ServiceId = dto.ServiceId,
-                    Name = dto.ServiceName,
-                    Duration = dto.ServiceDuration,
-                    Price = dto.ServicePrice
-                },
                 StaffId = dto.StaffId,
                 Staff = new Staff
                 {
@@ -332,7 +350,9 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 },
                 AppointmentTime = dto.AppointmentTime,
                 Duration = dto.Duration,
-                Status = dto.Status
+                Status = dto.Status,
+                AppointmentServices = services.Select(service => new AppointmentServiceMapping
+                    { ServiceId = service.ServiceId, Service = service }).ToList()
             };
         }
     }

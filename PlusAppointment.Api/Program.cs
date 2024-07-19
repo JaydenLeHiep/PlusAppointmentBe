@@ -6,7 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using WebApplication1.Data;
 using WebApplication1.Middleware;
-using WebApplication1.Repositories.Implementation.AppointmentRepo;
+
 using WebApplication1.Repositories.Implementation.UserRepo;
 using WebApplication1.Repositories.Interfaces.UserRepo;
 using WebApplication1.Services.Interfaces.UserService;
@@ -26,6 +26,7 @@ using WebApplication1.Services.Interfaces.ServicesService;
 using WebApplication1.Services.Interfaces.StaffService;
 
 using StackExchange.Redis;
+using WebApplication1.Repositories.Implementation.AppointmentRepo;
 using WebApplication1.Services.Implementations.AppointmentService;
 using WebApplication1.Services.Implementations.BusinessService;
 using WebApplication1.Services.Implementations.CustomerService;

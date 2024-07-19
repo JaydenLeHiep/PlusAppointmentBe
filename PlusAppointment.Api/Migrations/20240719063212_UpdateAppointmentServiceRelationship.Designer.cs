@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using WebApplication1.Data;
@@ -11,9 +12,11 @@ using WebApplication1.Data;
 namespace WebApplication1.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240719063212_UpdateAppointmentServiceRelationship")]
+    partial class UpdateAppointmentServiceRelationship
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -35,9 +38,6 @@ namespace WebApplication1.Migrations
 
                     b.Property<int>("BusinessId")
                         .HasColumnType("integer");
-
-                    b.Property<string>("Comment")
-                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -69,7 +69,7 @@ namespace WebApplication1.Migrations
                     b.ToTable("Appointments");
                 });
 
-            modelBuilder.Entity("PlusAppointment.Models.Classes.AppointmentServiceMapping", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.AppointmentService", b =>
                 {
                     b.Property<int>("AppointmentId")
                         .HasColumnType("integer");
@@ -271,7 +271,7 @@ namespace WebApplication1.Migrations
                     b.Navigation("Staff");
                 });
 
-            modelBuilder.Entity("PlusAppointment.Models.Classes.AppointmentServiceMapping", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.AppointmentService", b =>
                 {
                     b.HasOne("PlusAppointment.Models.Classes.Appointment", "Appointment")
                         .WithMany("AppointmentServices")

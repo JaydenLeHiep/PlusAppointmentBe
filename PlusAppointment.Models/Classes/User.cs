@@ -20,7 +20,7 @@ namespace PlusAppointment.Models.Classes
         [JsonConverter(typeof(BusinessCollectionConverter))]
         public ICollection<Business> Businesses { get; set; } = new List<Business>();
 
-        public User() { } // Parameterless constructor for deserialization
+        //public User() { } // Parameterless constructor for deserialization
 
         public User(string username, string password, string email, string phone, Role role)
         {

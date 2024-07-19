@@ -14,7 +14,8 @@ namespace PlusAppointment.Models.Classes
         public string Status { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
-
+        
+        public string? Comment { get; set; }
         public ICollection<AppointmentServiceMapping>? AppointmentServices { get; set; }
     }
 

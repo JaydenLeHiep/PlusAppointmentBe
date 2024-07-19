@@ -47,7 +47,7 @@ namespace WebApplication1.Services.Implementations.AppointmentService
 
             // Validate Services
             var services = await _businessRepository.GetServicesByBusinessIdAsync(appointmentDto.BusinessId);
-            var validServices = services.Where(s => appointmentDto.ServiceIds.Contains(s.ServiceId)).ToList();
+            var validServices = services.Where(s => s != null && appointmentDto.ServiceIds.Contains(s.ServiceId)).ToList();
             if (!validServices.Any())
             {
                 throw new ArgumentException("Invalid ServiceIds for the given BusinessId");
@@ -85,6 +85,7 @@ namespace WebApplication1.Services.Implementations.AppointmentService
                 Status = "Pending",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
+                Comment = appointmentDto.Comment,
                 AppointmentServices = validServices.Select(service => new AppointmentServiceMapping
                 {
                     ServiceId = service.ServiceId
@@ -131,6 +132,7 @@ namespace WebApplication1.Services.Implementations.AppointmentService
             appointment.StaffId = appointmentDto.StaffId;
             appointment.AppointmentTime = DateTime.SpecifyKind(appointmentDto.AppointmentTime, DateTimeKind.Utc);
             appointment.Duration = totalDuration;
+            appointment.Comment = appointmentDto.Comment;
             if (appointmentDto.Status != null) appointment.Status = appointmentDto.Status;
             appointment.UpdatedAt = DateTime.UtcNow;
 

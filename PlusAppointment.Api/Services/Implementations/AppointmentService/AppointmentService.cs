@@ -38,18 +38,19 @@ namespace WebApplication1.Services.Implementations.AppointmentService
                 throw new ArgumentException("Invalid BusinessId");
             }
 
-            // Validate the ServiceId
-            var services = await _businessRepository.GetServicesByBusinessIdAsync(appointmentDto.BusinessId);
-            if (services == null || !services.Any(s => s != null && s.ServiceId == appointmentDto.ServiceId))
-            {
-                throw new ArgumentException("Invalid ServiceId for the given BusinessId");
-            }
-
             // Validate the StaffId
             var staff = await _businessRepository.GetStaffByBusinessIdAsync(appointmentDto.BusinessId);
             if (staff == null || !staff.Any(s => s != null && s.StaffId == appointmentDto.StaffId))
             {
                 throw new ArgumentException("Invalid StaffId for the given BusinessId");
+            }
+
+            // Validate Services
+            var services = await _businessRepository.GetServicesByBusinessIdAsync(appointmentDto.BusinessId);
+            var validServices = services.Where(s => appointmentDto.ServiceIds.Contains(s.ServiceId)).ToList();
+            if (!validServices.Any())
+            {
+                throw new ArgumentException("Invalid ServiceIds for the given BusinessId");
             }
 
             // Adjust the appointment time by subtracting 2 hours
@@ -63,10 +64,11 @@ namespace WebApplication1.Services.Implementations.AppointmentService
             }
 
             // Check if the staff is available
+            var totalDuration = validServices.Aggregate(TimeSpan.Zero, (sum, next) => sum.Add(next.Duration));
             var isAvailable = await _appointmentRepository.IsStaffAvailable(
                 appointmentDto.StaffId,
                 adjustedAppointmentTime,
-                appointmentDto.Duration);
+                totalDuration);
 
             if (!isAvailable)
             {
@@ -77,18 +79,20 @@ namespace WebApplication1.Services.Implementations.AppointmentService
             {
                 CustomerId = appointmentDto.CustomerId,
                 BusinessId = appointmentDto.BusinessId,
-                ServiceId = appointmentDto.ServiceId,
                 StaffId = appointmentDto.StaffId,
                 AppointmentTime = DateTime.SpecifyKind(adjustedAppointmentTime, DateTimeKind.Utc),
-                Duration = appointmentDto.Duration,
+                Duration = totalDuration,
                 Status = "Pending",
                 CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                UpdatedAt = DateTime.UtcNow,
+                AppointmentServices = validServices.Select(service => new AppointmentServiceMapping
+                {
+                    ServiceId = service.ServiceId
+                }).ToList()
             };
 
             await _appointmentRepository.AddAppointmentAsync(appointment);
         }
-
 
         public async Task UpdateAppointmentAsync(int id, AppointmentDto appointmentDto)
         {
@@ -99,18 +103,19 @@ namespace WebApplication1.Services.Implementations.AppointmentService
                 throw new ArgumentException("Invalid BusinessId");
             }
 
-            // Validate the ServiceId
-            var services = await _businessRepository.GetServicesByBusinessIdAsync(appointmentDto.BusinessId);
-            if (!services.Any(s => s != null && s.ServiceId == appointmentDto.ServiceId))
-            {
-                throw new ArgumentException("Invalid ServiceId for the given BusinessId");
-            }
-
             // Validate the StaffId
             var staff = await _businessRepository.GetStaffByBusinessIdAsync(appointmentDto.BusinessId);
             if (!staff.Any(s => s != null && s.StaffId == appointmentDto.StaffId))
             {
                 throw new ArgumentException("Invalid StaffId for the given BusinessId");
+            }
+
+            // Validate Services
+            var services = await _businessRepository.GetServicesByBusinessIdAsync(appointmentDto.BusinessId);
+            var validServices = services.Where(s => appointmentDto.ServiceIds.Contains(s.ServiceId)).ToList();
+            if (!validServices.Any())
+            {
+                throw new ArgumentException("Invalid ServiceIds for the given BusinessId");
             }
 
             var appointment = await _appointmentRepository.GetAppointmentByIdAsync(id);
@@ -119,17 +124,28 @@ namespace WebApplication1.Services.Implementations.AppointmentService
                 throw new KeyNotFoundException("Appointment not found");
             }
 
+            var totalDuration = validServices.Aggregate(TimeSpan.Zero, (sum, next) => sum.Add(next.Duration));
+
             appointment.CustomerId = appointmentDto.CustomerId;
             appointment.BusinessId = appointmentDto.BusinessId;
-            appointment.ServiceId = appointmentDto.ServiceId;
             appointment.StaffId = appointmentDto.StaffId;
             appointment.AppointmentTime = DateTime.SpecifyKind(appointmentDto.AppointmentTime, DateTimeKind.Utc);
-            appointment.Duration = appointmentDto.Duration;
+            appointment.Duration = totalDuration;
             if (appointmentDto.Status != null) appointment.Status = appointmentDto.Status;
             appointment.UpdatedAt = DateTime.UtcNow;
 
+            appointment.AppointmentServices.Clear();
+            foreach (var service in validServices)
+            {
+                appointment.AppointmentServices.Add(new AppointmentServiceMapping
+                {
+                    ServiceId = service.ServiceId
+                });
+            }
+
             await _appointmentRepository.UpdateAppointmentAsync(appointment);
         }
+
         public async Task UpdateAppointmentStatusAsync(int id, string status)
         {
             var appointment = await _appointmentRepository.GetAppointmentByIdAsync(id);
@@ -141,9 +157,9 @@ namespace WebApplication1.Services.Implementations.AppointmentService
             appointment.Status = status;
             appointment.UpdatedAt = DateTime.UtcNow;
 
-            await _appointmentRepository.UpdateAppointmentAsync(appointment);
+            await _appointmentRepository.UpdateAppointmentStatusAsync(appointment);
         }
-        
+
         public async Task DeleteAppointmentAsync(int id)
         {
             await _appointmentRepository.DeleteAppointmentAsync(id);
@@ -169,6 +185,9 @@ namespace WebApplication1.Services.Implementations.AppointmentService
 
         private AppointmentDto MapToDto(Appointment appointment)
         {
+            var serviceIds = appointment.AppointmentServices?.Select(apptService => apptService.ServiceId).ToList() ?? new List<int>();
+            var totalDuration = appointment.AppointmentServices?.Sum(apptService => apptService.Service?.Duration.TotalMinutes ?? 0) ?? 0;
+
             return new AppointmentDto
             {
                 AppointmentId = appointment.AppointmentId,
@@ -177,15 +196,14 @@ namespace WebApplication1.Services.Implementations.AppointmentService
                 CustomerPhone = appointment.Customer?.Phone ?? "Unknown Customer Phone",
                 BusinessId = appointment.BusinessId,
                 BusinessName = appointment.Business?.Name ?? "Unknown Business Name",
-                ServiceId = appointment.ServiceId,
-                ServiceName = appointment.Service?.Name ?? "Unknown Service Name",
                 StaffId = appointment.StaffId,
                 StaffName = appointment.Staff?.Name ?? "Unknown Staff Name",
                 AppointmentTime = appointment.AppointmentTime,
-                Duration = appointment.Duration,
+                Duration = TimeSpan.FromMinutes(totalDuration),
                 Status = appointment.Status,
                 CreatedAt = appointment.CreatedAt,
-                UpdatedAt = appointment.UpdatedAt
+                UpdatedAt = appointment.UpdatedAt,
+                ServiceIds = serviceIds
             };
         }
     }

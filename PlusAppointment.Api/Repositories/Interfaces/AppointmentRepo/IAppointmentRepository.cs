@@ -8,6 +8,7 @@ namespace WebApplication1.Repositories.Interfaces.AppointmentRepo
         Task<Appointment?> GetAppointmentByIdAsync(int appointmentId);
         Task AddAppointmentAsync(Appointment appointment);
         Task UpdateAppointmentAsync(Appointment appointment);
+        Task UpdateAppointmentStatusAsync(Appointment appointment);
         Task DeleteAppointmentAsync(int appointmentId);
         Task<IEnumerable<Appointment>> GetAppointmentsByCustomerIdAsync(int customerId);
         Task<IEnumerable<Appointment>> GetAppointmentsByBusinessIdAsync(int businessId);

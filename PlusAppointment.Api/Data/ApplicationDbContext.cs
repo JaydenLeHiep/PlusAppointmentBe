@@ -16,6 +16,7 @@ namespace WebApplication1.Data
         public DbSet<Service> Services { get; set; }
         public DbSet<Staff> Staffs { get; set; }
         public DbSet<Customer> Customers { get; set; }
+        public DbSet<AppointmentServiceMapping> AppointmentServices { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -37,11 +38,6 @@ namespace WebApplication1.Data
                 .HasForeignKey(a => a.BusinessId);
 
             modelBuilder.Entity<Appointment>()
-                .HasOne(a => a.Service)
-                .WithMany()
-                .HasForeignKey(a => a.ServiceId);
-
-            modelBuilder.Entity<Appointment>()
                 .HasOne(a => a.Staff)
                 .WithMany(s => s.Appointments)
                 .HasForeignKey(a => a.StaffId);
@@ -56,6 +52,19 @@ namespace WebApplication1.Data
                 .WithMany(b => b.Services)
                 .HasForeignKey(s => s.BusinessId);
 
+            modelBuilder.Entity<AppointmentServiceMapping>()
+                .HasKey(apptService => new { apptService.AppointmentId, apptService.ServiceId });
+
+            modelBuilder.Entity<AppointmentServiceMapping>()
+                .HasOne(apptService => apptService.Appointment)
+                .WithMany(a => a.AppointmentServices)
+                .HasForeignKey(apptService => apptService.AppointmentId);
+
+            modelBuilder.Entity<AppointmentServiceMapping>()
+                .HasOne(apptService => apptService.Service)
+                .WithMany(s => s.AppointmentServices)
+                .HasForeignKey(apptService => apptService.ServiceId);
+
             // Add indexes to improve performance
             modelBuilder.Entity<Business>()
                 .HasIndex(b => b.UserID);
@@ -65,9 +74,6 @@ namespace WebApplication1.Data
 
             modelBuilder.Entity<Appointment>()
                 .HasIndex(a => a.BusinessId);
-
-            modelBuilder.Entity<Appointment>()
-                .HasIndex(a => a.ServiceId);
 
             modelBuilder.Entity<Appointment>()
                 .HasIndex(a => a.StaffId);

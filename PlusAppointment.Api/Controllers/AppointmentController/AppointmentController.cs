@@ -22,11 +22,21 @@ public class AppointmentsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var userRole = HttpContext.Items["UserRole"]?.ToString();
-        if (userRole != Role.Admin.ToString())
+        var tokenType = HttpContext.Request.Headers["Token-Type"].FirstOrDefault();
+
+        if (tokenType == "Access")
         {
-            return NotFound(new { message = "You are not authorized to view all businesses." });
+            var userRole = HttpContext.Items["UserRole"]?.ToString();
+            if (userRole != Role.Admin.ToString())
+            {
+                return Unauthorized(new { message = "You are not authorized to view all appointments." });
+            }
         }
+        else
+        {
+            return Unauthorized(new { message = "Invalid token type for accessing this endpoint." });
+        }
+
         var appointments = await _appointmentService.GetAllAppointmentsAsync();
         return Ok(appointments);
     }

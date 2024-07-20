@@ -13,11 +13,16 @@ public class RoleMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        var userRole = context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+        var tokenType = context.Request.Headers["Token-Type"].FirstOrDefault();
 
-        if (!string.IsNullOrEmpty(userRole))
+        if (tokenType == "Access")
         {
-            context.Items["UserRole"] = userRole;
+            var userRole = context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+
+            if (!string.IsNullOrEmpty(userRole))
+            {
+                context.Items["UserRole"] = userRole;
+            }
         }
 
         await _next(context);

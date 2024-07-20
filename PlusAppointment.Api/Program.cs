@@ -94,34 +94,46 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
 // Add JWT Authentication
 var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"] ?? string.Empty);
 builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.RequireHttpsMetadata = false;
-    options.SaveToken = true;
-    options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(key),
-        ValidateIssuer = false,
-        ValidateAudience = false
-    };
-    options.Events = new JwtBearerEvents
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
     {
-        OnMessageReceived = context =>
+        options.RequireHttpsMetadata = false;
+        options.SaveToken = true;
+        options.TokenValidationParameters = new TokenValidationParameters
         {
-            if (context.Request.Cookies.ContainsKey("refreshToken"))
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
             {
-                context.Token = context.Request.Cookies["refreshToken"];
-            }
+                var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
 
-            return Task.CompletedTask;
-        }
-    };
-});
+                // If the Authorization header is missing or empty, use the refresh token
+                if (string.IsNullOrEmpty(token) && context.Request.Cookies.ContainsKey("refreshToken"))
+                {
+                    token = context.Request.Cookies["refreshToken"];
+                    context.Request.Headers.Append("Token-Type", "Refresh");
+                }
+                else
+                {
+                    context.Request.Headers.Append("Token-Type", "Access");
+                }
+
+                context.Token = token;
+
+                return Task.CompletedTask;
+            }
+        };
+    });
+
+
 
 // Configure CORS
 builder.Services.AddCors(options =>
@@ -156,8 +168,9 @@ app.UseRouting();
 app.UseCors("AllowFrontendOnly");
 
 app.UseAuthentication();
-app.UseAuthorization();
 app.UseRoleMiddleware();
+app.UseAuthorization();
+
 app.MapControllers();
 app.MapGet("/", () => "Hello World!");
 

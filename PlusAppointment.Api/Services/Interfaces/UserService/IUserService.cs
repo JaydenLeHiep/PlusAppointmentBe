@@ -10,5 +10,6 @@ public interface IUserService
     Task UpdateUserAsync(User user);
     Task DeleteUserAsync(int id);
     
-    Task<(string? token, User? user)> LoginAsync(string usernameOrEmail, string password);
+    Task<(string? token, string? refreshToken, User? user)> LoginAsync(string usernameOrEmail, string password);
+    Task<(string? newAccessToken, string? newRefreshToken)> RefreshTokenAsync(string token, string refreshToken);
 }

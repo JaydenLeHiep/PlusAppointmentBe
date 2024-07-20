@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.Enums;
 using WebApplication1.Repositories.Interfaces.UserRepo;
@@ -71,18 +72,51 @@ public class UserService : IUserService
         await _userRepository.DeleteAsync(id);
     }
 
-    public async Task<(string? token, User? user)> LoginAsync(string usernameOrEmail, string password)
+    public async Task<(string? token, string? refreshToken, User? user)> LoginAsync(string usernameOrEmail, string password)
     {
         var user = await _userRepository.GetUserByUsernameOrEmailAsync(usernameOrEmail);
 
-        // Check if the user or the user's password is null
         if (user == null || string.IsNullOrEmpty(user.Password) || !HashUtility.VerifyPassword(user.Password, password))
+        {
+            return (null, null, null);
+        }
+
+        var token = JwtUtility.GenerateJwtToken(user, _configuration);
+        var refreshToken = JwtUtility.GenerateRefreshToken();
+
+        user.RefreshToken = refreshToken;
+        user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+
+        await _userRepository.UpdateAsync(user);
+
+        return (token, refreshToken, user);
+    }
+
+    public async Task<(string? newAccessToken, string? newRefreshToken)> RefreshTokenAsync(string token, string refreshToken)
+    {
+        var principal = JwtUtility.GetPrincipalFromExpiredToken(token, _configuration);
+        if (principal == null)
         {
             return (null, null);
         }
 
-        var token = JwtUtility.GenerateJwtToken(user, _configuration);
-        return (token, user); // Return the token and user
+        var userId = int.Parse(principal.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null || user.RefreshToken != refreshToken || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
+        {
+            return (null, null);
+        }
+
+        var newAccessToken = JwtUtility.GenerateJwtToken(user, _configuration);
+        var newRefreshToken = JwtUtility.GenerateRefreshToken();
+
+        user.RefreshToken = newRefreshToken;
+        user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+        await _userRepository.UpdateAsync(user);
+
+        return (newAccessToken, newRefreshToken);
     }
+
+    
 
 }

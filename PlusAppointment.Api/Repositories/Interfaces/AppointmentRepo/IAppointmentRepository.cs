@@ -1,4 +1,5 @@
 using PlusAppointment.Models.Classes;
+using PlusAppointment.Models.DTOs;
 
 namespace WebApplication1.Repositories.Interfaces.AppointmentRepo
 {
@@ -9,6 +10,10 @@ namespace WebApplication1.Repositories.Interfaces.AppointmentRepo
         Task AddAppointmentAsync(Appointment appointment);
         Task UpdateAppointmentAsync(Appointment appointment);
         Task UpdateAppointmentStatusAsync(Appointment appointment);
+        Task UpdateAppointmentServicesMappingAsync(int appointmentId, List<Service> validServices);
+
+        Task UpdateAppointmentWithServicesAsync(int appointmentId, UpdateAppointmentDto updateAppointmentDto,
+            List<Service> validServices, TimeSpan totalDuration);
         Task DeleteAppointmentAsync(int appointmentId);
         Task<IEnumerable<Appointment>> GetAppointmentsByCustomerIdAsync(int customerId);
         Task<IEnumerable<Appointment>> GetAppointmentsByBusinessIdAsync(int businessId);

@@ -11,6 +11,7 @@ public interface IUserRepository: IRepository<User>
     Task<User?> GetUserByUsernameOrEmailAsync(string usernameOrEmail);
     Task<User?> GetUserByEmailAsync(string email);
     Task<User?> GetUserByPhoneAsync(string phone);
+    
 
     
 }

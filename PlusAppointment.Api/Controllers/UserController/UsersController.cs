@@ -1,9 +1,13 @@
+
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
 using PlusAppointment.Models.Enums;
 using WebApplication1.Services.Interfaces.UserService;
 using WebApplication1.Utils.Hash;
+
 
 namespace WebApplication1.Controllers.UserController;
 
@@ -74,7 +78,7 @@ public class UsersController : ControllerBase
             return BadRequest(new { message = "Username or Email and Password are required." });
         }
 
-        var (token, user) = await _userService.LoginAsync(loginDto.UsernameOrEmail, loginDto.Password);
+        var (token, refreshToken, user) = await _userService.LoginAsync(loginDto.UsernameOrEmail, loginDto.Password);
 
         if (token == null || user == null)
         {
@@ -85,11 +89,61 @@ public class UsersController : ControllerBase
         {
             Token = token,
             Username = user.Username,
-            Role = user.Role.ToString()  // Convert Role enum to string
+            Role = user.Role.ToString()
         };
+
+        // Setting the refresh token as HTTP-only cookie
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = false, // Change to true in production (HTTPS)
+            SameSite = SameSiteMode.Strict, // Required for cross-site cookies
+            Expires = DateTime.UtcNow.AddDays(30)
+        };
+        Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
+        Console.WriteLine($"Set-Cookie: refreshToken={refreshToken}; Expires={cookieOptions.Expires}; Path={cookieOptions.Path}; HttpOnly={cookieOptions.HttpOnly}; Secure={cookieOptions.Secure}; SameSite={cookieOptions.SameSite}");
 
         return Ok(response);
     }
+
+    [HttpPost("refresh")]
+    [EnableCors("AllowFrontendOnly")] 
+    public async Task<IActionResult> Refresh([FromBody] TokenModel tokenModel)
+    {
+        
+        var refreshToken = Request.Cookies["refreshToken"];
+        Console.WriteLine("Refresh token from cookies: " + refreshToken);
+        if (string.IsNullOrEmpty(refreshToken))
+        {
+            return Unauthorized();
+        }
+        if (string.IsNullOrEmpty(refreshToken))
+        {
+            return Unauthorized();
+        }
+
+        var (newAccessToken, newRefreshToken) = await _userService.RefreshTokenAsync(tokenModel.Token, refreshToken);
+
+        if (newAccessToken == null || newRefreshToken == null)
+        {
+            return Unauthorized();
+        }
+
+        // Update the refresh token cookie
+        // Setting the refresh token as HTTP-only cookie
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = false, // Change to true in production (HTTPS)
+            SameSite = SameSiteMode.Strict, // Required for cross-site cookies
+            Expires = DateTime.UtcNow.AddDays(30)
+        };
+        Response.Cookies.Append("refreshToken", newRefreshToken, cookieOptions);
+
+        return Ok(new { Token = newAccessToken });
+    }
+
+
 
     // Use for changing the whole user or changing only one thing like Password
     [HttpPut("user_id={userId}")]

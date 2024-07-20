@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using PlusAppointment.Models.Classes;
+using PlusAppointment.Models.DTOs;
 using WebApplication1.Data;
 using WebApplication1.Repositories.Interfaces.AppointmentRepo;
 using WebApplication1.Utils.Redis;
@@ -37,7 +39,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 .Include(a => a.Business)
                 .Include(a => a.Staff)
                 .Include(a => a.AppointmentServices)
-                    .ThenInclude(apptService => apptService.Service)
+                .ThenInclude(apptService => apptService.Service)
                 .ToListAsync();
 
             var appointmentCacheDtos = appointments.Select(MapToCacheDto).ToList();
@@ -60,7 +62,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 .Include(a => a.Business)
                 .Include(a => a.Staff)
                 .Include(a => a.AppointmentServices)
-                    .ThenInclude(apptService => apptService.Service)
+                .ThenInclude(apptService => apptService.Service)
                 .FirstOrDefaultAsync(a => a.AppointmentId == appointmentId);
             if (appointment == null)
             {
@@ -108,6 +110,92 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
             await UpdateAppointmentCacheAsync(appointment);
         }
 
+        public async Task UpdateAppointmentServicesMappingAsync(int appointmentId, List<Service> validServices)
+        {
+            // Begin a new transaction
+            using (var transaction = await _context.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // Delete existing mappings
+                    var deleteQuery = "DELETE FROM AppointmentServices WHERE AppointmentId = @appointmentId";
+                    await _context.Database.ExecuteSqlRawAsync(deleteQuery,
+                        new NpgsqlParameter("@appointmentId", appointmentId));
+
+                    // Insert new mappings
+                    foreach (var service in validServices)
+                    {
+                        var insertQuery =
+                            "INSERT INTO AppointmentServices (AppointmentId, ServiceId) VALUES (@appointmentId, @serviceId)";
+                        await _context.Database.ExecuteSqlRawAsync(insertQuery,
+                            new NpgsqlParameter("@appointmentId", appointmentId),
+                            new NpgsqlParameter("@serviceId", service.ServiceId));
+                    }
+
+                    // Commit the transaction
+                    await transaction.CommitAsync();
+                }
+                catch (Exception ex)
+                {
+                    // Rollback the transaction if any error occurs
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            }
+        }
+
+        public async Task UpdateAppointmentWithServicesAsync(int appointmentId,
+            UpdateAppointmentDto updateAppointmentDto, List<Service> validServices, TimeSpan totalDuration)
+        {
+            // Begin a new transaction
+            using (var transaction = await _context.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    // Update the appointment using raw SQL
+                    var updateAppointmentQuery = @"
+                UPDATE ""Appointments""
+                SET 
+                    ""AppointmentTime"" = @appointmentTime,
+                    ""Duration"" = @duration,
+                    ""Comment"" = @comment,
+                    ""UpdatedAt"" = @updatedAt
+                WHERE ""AppointmentId"" = @appointmentId";
+                    await _context.Database.ExecuteSqlRawAsync(updateAppointmentQuery,
+                        new NpgsqlParameter("@appointmentTime", updateAppointmentDto.AppointmentTime),
+                        new NpgsqlParameter("@duration", totalDuration),
+                        new NpgsqlParameter("@comment", updateAppointmentDto.Comment ?? (object)DBNull.Value),
+                        new NpgsqlParameter("@updatedAt", DateTime.UtcNow),
+                        new NpgsqlParameter("@appointmentId", appointmentId));
+
+                    // Delete existing mappings
+                    var deleteQuery = "DELETE FROM \"AppointmentServices\" WHERE \"AppointmentId\" = @appointmentId";
+                    await _context.Database.ExecuteSqlRawAsync(deleteQuery,
+                        new NpgsqlParameter("@appointmentId", appointmentId));
+
+                    // Insert new mappings
+                    foreach (var service in validServices)
+                    {
+                        var insertQuery =
+                            "INSERT INTO \"AppointmentServices\" (\"AppointmentId\", \"ServiceId\") VALUES (@appointmentId, @serviceId)";
+                        await _context.Database.ExecuteSqlRawAsync(insertQuery,
+                            new NpgsqlParameter("@appointmentId", appointmentId),
+                            new NpgsqlParameter("@serviceId", service.ServiceId));
+                    }
+
+                    // Commit the transaction
+                    await transaction.CommitAsync();
+                }
+                catch (Exception ex)
+                {
+                    // Rollback the transaction if any error occurs
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            }
+        }
+
+
         public async Task UpdateAppointmentStatusAsync(Appointment appointment)
         {
             // Attach the appointment to the context
@@ -127,6 +215,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
 
             await UpdateAppointmentCacheAsync(appointment);
         }
+
 
         public async Task DeleteAppointmentAsync(int appointmentId)
         {
@@ -158,7 +247,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 .Include(a => a.Business)
                 .Include(a => a.Staff)
                 .Include(a => a.AppointmentServices)
-                    .ThenInclude(apptService => apptService.Service)
+                .ThenInclude(apptService => apptService.Service)
                 .Where(a => a.CustomerId == customerId && a.AppointmentTime >= startOfTodayUtc && a.Status != "Delete")
                 .ToListAsync();
 
@@ -186,7 +275,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 .Include(a => a.Business)
                 .Include(a => a.Staff)
                 .Include(a => a.AppointmentServices)
-                    .ThenInclude(apptService => apptService.Service)
+                .ThenInclude(apptService => apptService.Service)
                 .Where(a => a.BusinessId == businessId && a.AppointmentTime >= startOfTodayUtc && a.Status != "Delete")
                 .ToListAsync();
 
@@ -214,7 +303,7 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 .Include(a => a.Business)
                 .Include(a => a.Staff)
                 .Include(a => a.AppointmentServices)
-                    .ThenInclude(apptService => apptService.Service)
+                .ThenInclude(apptService => apptService.Service)
                 .Where(a => a.StaffId == staffId && a.AppointmentTime >= startOfTodayUtc && a.Status != "Delete")
                 .ToListAsync();
 

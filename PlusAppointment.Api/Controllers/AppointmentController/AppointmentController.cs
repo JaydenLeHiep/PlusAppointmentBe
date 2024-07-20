@@ -45,7 +45,7 @@ public class AppointmentsController : ControllerBase
     public async Task<IActionResult> GetById(int appointmentId)
     {
         var userRole = HttpContext.Items["UserRole"]?.ToString();
-        var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
+        //var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
         if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
         {
             return NotFound(new { message = "You are not authorized to view this business." });
@@ -63,7 +63,7 @@ public class AppointmentsController : ControllerBase
     public async Task<IActionResult> GetByCustomerId(int customerId)
     {
         var userRole = HttpContext.Items["UserRole"]?.ToString();
-        var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
+        //var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
         if (userRole != Role.Admin.ToString() && userRole != Role.Customer.ToString() && userRole != Role.Owner.ToString())
         {
             return NotFound(new { message = "You are not authorized to view this business." });
@@ -76,7 +76,7 @@ public class AppointmentsController : ControllerBase
     public async Task<IActionResult> GetByBusinessId(int businessId)
     {
         var userRole = HttpContext.Items["UserRole"]?.ToString();
-        var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
+        //var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
         if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
         {
             return NotFound(new { message = "You are not authorized to view this business." });
@@ -90,7 +90,7 @@ public class AppointmentsController : ControllerBase
     public async Task<IActionResult> GetByStaffId(int staffId)
     {
         var userRole = HttpContext.Items["UserRole"]?.ToString();
-        var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
+        //var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
         if (userRole != Role.Admin.ToString() && userRole != Role.Staff.ToString() && userRole != Role.Owner.ToString())
         {
             return NotFound(new { message = "You are not authorized to view this business." });
@@ -117,13 +117,13 @@ public class AppointmentsController : ControllerBase
     }
 
     [HttpPut("appointment_id={appointmentId}")]
-    public async Task<IActionResult> UpdateAppointment(int appointmentId, [FromBody] AppointmentDto appointmentDto)
+    public async Task<IActionResult> UpdateAppointment(int appointmentId, [FromBody] UpdateAppointmentDto updateAppointmentDto)
     {
         try
         {
             // Ensure the provided AppointmentTime is treated as UTC
-            appointmentDto.AppointmentTime = DateTime.SpecifyKind(appointmentDto.AppointmentTime, DateTimeKind.Utc);
-            await _appointmentService.UpdateAppointmentAsync(appointmentId, appointmentDto);
+            updateAppointmentDto.AppointmentTime = DateTime.SpecifyKind(updateAppointmentDto.AppointmentTime, DateTimeKind.Utc);
+            await _appointmentService.UpdateAppointmentAsync(appointmentId, updateAppointmentDto);
             return Ok(new { message = "Appointment updated successfully" });
         }
         catch (KeyNotFoundException ex)
@@ -139,6 +139,8 @@ public class AppointmentsController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+
     
     [HttpPut("appointment_id={appointmentId}/status")]
     public async Task<IActionResult> UpdateAppointmentStatus(int appointmentId, [FromBody] UpdateStatusDto updateStatusDto)

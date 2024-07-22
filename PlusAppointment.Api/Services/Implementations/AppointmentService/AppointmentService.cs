@@ -1,9 +1,11 @@
+using Hangfire;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
 using WebApplication1.Repositories.Interfaces.AppointmentRepo;
 using WebApplication1.Repositories.Interfaces.BusinessRepo;
 using WebApplication1.Services.Interfaces.AppointmentService;
 using WebApplication1.Utils.SendingEmail;
+using WebApplication1.Utils.SendingSms;
 
 namespace WebApplication1.Services.Implementations.AppointmentService
 {
@@ -12,11 +14,13 @@ namespace WebApplication1.Services.Implementations.AppointmentService
         private readonly IAppointmentRepository _appointmentRepository;
         private readonly IBusinessRepository _businessRepository;
         private readonly EmailService _emailService;
-        public AppointmentService(IAppointmentRepository appointmentRepository, IBusinessRepository businessRepository, EmailService emailService)
+        private readonly SmsService _smsService;
+        public AppointmentService(IAppointmentRepository appointmentRepository, IBusinessRepository businessRepository, EmailService emailService, SmsService smsService)
         {
             _appointmentRepository = appointmentRepository;
             _businessRepository = businessRepository;
             _emailService = emailService;
+            _smsService = smsService;
         }
 
         public async Task<IEnumerable<AppointmentDto?>> GetAllAppointmentsAsync()
@@ -113,6 +117,11 @@ namespace WebApplication1.Services.Implementations.AppointmentService
 
             // Save the appointment if the email was sent successfully
             await _appointmentRepository.AddAppointmentAsync(appointment);
+
+            // Schedule SMS reminder
+            var sendTime = appointment.AppointmentTime.AddDays(-1);
+            BackgroundJob.Schedule(() => _smsService.SendSmsAsync(customer.Phone, $"Reminder: You have an appointment on {appointmentDto.AppointmentTime}."), sendTime);
+
             return true;
         }
 

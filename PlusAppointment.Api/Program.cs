@@ -34,6 +34,7 @@ using WebApplication1.Services.Implementations.ServicesService;
 using WebApplication1.Services.Implementations.StaffService;
 using WebApplication1.Services.Implementations.UserService;
 using WebApplication1.Utils.Redis;
+using WebApplication1.Utils.SendingEmail;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -75,6 +76,8 @@ builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 
+// 
+builder.Services.AddSingleton<EmailService>();
 builder.Services.AddSingleton<RedisHelper>();
 
 // Configure Redis

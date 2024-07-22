@@ -42,11 +42,18 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 .ThenInclude(apptService => apptService.Service)
                 .ToListAsync();
 
+            // Convert AppointmentTime to local time
+            foreach (var appointment in appointments)
+            {
+                appointment.AppointmentTime = ConvertToLocalTime(appointment.AppointmentTime);
+            }
+
             var appointmentCacheDtos = appointments.Select(MapToCacheDto).ToList();
             await _redisHelper.SetCacheAsync(cacheKey, appointmentCacheDtos, TimeSpan.FromMinutes(10));
 
             return appointments;
         }
+
 
         public async Task<Appointment?> GetAppointmentByIdAsync(int appointmentId)
         {
@@ -69,10 +76,13 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 throw new KeyNotFoundException($"Appointment with ID {appointmentId} not found");
             }
 
+            appointment.AppointmentTime = ConvertToLocalTime(appointment.AppointmentTime);
+
             appointmentCacheDto = MapToCacheDto(appointment);
             await _redisHelper.SetCacheAsync(cacheKey, appointmentCacheDto, TimeSpan.FromMinutes(10));
             return appointment;
         }
+
 
         public async Task<bool> IsStaffAvailable(int staffId, DateTime appointmentTime, TimeSpan duration)
         {
@@ -256,11 +266,18 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 .Where(a => a.CustomerId == customerId && a.AppointmentTime >= startOfTodayUtc && a.Status != "Delete")
                 .ToListAsync();
 
+            // Convert AppointmentTime to local time
+            foreach (var appointment in appointments)
+            {
+                appointment.AppointmentTime = ConvertToLocalTime(appointment.AppointmentTime);
+            }
+
             var appointmentCacheDtos = appointments.Select(MapToCacheDto).ToList();
             await _redisHelper.SetCacheAsync(cacheKey, appointmentCacheDtos, TimeSpan.FromMinutes(10));
 
             return appointments;
         }
+
 
         public async Task<IEnumerable<Appointment>> GetAppointmentsByBusinessIdAsync(int businessId)
         {
@@ -283,6 +300,12 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 .ThenInclude(apptService => apptService.Service)
                 .Where(a => a.BusinessId == businessId && a.AppointmentTime >= startOfTodayUtc && a.Status != "Delete")
                 .ToListAsync();
+
+            // Convert AppointmentTime to local time
+            foreach (var appointment in appointments)
+            {
+                appointment.AppointmentTime = ConvertToLocalTime(appointment.AppointmentTime);
+            }
 
             var appointmentCacheDtos = appointments.Select(MapToCacheDto).ToList();
             await _redisHelper.SetCacheAsync(cacheKey, appointmentCacheDtos, TimeSpan.FromMinutes(10));
@@ -312,11 +335,18 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                 .Where(a => a.StaffId == staffId && a.AppointmentTime >= startOfTodayUtc && a.Status != "Delete")
                 .ToListAsync();
 
+            // Convert AppointmentTime to local time
+            foreach (var appointment in appointments)
+            {
+                appointment.AppointmentTime = ConvertToLocalTime(appointment.AppointmentTime);
+            }
+
             var appointmentCacheDtos = appointments.Select(MapToCacheDto).ToList();
             await _redisHelper.SetCacheAsync(cacheKey, appointmentCacheDtos, TimeSpan.FromMinutes(10));
 
             return appointments;
         }
+
 
         private async Task UpdateAppointmentCacheAsync(Appointment appointment)
         {
@@ -449,5 +479,11 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
                     { ServiceId = service.ServiceId, Service = service }).ToList()
             };
         }
+        private DateTime ConvertToLocalTime(DateTime utcTime)
+        {
+            var localTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Vienna");
+            return TimeZoneInfo.ConvertTimeFromUtc(utcTime, localTimeZone);
+        }
+
     }
 }

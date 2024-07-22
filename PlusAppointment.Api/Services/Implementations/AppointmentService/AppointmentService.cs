@@ -93,7 +93,7 @@ namespace WebApplication1.Services.Implementations.AppointmentService
                 CustomerId = appointmentDto.CustomerId,
                 BusinessId = appointmentDto.BusinessId,
                 StaffId = appointmentDto.StaffId,
-                AppointmentTime = DateTime.SpecifyKind(adjustedAppointmentTime, DateTimeKind.Utc),
+                AppointmentTime = DateTime.SpecifyKind(appointmentDto.AppointmentTime, DateTimeKind.Utc),
                 Duration = totalDuration,
                 Status = "Pending",
                 CreatedAt = DateTime.UtcNow,

@@ -4,6 +4,7 @@ using WebApplication1.Data;
 using WebApplication1.Repositories.Interfaces.UserRepo;
 using WebApplication1.Utils.Redis;
 
+
 namespace WebApplication1.Repositories.Implementation.UserRepo
 {
     public class UserRepository : IUserRepository
@@ -57,7 +58,7 @@ namespace WebApplication1.Repositories.Implementation.UserRepo
             await _context.Users.AddAsync(user);
             await _context.SaveChangesAsync();
 
-            await InvalidateCache();
+            await UpdateUserCacheAsync(user);
         }
 
         public async Task UpdateAsync(User user)
@@ -65,7 +66,7 @@ namespace WebApplication1.Repositories.Implementation.UserRepo
             _context.Users.Update(user);
             await _context.SaveChangesAsync();
 
-            await InvalidateCache();
+            await UpdateUserCacheAsync(user);
         }
 
         public async Task DeleteAsync(int id)
@@ -76,7 +77,7 @@ namespace WebApplication1.Repositories.Implementation.UserRepo
                 _context.Users.Remove(user);
                 await _context.SaveChangesAsync();
 
-                await InvalidateCache();
+                await InvalidateUserCacheAsync(user);
             }
         }
 
@@ -157,11 +158,35 @@ namespace WebApplication1.Repositories.Implementation.UserRepo
             return user;
         }
 
-
-        private async Task InvalidateCache()
+        private async Task UpdateUserCacheAsync(User user)
         {
-            await _redisHelper.DeleteKeysByPatternAsync("user_*");
-            await _redisHelper.DeleteCacheAsync("all_users");
+            var userCacheKey = $"user_{user.UserId}";
+            await _redisHelper.SetCacheAsync(userCacheKey, user, TimeSpan.FromMinutes(10));
+
+            await _redisHelper.UpdateListCacheAsync<User>(
+                "all_users",
+                list =>
+                {
+                    list.RemoveAll(u => u.UserId == user.UserId);
+                    list.Add(user);
+                    return list;
+                },
+                TimeSpan.FromMinutes(10));
+        }
+
+        private async Task InvalidateUserCacheAsync(User user)
+        {
+            var userCacheKey = $"user_{user.UserId}";
+            await _redisHelper.DeleteCacheAsync(userCacheKey);
+
+            await _redisHelper.RemoveFromListCacheAsync<User>(
+                "all_users",
+                list =>
+                {
+                    list.RemoveAll(u => u.UserId == user.UserId);
+                    return list;
+                },
+                TimeSpan.FromMinutes(10));
         }
     }
 }

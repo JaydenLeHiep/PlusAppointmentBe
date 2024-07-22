@@ -94,6 +94,11 @@ namespace WebApplication1.Repositories.Implementation.AppointmentRepo
             return true; // No overlap
         }
 
+        public async Task<Customer?> GetByCustomerIdAsync(int customerId)
+        {
+            return await _context.Customers.FindAsync(customerId);
+        }
+
         public async Task AddAppointmentAsync(Appointment appointment)
         {
             await _context.Appointments.AddAsync(appointment);

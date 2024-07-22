@@ -6,7 +6,6 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using WebApplication1.Data;
 using WebApplication1.Middleware;
-
 using WebApplication1.Repositories.Implementation.UserRepo;
 using WebApplication1.Repositories.Interfaces.UserRepo;
 using WebApplication1.Services.Interfaces.UserService;
@@ -24,7 +23,6 @@ using WebApplication1.Services.Interfaces.BusinessService;
 using WebApplication1.Services.Interfaces.CustomerService;
 using WebApplication1.Services.Interfaces.ServicesService;
 using WebApplication1.Services.Interfaces.StaffService;
-
 using StackExchange.Redis;
 using WebApplication1.Repositories.Implementation.AppointmentRepo;
 using WebApplication1.Services.Implementations.AppointmentService;
@@ -34,6 +32,10 @@ using WebApplication1.Services.Implementations.ServicesService;
 using WebApplication1.Services.Implementations.StaffService;
 using WebApplication1.Services.Implementations.UserService;
 using WebApplication1.Utils.Redis;
+using WebApplication1.Utils.SendingEmail;
+using WebApplication1.Utils.SendingSms;
+using Hangfire;
+using Hangfire.MemoryStorage;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -75,6 +77,8 @@ builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 
+builder.Services.AddSingleton<EmailService>();
+builder.Services.AddSingleton<SmsService>();
 builder.Services.AddSingleton<RedisHelper>();
 
 // Configure Redis
@@ -91,49 +95,54 @@ var redis = ConnectionMultiplexer.Connect(configurationOptions);
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
 
+// Configure Hangfire to use In-Memory storage
+builder.Services.AddHangfire(config =>
+{
+    config.UseMemoryStorage();
+});
+builder.Services.AddHangfireServer();
+
 // Add JWT Authentication
 var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"] ?? string.Empty);
 builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    })
-    .AddJwtBearer(options =>
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ValidateIssuer = false,
+        ValidateAudience = false
+    };
+    options.Events = new JwtBearerEvents
     {
-        options.RequireHttpsMetadata = false;
-        options.SaveToken = true;
-        options.TokenValidationParameters = new TokenValidationParameters
+        OnMessageReceived = context =>
         {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(key),
-            ValidateIssuer = false,
-            ValidateAudience = false
-        };
-        options.Events = new JwtBearerEvents
-        {
-            OnMessageReceived = context =>
+            var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
+
+            // If the Authorization header is missing or empty, use the refresh token
+            if (string.IsNullOrEmpty(token) && context.Request.Cookies.ContainsKey("refreshToken"))
             {
-                var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
-
-                // If the Authorization header is missing or empty, use the refresh token
-                if (string.IsNullOrEmpty(token) && context.Request.Cookies.ContainsKey("refreshToken"))
-                {
-                    token = context.Request.Cookies["refreshToken"];
-                    context.Request.Headers.Append("Token-Type", "Refresh");
-                }
-                else
-                {
-                    context.Request.Headers.Append("Token-Type", "Access");
-                }
-
-                context.Token = token;
-
-                return Task.CompletedTask;
+                token = context.Request.Cookies["refreshToken"];
+                context.Request.Headers.Append("Token-Type", "Refresh");
             }
-        };
-    });
+            else
+            {
+                context.Request.Headers.Append("Token-Type", "Access");
+            }
 
+            context.Token = token;
 
+            return Task.CompletedTask;
+        }
+    };
+});
 
 // Configure CORS
 builder.Services.AddCors(options =>
@@ -170,6 +179,12 @@ app.UseCors("AllowFrontendOnly");
 app.UseAuthentication();
 app.UseRoleMiddleware();
 app.UseAuthorization();
+
+// Use Hangfire dashboard
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = new[] { new Hangfire.Dashboard.LocalRequestsOnlyAuthorizationFilter() }
+});
 
 app.MapControllers();
 app.MapGet("/", () => "Hello World!");

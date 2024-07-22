@@ -1,8 +1,11 @@
+using Hangfire;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
 using WebApplication1.Repositories.Interfaces.AppointmentRepo;
 using WebApplication1.Repositories.Interfaces.BusinessRepo;
 using WebApplication1.Services.Interfaces.AppointmentService;
+using WebApplication1.Utils.SendingEmail;
+using WebApplication1.Utils.SendingSms;
 
 namespace WebApplication1.Services.Implementations.AppointmentService
 {
@@ -10,11 +13,14 @@ namespace WebApplication1.Services.Implementations.AppointmentService
     {
         private readonly IAppointmentRepository _appointmentRepository;
         private readonly IBusinessRepository _businessRepository;
-
-        public AppointmentService(IAppointmentRepository appointmentRepository, IBusinessRepository businessRepository)
+        private readonly EmailService _emailService;
+        private readonly SmsService _smsService;
+        public AppointmentService(IAppointmentRepository appointmentRepository, IBusinessRepository businessRepository, EmailService emailService, SmsService smsService)
         {
             _appointmentRepository = appointmentRepository;
             _businessRepository = businessRepository;
+            _emailService = emailService;
+            _smsService = smsService;
         }
 
         public async Task<IEnumerable<AppointmentDto?>> GetAllAppointmentsAsync()
@@ -29,7 +35,7 @@ namespace WebApplication1.Services.Implementations.AppointmentService
             return appointment == null ? null : MapToDto(appointment);
         }
 
-        public async Task AddAppointmentAsync(AppointmentDto appointmentDto)
+        public async Task<bool> AddAppointmentAsync(AppointmentDto appointmentDto)
         {
             // Validate the BusinessId
             var business = await _businessRepository.GetByIdAsync(appointmentDto.BusinessId);
@@ -75,6 +81,13 @@ namespace WebApplication1.Services.Implementations.AppointmentService
                 throw new InvalidOperationException("The staff is not available at the requested time.");
             }
 
+            // Get the customer details
+            var customer = await _appointmentRepository.GetByCustomerIdAsync(appointmentDto.CustomerId);
+            if (customer == null)
+            {
+                throw new ArgumentException("Invalid CustomerId");
+            }
+
             var appointment = new Appointment
             {
                 CustomerId = appointmentDto.CustomerId,
@@ -92,7 +105,24 @@ namespace WebApplication1.Services.Implementations.AppointmentService
                 }).ToList()
             };
 
+            // Try to send the email first
+            var subject = "Appointment Confirmation";
+            var body = $"Your appointment for {appointmentDto.AppointmentTime} has been confirmed.";
+            var emailSent = await _emailService.SendEmailAsync(customer.Email, subject, body);
+
+            if (!emailSent)
+            {
+                return false;
+            }
+
+            // Save the appointment if the email was sent successfully
             await _appointmentRepository.AddAppointmentAsync(appointment);
+
+            // Schedule SMS reminder
+            var sendTime = appointment.AppointmentTime.AddDays(-1);
+            BackgroundJob.Schedule(() => _smsService.SendSmsAsync(customer.Phone, $"Reminder: You have an appointment on {appointmentDto.AppointmentTime}."), sendTime);
+
+            return true;
         }
 
         public async Task UpdateAppointmentAsync(int id, UpdateAppointmentDto updateAppointmentDto)
@@ -161,6 +191,7 @@ namespace WebApplication1.Services.Implementations.AppointmentService
                 CustomerId = appointment.CustomerId,
                 CustomerName = appointment.Customer?.Name ?? "Unknown Customer Name",
                 CustomerPhone = appointment.Customer?.Phone ?? "Unknown Customer Phone",
+                CustomerEmail = appointment.Customer?.Email?? "Unknown Customer Email",
                 BusinessId = appointment.BusinessId,
                 BusinessName = appointment.Business?.Name ?? "Unknown Business Name",
                 StaffId = appointment.StaffId,

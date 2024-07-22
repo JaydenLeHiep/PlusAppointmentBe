@@ -1,9 +1,9 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlusAppointment.Models.DTOs;
 using PlusAppointment.Models.Enums;
 using WebApplication1.Services.Interfaces.AppointmentService;
+
 
 namespace WebApplication1.Controllers.AppointmentController;
 
@@ -14,7 +14,7 @@ public class AppointmentsController : ControllerBase
 {
     private readonly IAppointmentService _appointmentService;
 
-    public AppointmentsController(IAppointmentService appointmentService)
+    public AppointmentsController(IAppointmentService appointmentService )
     {
         _appointmentService = appointmentService;
     }
@@ -50,6 +50,7 @@ public class AppointmentsController : ControllerBase
         {
             return NotFound(new { message = "You are not authorized to view this business." });
         }
+
         var appointment = await _appointmentService.GetAppointmentByIdAsync(appointmentId);
         if (appointment == null)
         {
@@ -64,10 +65,12 @@ public class AppointmentsController : ControllerBase
     {
         var userRole = HttpContext.Items["UserRole"]?.ToString();
         //var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
-        if (userRole != Role.Admin.ToString() && userRole != Role.Customer.ToString() && userRole != Role.Owner.ToString())
+        if (userRole != Role.Admin.ToString() && userRole != Role.Customer.ToString() &&
+            userRole != Role.Owner.ToString())
         {
             return NotFound(new { message = "You are not authorized to view this business." });
         }
+
         var appointments = await _appointmentService.GetAppointmentsByCustomerIdAsync(customerId);
         return Ok(appointments);
     }
@@ -105,9 +108,16 @@ public class AppointmentsController : ControllerBase
     {
         try
         {
-            // Ensure the provided AppointmentTime is treated as UTC
             appointmentDto.AppointmentTime = DateTime.SpecifyKind(appointmentDto.AppointmentTime, DateTimeKind.Utc);
-            await _appointmentService.AddAppointmentAsync(appointmentDto);
+
+            // Add the appointment and send the email
+            var appointmentAdded = await _appointmentService.AddAppointmentAsync(appointmentDto);
+
+            if (!appointmentAdded)
+            {
+                return BadRequest(new { message = "Appointment could not be added because the email was not sent." });
+            }
+
             return Ok(new { message = "Appointment added successfully" });
         }
         catch (Exception ex)
@@ -117,12 +127,14 @@ public class AppointmentsController : ControllerBase
     }
 
     [HttpPut("appointment_id={appointmentId}")]
-    public async Task<IActionResult> UpdateAppointment(int appointmentId, [FromBody] UpdateAppointmentDto updateAppointmentDto)
+    public async Task<IActionResult> UpdateAppointment(int appointmentId,
+        [FromBody] UpdateAppointmentDto updateAppointmentDto)
     {
         try
         {
             // Ensure the provided AppointmentTime is treated as UTC
-            updateAppointmentDto.AppointmentTime = DateTime.SpecifyKind(updateAppointmentDto.AppointmentTime, DateTimeKind.Utc);
+            updateAppointmentDto.AppointmentTime =
+                DateTime.SpecifyKind(updateAppointmentDto.AppointmentTime, DateTimeKind.Utc);
             await _appointmentService.UpdateAppointmentAsync(appointmentId, updateAppointmentDto);
             return Ok(new { message = "Appointment updated successfully" });
         }
@@ -141,9 +153,9 @@ public class AppointmentsController : ControllerBase
     }
 
 
-    
     [HttpPut("appointment_id={appointmentId}/status")]
-    public async Task<IActionResult> UpdateAppointmentStatus(int appointmentId, [FromBody] UpdateStatusDto updateStatusDto)
+    public async Task<IActionResult> UpdateAppointmentStatus(int appointmentId,
+        [FromBody] UpdateStatusDto updateStatusDto)
     {
         try
         {
@@ -160,7 +172,7 @@ public class AppointmentsController : ControllerBase
         }
     }
 
-    
+
     [HttpDelete("appointment_id={appointmentId}")]
     public async Task<IActionResult> DeleteAppointment(int appointmentId)
     {

@@ -49,8 +49,8 @@ namespace PlusAppointment.Controllers.CustomerController
             return Ok(new { customer.CustomerId });
         }
         
-        [HttpPost]
-        [Authorize]
+        [HttpPost("add")]
+        
         public async Task<IActionResult> AddCustomer([FromBody] CustomerDto customerDto)
         {
             try
@@ -65,7 +65,7 @@ namespace PlusAppointment.Controllers.CustomerController
         }
 
         [HttpPut("customer_id={customerId}")]
-        [Authorize]
+        
         public async Task<IActionResult> UpdateCustomer(int customerId, [FromBody] CustomerDto? customerDto)
         {
             if (customerDto == null)

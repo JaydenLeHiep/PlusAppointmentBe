@@ -1,7 +1,7 @@
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
 
-namespace WebApplication1.Repositories.Interfaces.CustomerRepo;
+namespace PlusAppointment.Repositories.Interfaces.CustomerRepo;
 
 public interface ICustomerRepository
 {

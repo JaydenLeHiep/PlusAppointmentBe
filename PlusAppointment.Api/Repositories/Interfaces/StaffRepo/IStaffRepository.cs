@@ -1,6 +1,6 @@
 using PlusAppointment.Models.Classes;
 
-namespace WebApplication1.Repositories.Interfaces.StaffRepo;
+namespace PlusAppointment.Repositories.Interfaces.StaffRepo;
 
 public interface IStaffRepository
 {

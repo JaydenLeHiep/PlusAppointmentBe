@@ -1,10 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using PlusAppointment.Data;
 using PlusAppointment.Models.Classes;
-using WebApplication1.Data;
-using WebApplication1.Repositories.Interfaces.StaffRepo;
-using WebApplication1.Utils.Redis;
+using PlusAppointment.Repositories.Interfaces.StaffRepo;
+using PlusAppointment.Utils.Redis;
 
-namespace WebApplication1.Repositories.Implementation.StaffRepo
+namespace PlusAppointment.Repositories.Implementation.StaffRepo
 {
     public class StaffRepository : IStaffRepository
     {

@@ -3,7 +3,7 @@ using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 
 
-namespace WebApplication1.Utils.SendingSms
+namespace PlusAppointment.Utils.SendingSms
 {
     public class SmsService
     {

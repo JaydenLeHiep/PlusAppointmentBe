@@ -1,12 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using PlusAppointment.Data;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
-using WebApplication1.Data;
-using WebApplication1.Repositories.Interfaces.AppointmentRepo;
-using WebApplication1.Utils.Redis;
+using PlusAppointment.Repositories.Interfaces.AppointmentRepo;
+using PlusAppointment.Utils.Redis;
 
-namespace WebApplication1.Repositories.Implementation.AppointmentRepo
+namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
 {
     public class AppointmentRepository : IAppointmentRepository
     {

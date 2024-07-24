@@ -1,6 +1,6 @@
 using PlusAppointment.Models.Classes;
 
-namespace WebApplication1.Repositories.Interfaces.UserRepo;
+namespace PlusAppointment.Repositories.Interfaces.UserRepo;
 
 public interface IUserRepository: IRepository<User>
 {

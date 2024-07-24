@@ -16,7 +16,7 @@ namespace PlusAppointment.Models.Classes
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public Role Role { get; set; }
-        public string RefreshToken { get; set; } // Add this property
+        public string RefreshToken { get; set; } = String.Empty;// Add this property
         public DateTime RefreshTokenExpiryTime { get; set; } // Add this property
 
         [JsonConverter(typeof(BusinessCollectionConverter))]

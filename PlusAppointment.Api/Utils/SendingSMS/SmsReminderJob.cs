@@ -30,6 +30,6 @@ public class SmsReminderJob
         }
 
         var smsMessage = $"Reminder: You have an appointment on {appointment.AppointmentTime}.";
-        await _smsService.SendSmsAsync(customer.Phone, smsMessage);
+        if (customer.Phone != null) await _smsService.SendSmsAsync(customer.Phone, smsMessage);
     }
 }

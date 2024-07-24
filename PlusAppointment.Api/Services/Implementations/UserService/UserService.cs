@@ -100,7 +100,12 @@ public class UserService : IUserService
             return (null, null);
         }
 
-        var userId = int.Parse(principal.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+        var userIdClaim = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userIdClaim == null || !int.TryParse(userIdClaim, out var userId))
+        {
+            return (null, null);
+        }
+
         var user = await _userRepository.GetByIdAsync(userId);
         if (user == null || user.RefreshToken != refreshToken || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
         {
@@ -116,6 +121,7 @@ public class UserService : IUserService
 
         return (newAccessToken, newRefreshToken);
     }
+
 
     
 

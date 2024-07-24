@@ -38,8 +38,8 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 .Include(a => a.Customer)
                 .Include(a => a.Business)
                 .Include(a => a.Staff)
-                .Include(a => a.AppointmentServices)
-                .ThenInclude(apptService => apptService.Service)
+                .Include(a => a.AppointmentServices)!
+                .ThenInclude(apptService => apptService.Service!)
                 .ToListAsync();
 
             // Convert AppointmentTime to local time
@@ -55,6 +55,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
         }
 
 
+
         public async Task<Appointment?> GetAppointmentByIdAsync(int appointmentId)
         {
             string cacheKey = $"appointment_{appointmentId}";
@@ -68,7 +69,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 .Include(a => a.Customer)
                 .Include(a => a.Business)
                 .Include(a => a.Staff)
-                .Include(a => a.AppointmentServices)
+                .Include(a => a.AppointmentServices)!
                 .ThenInclude(apptService => apptService.Service)
                 .FirstOrDefaultAsync(a => a.AppointmentId == appointmentId);
             if (appointment == null)
@@ -125,39 +126,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
             await UpdateAppointmentCacheAsync(appointment);
         }
 
-        public async Task UpdateAppointmentServicesMappingAsync(int appointmentId, List<Service> validServices)
-        {
-            // Begin a new transaction
-            using (var transaction = await _context.Database.BeginTransactionAsync())
-            {
-                try
-                {
-                    // Delete existing mappings
-                    var deleteQuery = "DELETE FROM AppointmentServices WHERE AppointmentId = @appointmentId";
-                    await _context.Database.ExecuteSqlRawAsync(deleteQuery,
-                        new NpgsqlParameter("@appointmentId", appointmentId));
-
-                    // Insert new mappings
-                    foreach (var service in validServices)
-                    {
-                        var insertQuery =
-                            "INSERT INTO AppointmentServices (AppointmentId, ServiceId) VALUES (@appointmentId, @serviceId)";
-                        await _context.Database.ExecuteSqlRawAsync(insertQuery,
-                            new NpgsqlParameter("@appointmentId", appointmentId),
-                            new NpgsqlParameter("@serviceId", service.ServiceId));
-                    }
-
-                    // Commit the transaction
-                    await transaction.CommitAsync();
-                }
-                catch (Exception ex)
-                {
-                    // Rollback the transaction if any error occurs
-                    await transaction.RollbackAsync();
-                    throw;
-                }
-            }
-        }
+       
 
         public async Task UpdateAppointmentWithServicesAsync(int appointmentId,
             UpdateAppointmentDto updateAppointmentDto, List<Service> validServices, TimeSpan totalDuration)
@@ -201,7 +170,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                     // Commit the transaction
                     await transaction.CommitAsync();
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     // Rollback the transaction if any error occurs
                     await transaction.RollbackAsync();
@@ -221,10 +190,11 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
             _context.Entry(appointment).Property(a => a.UpdatedAt).IsModified = true;
 
             // Ensure no changes are being tracked for the AppointmentServices collection
-            foreach (var service in appointment.AppointmentServices)
-            {
-                _context.Entry(service).State = EntityState.Unchanged;
-            }
+            if (appointment.AppointmentServices != null)
+                foreach (var service in appointment.AppointmentServices)
+                {
+                    _context.Entry(service).State = EntityState.Unchanged;
+                }
 
             await _context.SaveChangesAsync();
 
@@ -261,7 +231,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 .Include(a => a.Customer)
                 .Include(a => a.Business)
                 .Include(a => a.Staff)
-                .Include(a => a.AppointmentServices)
+                .Include(a => a.AppointmentServices)!
                 .ThenInclude(apptService => apptService.Service)
                 .Where(a => a.CustomerId == customerId && a.AppointmentTime >= startOfTodayUtc && a.Status != "Delete")
                 .ToListAsync();
@@ -296,7 +266,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 .Include(a => a.Customer)
                 .Include(a => a.Business)
                 .Include(a => a.Staff)
-                .Include(a => a.AppointmentServices)
+                .Include(a => a.AppointmentServices)!
                 .ThenInclude(apptService => apptService.Service)
                 .Where(a => a.BusinessId == businessId && a.AppointmentTime >= startOfTodayUtc && a.Status != "Delete")
                 .ToListAsync();
@@ -330,7 +300,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 .Include(a => a.Customer)
                 .Include(a => a.Business)
                 .Include(a => a.Staff)
-                .Include(a => a.AppointmentServices)
+                .Include(a => a.AppointmentServices)!
                 .ThenInclude(apptService => apptService.Service)
                 .Where(a => a.StaffId == staffId && a.AppointmentTime >= startOfTodayUtc && a.Status != "Delete")
                 .ToListAsync();
@@ -425,12 +395,15 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
             // Ensure related entities are loaded
             _context.Entry(appointment).Reference(a => a.Customer).Load();
             _context.Entry(appointment).Reference(a => a.Staff).Load();
-            _context.Entry(appointment).Collection(a => a.AppointmentServices).Query()
-                .Include(apptService => apptService.Service).Load();
+
+            if (appointment.AppointmentServices != null)
+            {
+                _context.Entry(appointment).Collection(a => a.AppointmentServices!).Query()
+                    .Include(apptService => apptService.Service).Load();
+            }
 
             var totalDuration =
-                appointment.AppointmentServices?.Sum(apptService => apptService.Service?.Duration.TotalMinutes ?? 0) ??
-                0;
+                appointment.AppointmentServices?.Sum(apptService => apptService.Service?.Duration.TotalMinutes ?? 0) ?? 0;
 
             return new AppointmentCacheDto
             {
@@ -445,10 +418,10 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 AppointmentTime = appointment.AppointmentTime,
                 Duration = TimeSpan.FromMinutes(totalDuration),
                 Status = appointment.Status,
-                ServiceIds = appointment.AppointmentServices?.Select(apptService => apptService.ServiceId).ToList() ??
-                             new List<int>()
+                ServiceIds = appointment.AppointmentServices?.Select(apptService => apptService.ServiceId).ToList() ?? new List<int>()
             };
         }
+
 
         private Appointment MapFromCacheDto(AppointmentCacheDto dto)
         {

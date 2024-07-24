@@ -100,8 +100,12 @@ public class UsersController : ControllerBase
             SameSite = SameSiteMode.Strict, // Required for cross-site cookies
             Expires = DateTime.UtcNow.AddDays(30)
         };
-        Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
-        Console.WriteLine($"Set-Cookie: refreshToken={refreshToken}; Expires={cookieOptions.Expires}; Path={cookieOptions.Path}; HttpOnly={cookieOptions.HttpOnly}; Secure={cookieOptions.Secure}; SameSite={cookieOptions.SameSite}");
+        if (refreshToken != null)
+        {
+            Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
+            Console.WriteLine(
+                $"Set-Cookie: refreshToken={refreshToken}; Expires={cookieOptions.Expires}; Path={cookieOptions.Path}; HttpOnly={cookieOptions.HttpOnly}; Secure={cookieOptions.Secure}; SameSite={cookieOptions.SameSite}");
+        }
 
         return Ok(response);
     }

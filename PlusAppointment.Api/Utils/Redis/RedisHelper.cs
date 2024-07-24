@@ -12,6 +12,11 @@ namespace PlusAppointment.Utils.Redis
         public RedisHelper(IConfiguration configuration)
         {
             var redisConnectionString = configuration.GetConnectionString("RedisConnection");
+            if (string.IsNullOrEmpty(redisConnectionString))
+            {
+                throw new ArgumentException("Redis connection string is missing in the configuration.");
+            }
+
             _connectionMultiplexer = ConnectionMultiplexer.Connect(redisConnectionString);
 
             _serializerOptions = new JsonSerializerOptions
@@ -20,6 +25,7 @@ namespace PlusAppointment.Utils.Redis
                 WriteIndented = true
             };
         }
+
 
         public async Task<T?> GetCacheAsync<T>(string key) where T : class
         {
@@ -61,7 +67,11 @@ namespace PlusAppointment.Utils.Redis
 
             foreach (var key in keys)
             {
-                await DeleteCacheAsync(key);
+                var keyString = key.ToString();
+                if (!string.IsNullOrEmpty(keyString))
+                {
+                    await DeleteCacheAsync(keyString);
+                }
             }
         }
 

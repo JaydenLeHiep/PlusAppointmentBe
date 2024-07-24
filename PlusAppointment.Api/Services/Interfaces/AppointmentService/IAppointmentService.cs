@@ -4,14 +4,14 @@ namespace PlusAppointment.Services.Interfaces.AppointmentService
 {
     public interface IAppointmentService
     {
-        Task<IEnumerable<AppointmentDto?>> GetAllAppointmentsAsync();
-        Task<AppointmentDto?> GetAppointmentByIdAsync(int id);
+        Task<IEnumerable<AppointmentRetrieveDto?>> GetAllAppointmentsAsync();
+        Task<AppointmentRetrieveDto?> GetAppointmentByIdAsync(int id);
         Task<bool> AddAppointmentAsync(AppointmentDto appointmentDto);
         Task UpdateAppointmentAsync(int id, UpdateAppointmentDto updateAppointmentDto);
         Task UpdateAppointmentStatusAsync(int id, string status);
         Task DeleteAppointmentAsync(int id);
-        Task<IEnumerable<AppointmentDto>> GetAppointmentsByCustomerIdAsync(int customerId);
-        Task<IEnumerable<AppointmentDto>> GetAppointmentsByBusinessIdAsync(int businessId);
-        Task<IEnumerable<AppointmentDto>> GetAppointmentsByStaffIdAsync(int staffId);
+        Task<IEnumerable<AppointmentRetrieveDto>> GetAppointmentsByCustomerIdAsync(int customerId);
+        Task<IEnumerable<AppointmentRetrieveDto>> GetAppointmentsByBusinessIdAsync(int businessId);
+        Task<IEnumerable<AppointmentRetrieveDto>> GetAppointmentsByStaffIdAsync(int staffId);
     }
 }

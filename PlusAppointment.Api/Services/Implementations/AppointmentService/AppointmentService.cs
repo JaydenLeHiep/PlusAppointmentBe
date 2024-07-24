@@ -25,13 +25,13 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             _smsService = smsService;
         }
 
-        public async Task<IEnumerable<AppointmentDto?>> GetAllAppointmentsAsync()
+        public async Task<IEnumerable<AppointmentRetrieveDto?>> GetAllAppointmentsAsync()
         {
             var appointments = await _appointmentRepository.GetAllAppointmentsAsync();
             return appointments.Select(a => MapToDto(a));
         }
 
-        public async Task<AppointmentDto?> GetAppointmentByIdAsync(int id)
+        public async Task<AppointmentRetrieveDto?> GetAppointmentByIdAsync(int id)
         {
             var appointment = await _appointmentRepository.GetAppointmentByIdAsync(id);
             return appointment == null ? null : MapToDto(appointment);
@@ -193,33 +193,38 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             await _appointmentRepository.DeleteAppointmentAsync(id);
         }
 
-        public async Task<IEnumerable<AppointmentDto>> GetAppointmentsByCustomerIdAsync(int customerId)
+        public async Task<IEnumerable<AppointmentRetrieveDto>> GetAppointmentsByCustomerIdAsync(int customerId)
         {
             var appointments = await _appointmentRepository.GetAppointmentsByCustomerIdAsync(customerId);
             return appointments.Select(a => MapToDto(a));
         }
 
-        public async Task<IEnumerable<AppointmentDto>> GetAppointmentsByBusinessIdAsync(int businessId)
+        public async Task<IEnumerable<AppointmentRetrieveDto>> GetAppointmentsByBusinessIdAsync(int businessId)
         {
             var appointments = await _appointmentRepository.GetAppointmentsByBusinessIdAsync(businessId);
             return appointments.Select(a => MapToDto(a));
         }
 
-        public async Task<IEnumerable<AppointmentDto>> GetAppointmentsByStaffIdAsync(int staffId)
+        public async Task<IEnumerable<AppointmentRetrieveDto>> GetAppointmentsByStaffIdAsync(int staffId)
         {
             var appointments = await _appointmentRepository.GetAppointmentsByStaffIdAsync(staffId);
             return appointments.Select(a => MapToDto(a));
         }
 
-        private AppointmentDto MapToDto(Appointment appointment)
-        {
-            var serviceIds = appointment.AppointmentServices?.Select(apptService => apptService.ServiceId).ToList() ??
-                             new List<int>();
-            var totalDuration =
-                appointment.AppointmentServices?.Sum(apptService => apptService.Service?.Duration.TotalMinutes ?? 0) ??
-                0;
 
-            return new AppointmentDto
+        private AppointmentRetrieveDto MapToDto(Appointment appointment)
+        {
+            var services = appointment.AppointmentServices?
+                .Select(apptService => new ServiceListsRetrieveDto
+                {
+                    ServiceId = apptService.ServiceId,
+                    Name = apptService.Service?.Name ?? "Unknown Service Name",
+                    Duration = apptService.Service?.Duration ?? TimeSpan.Zero
+                }).ToList() ?? new List<ServiceListsRetrieveDto>();
+
+            var totalDuration = services.Sum(service => service.Duration.HasValue ? service.Duration.Value.TotalMinutes : 0);
+
+            return new AppointmentRetrieveDto
             {
                 AppointmentId = appointment.AppointmentId,
                 CustomerId = appointment.CustomerId,
@@ -235,8 +240,9 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 Status = appointment.Status,
                 CreatedAt = appointment.CreatedAt,
                 UpdatedAt = appointment.UpdatedAt,
-                ServiceIds = serviceIds
+                Services = services
             };
         }
+
     }
 }

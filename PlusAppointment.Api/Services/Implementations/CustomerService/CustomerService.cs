@@ -1,9 +1,9 @@
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
-using WebApplication1.Repositories.Interfaces.CustomerRepo;
-using WebApplication1.Services.Interfaces.CustomerService;
+using PlusAppointment.Repositories.Interfaces.CustomerRepo;
+using PlusAppointment.Services.Interfaces.CustomerService;
 
-namespace WebApplication1.Services.Implementations.CustomerService;
+namespace PlusAppointment.Services.Implementations.CustomerService;
 
 public class CustomerService: ICustomerService
 {

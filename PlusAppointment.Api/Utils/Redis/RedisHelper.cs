@@ -2,7 +2,7 @@ using StackExchange.Redis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace WebApplication1.Utils.Redis
+namespace PlusAppointment.Utils.Redis
 {
     public class RedisHelper
     {

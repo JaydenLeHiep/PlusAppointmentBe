@@ -1,7 +1,7 @@
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
 
-namespace WebApplication1.Services.Interfaces.ServicesService
+namespace PlusAppointment.Services.Interfaces.ServicesService
 {
     public interface IServicesService
     {

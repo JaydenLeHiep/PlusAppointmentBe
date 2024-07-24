@@ -4,9 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
 using PlusAppointment.Models.Enums;
-using WebApplication1.Services.Interfaces.BusinessService;
+using PlusAppointment.Services.Interfaces.BusinessService;
 
-namespace WebApplication1.Controllers.BusinessController;
+namespace PlusAppointment.Controllers.BusinessController;
 
 [ApiController]
 [Route("api/[controller]")]

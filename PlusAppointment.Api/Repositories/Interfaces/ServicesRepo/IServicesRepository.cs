@@ -1,6 +1,6 @@
 using PlusAppointment.Models.Classes;
 
-namespace WebApplication1.Repositories.Interfaces.ServicesRepo;
+namespace PlusAppointment.Repositories.Interfaces.ServicesRepo;
 
 public interface IServicesRepository
 {

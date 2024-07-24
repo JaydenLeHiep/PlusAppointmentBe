@@ -1,8 +1,8 @@
 using PlusAppointment.Models.Classes;
-using WebApplication1.Repositories.Interfaces.BusinessRepo;
-using WebApplication1.Services.Interfaces.BusinessService;
+using PlusAppointment.Repositories.Interfaces.BusinessRepo;
+using PlusAppointment.Services.Interfaces.BusinessService;
 
-namespace WebApplication1.Services.Implementations.BusinessService;
+namespace PlusAppointment.Services.Implementations.BusinessService;
 
 public class BusinessService: IBusinessService
 {

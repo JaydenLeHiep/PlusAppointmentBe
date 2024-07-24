@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using log4net;
-using WebApplication1.Data;
+using PlusAppointment.Data;
 
-namespace WebApplication1.Controllers;
+namespace PlusAppointment.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]

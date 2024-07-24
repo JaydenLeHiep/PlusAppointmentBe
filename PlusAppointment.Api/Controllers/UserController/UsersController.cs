@@ -5,11 +5,11 @@ using Microsoft.AspNetCore.Mvc;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
 using PlusAppointment.Models.Enums;
-using WebApplication1.Services.Interfaces.UserService;
-using WebApplication1.Utils.Hash;
+using PlusAppointment.Services.Interfaces.UserService;
+using PlusAppointment.Utils.Hash;
 
 
-namespace WebApplication1.Controllers.UserController;
+namespace PlusAppointment.Controllers.UserController;
 
 [ApiController]
 [Route("api/[controller]")]

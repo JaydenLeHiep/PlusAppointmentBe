@@ -1,6 +1,6 @@
 using System.Security.Claims;
 
-namespace WebApplication1.Middleware;
+namespace PlusAppointment.Middleware;
 
 public class RoleMiddleware
 {

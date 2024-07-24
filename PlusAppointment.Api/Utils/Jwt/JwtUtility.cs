@@ -5,7 +5,7 @@ using System.Text;
 using Microsoft.IdentityModel.Tokens;
 using PlusAppointment.Models.Interfaces;
 
-namespace WebApplication1.Utils.Jwt
+namespace PlusAppointment.Utils.Jwt
 {
     public class JwtUtility
     {

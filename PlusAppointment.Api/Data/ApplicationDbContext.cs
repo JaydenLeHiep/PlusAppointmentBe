@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PlusAppointment.Models.Classes;
 
-namespace WebApplication1.Data
+namespace PlusAppointment.Data
 {
     public class ApplicationDbContext : DbContext
     {

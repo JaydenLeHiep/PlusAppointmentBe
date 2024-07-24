@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace WebApplication1.Migrations
+namespace PlusAppointment.Migrations
 {
     /// <inheritdoc />
     public partial class AddRefreshTokenToUser : Migration

@@ -1,6 +1,6 @@
 using PlusAppointment.Models.Classes;
 
-namespace WebApplication1.Services.Interfaces.UserService;
+namespace PlusAppointment.Services.Interfaces.UserService;
 
 public interface IUserService
 {

@@ -1,10 +1,10 @@
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
 using PlusAppointment.Models.Enums;
-using WebApplication1.Repositories.Interfaces.ServicesRepo;
-using WebApplication1.Services.Interfaces.ServicesService;
+using PlusAppointment.Repositories.Interfaces.ServicesRepo;
+using PlusAppointment.Services.Interfaces.ServicesService;
 
-namespace WebApplication1.Services.Implementations.ServicesService
+namespace PlusAppointment.Services.Implementations.ServicesService
 {
     public class ServicesService : IServicesService
     {

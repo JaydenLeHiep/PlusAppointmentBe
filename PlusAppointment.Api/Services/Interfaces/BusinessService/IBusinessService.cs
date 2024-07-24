@@ -1,6 +1,6 @@
 using PlusAppointment.Models.Classes;
 
-namespace WebApplication1.Services.Interfaces.BusinessService;
+namespace PlusAppointment.Services.Interfaces.BusinessService;
 
 public interface IBusinessService
 {

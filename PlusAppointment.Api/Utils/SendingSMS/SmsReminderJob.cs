@@ -1,6 +1,6 @@
-using WebApplication1.Repositories.Interfaces.AppointmentRepo;
+using PlusAppointment.Repositories.Interfaces.AppointmentRepo;
 
-namespace WebApplication1.Utils.SendingSms;
+namespace PlusAppointment.Utils.SendingSms;
 
 public class SmsReminderJob
 {

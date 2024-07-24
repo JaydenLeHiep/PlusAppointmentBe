@@ -1,13 +1,13 @@
 using Hangfire;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
-using WebApplication1.Repositories.Interfaces.AppointmentRepo;
-using WebApplication1.Repositories.Interfaces.BusinessRepo;
-using WebApplication1.Services.Interfaces.AppointmentService;
-using WebApplication1.Utils.SendingEmail;
-using WebApplication1.Utils.SendingSms;
+using PlusAppointment.Repositories.Interfaces.AppointmentRepo;
+using PlusAppointment.Repositories.Interfaces.BusinessRepo;
+using PlusAppointment.Services.Interfaces.AppointmentService;
+using PlusAppointment.Utils.SendingEmail;
+using PlusAppointment.Utils.SendingSms;
 
-namespace WebApplication1.Services.Implementations.AppointmentService
+namespace PlusAppointment.Services.Implementations.AppointmentService
 {
     public class AppointmentService : IAppointmentService
     {
@@ -35,6 +35,11 @@ namespace WebApplication1.Services.Implementations.AppointmentService
             return appointment == null ? null : MapToDto(appointment);
         }
 
+        private DateTime ConvertToLocalTime(DateTime utcTime)
+        {
+            var localTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Vienna");
+            return TimeZoneInfo.ConvertTimeFromUtc(utcTime, localTimeZone);
+        }
         public async Task<bool> AddAppointmentAsync(AppointmentDto appointmentDto)
         {
             // Validate the BusinessId
@@ -107,7 +112,8 @@ namespace WebApplication1.Services.Implementations.AppointmentService
 
             // Try to send the email first
             var subject = "Appointment Confirmation";
-            var body = $"Your appointment for {appointmentDto.AppointmentTime} has been confirmed.";
+            var localTimeAppointment = ConvertToLocalTime(appointmentDto.AppointmentTime);
+            var body = $"Your appointment for {localTimeAppointment} has been confirmed.";
             var emailSent = await _emailService.SendEmailAsync(customer.Email, subject, body);
 
             if (!emailSent)
@@ -119,8 +125,8 @@ namespace WebApplication1.Services.Implementations.AppointmentService
             await _appointmentRepository.AddAppointmentAsync(appointment);
 
             // Schedule SMS reminder
-            var sendTime = appointment.AppointmentTime.AddDays(-1);
-            BackgroundJob.Schedule(() => _smsService.SendSmsAsync(customer.Phone, $"Reminder: You have an appointment on {appointmentDto.AppointmentTime}."), sendTime);
+            var sendTime = localTimeAppointment.AddDays(-1);
+            BackgroundJob.Schedule(() => _smsService.SendSmsAsync(customer.Phone, $"Reminder: You have an appointment on {localTimeAppointment}."), sendTime);
 
             return true;
         }

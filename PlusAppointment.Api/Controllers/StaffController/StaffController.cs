@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlusAppointment.Models.DTOs;
 using PlusAppointment.Models.Enums;
-using WebApplication1.Services.Interfaces.StaffService;
+using PlusAppointment.Services.Interfaces.StaffService;
 
-namespace WebApplication1.Controllers.StaffController
+namespace PlusAppointment.Controllers.StaffController
 {
     [ApiController]
     [Route("api/[controller]")]

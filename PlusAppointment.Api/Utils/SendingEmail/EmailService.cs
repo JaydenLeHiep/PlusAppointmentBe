@@ -2,7 +2,7 @@ using Amazon;
 using Amazon.SimpleEmail;
 using Amazon.SimpleEmail.Model;
 
-namespace WebApplication1.Utils.SendingEmail
+namespace PlusAppointment.Utils.SendingEmail
 {
     public class EmailService
     {

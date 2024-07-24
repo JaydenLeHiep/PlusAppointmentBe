@@ -1,4 +1,4 @@
-namespace WebApplication1.Repositories.Interfaces;
+namespace PlusAppointment.Repositories.Interfaces;
 
 public interface IRepository<T> where T : class
 {

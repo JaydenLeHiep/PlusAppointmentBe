@@ -1,6 +1,6 @@
 using PlusAppointment.Models.DTOs;
 
-namespace WebApplication1.Services.Interfaces.AppointmentService
+namespace PlusAppointment.Services.Interfaces.AppointmentService
 {
     public interface IAppointmentService
     {

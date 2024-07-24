@@ -4,7 +4,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace WebApplication1.Migrations
+namespace PlusAppointment.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration

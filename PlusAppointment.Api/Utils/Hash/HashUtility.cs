@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-namespace WebApplication1.Utils.Hash;
+namespace PlusAppointment.Utils.Hash;
 
 public class HashUtility
 {

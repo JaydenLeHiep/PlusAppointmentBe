@@ -125,7 +125,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             // Try to send the email first
             var subject = "Appointment Confirmation";
             var localTimeAppointment = ConvertToLocalTime(appointmentDto.AppointmentTime);
-            var body = $"Your appointment for {localTimeAppointment} has been confirmed.";
+            var body = $"Plus Appointment. Your appointment at {business.Name} for {localTimeAppointment} has been sent.";
             var emailSent = await _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, body);
 
             if (!emailSent)
@@ -140,7 +140,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             var sendTime = localTimeAppointment.AddDays(-1);
             BackgroundJob.Schedule(
                 () => _smsService.SendSmsAsync(customer.Phone ?? string.Empty,
-                    $"Reminder: You have an appointment on {localTimeAppointment}."), sendTime);
+                    $"Plus Appointment Reminder: You have an appointment at {business.Name} on {localTimeAppointment}."), sendTime);
 
             return true;
         }

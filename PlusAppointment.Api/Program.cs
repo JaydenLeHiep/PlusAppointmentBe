@@ -80,6 +80,8 @@ builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddSingleton<EmailService>();
 builder.Services.AddSingleton<SmsService>();
 builder.Services.AddSingleton<RedisHelper>();
+builder.Services.AddTransient<SmsTextMagicService>();
+
 
 // Configure Redis
 var redisConnectionString = builder.Configuration.GetConnectionString("RedisConnection");

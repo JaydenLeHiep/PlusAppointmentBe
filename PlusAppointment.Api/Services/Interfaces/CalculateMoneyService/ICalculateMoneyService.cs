@@ -1,10 +1,12 @@
+using PlusAppointment.Models.Classes;
+
 namespace PlusAppointment.Services.Interfaces.CalculateMoneyService;
 
 public interface ICalculateMoneyService
 {
-    Task<decimal> GetDailyEarningsAsync(int staffId, decimal commission);
-    Task<decimal> GetWeeklyEarningsAsync(int staffId, decimal commission);
-    Task<decimal> GetMonthlyEarningsAsync(int staffId, decimal commission);
-    Task<decimal> GetDailyEarningsForSpecificDateAsync(int staffId, decimal commission, DateTime specificDate);
+    Task<EarningsResult> GetDailyEarningsAsync(int staffId, decimal commission);
+    Task<EarningsResult> GetWeeklyEarningsAsync(int staffId, decimal commission);
+    Task<EarningsResult> GetMonthlyEarningsAsync(int staffId, decimal commission);
+    Task<EarningsResult> GetDailyEarningsForSpecificDateAsync(int staffId, decimal commission, DateTime specificDate);
 
 }

@@ -14,15 +14,17 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
         private readonly IAppointmentRepository _appointmentRepository;
         private readonly IBusinessRepository _businessRepository;
         private readonly EmailService _emailService;
-        private readonly SmsService _smsService;
+        //private readonly SmsService _smsService;
+        private readonly SmsTextMagicService _smsTextMagicService;
 
         public AppointmentService(IAppointmentRepository appointmentRepository, IBusinessRepository businessRepository,
-            EmailService emailService, SmsService smsService)
+            EmailService emailService, SmsTextMagicService smsTextMagicService)
         {
             _appointmentRepository = appointmentRepository;
             _businessRepository = businessRepository;
             _emailService = emailService;
-            _smsService = smsService;
+            //_smsService = smsService;
+            _smsTextMagicService = smsTextMagicService;
         }
 
         public async Task<IEnumerable<AppointmentRetrieveDto?>> GetAllAppointmentsAsync()
@@ -123,24 +125,35 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             };
 
             // Try to send the email first
-            var subject = "Appointment Confirmation";
             var localTimeAppointment = ConvertToLocalTime(appointmentDto.AppointmentTime);
-            var body = $"Plus Appointment. Your appointment at {business.Name} for {localTimeAppointment} has been sent.";
-            var emailSent = await _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, body);
+            var subject = "Appointment Confirmation";
+            var bodySms =
+                $"Plus Appointment. Your appointment at {business.Name} for {localTimeAppointment} has been confirmed.";
 
-            if (!emailSent)
+            // Commented out the email sending code
+            // var emailSent = await _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, body);
+            // if (!emailSent)
+            // {
+            //     return false;
+            // }
+
+            // Attempt to send an SMS notification instead of email
+            var smsSent = await _smsTextMagicService.SendSmsAsync(customer.Phone ?? string.Empty, bodySms);
+            if (!smsSent)
             {
                 return false;
             }
-
-            // Save the appointment if the email was sent successfully
+            
+            var bodyEmail =
+                $"Plus Appointment. Your appointment at {business.Name} tomorrow.";
+            // Save the appointment if the SMS was sent successfully
             await _appointmentRepository.AddAppointmentAsync(appointment);
 
             // Schedule SMS reminder
             var sendTime = localTimeAppointment.AddDays(-1);
             BackgroundJob.Schedule(
-                () => _smsService.SendSmsAsync(customer.Phone ?? string.Empty,
-                    $"Plus Appointment Reminder: You have an appointment at {business.Name} on {localTimeAppointment}."), sendTime);
+                () => _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodyEmail),
+                sendTime);
 
             return true;
         }
@@ -150,7 +163,8 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
         {
             // Validate Services
             var services = await _businessRepository.GetServicesByBusinessIdAsync(updateAppointmentDto.BusinessId);
-            var validServices = services.Where(s => s != null && updateAppointmentDto.ServiceIds.Contains(s.ServiceId)).ToList();
+            var validServices = services.Where(s => s != null && updateAppointmentDto.ServiceIds.Contains(s.ServiceId))
+                .ToList();
             if (!validServices.Any())
             {
                 throw new ArgumentException("Invalid ServiceIds for the given BusinessId");
@@ -165,13 +179,13 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             // Cast validServices to a list of non-nullable Service objects
             var nonNullableValidServices = validServices.Cast<Service>().ToList();
 
-            var totalDuration = nonNullableValidServices.Aggregate(TimeSpan.Zero, (sum, next) => sum.Add(next.Duration));
+            var totalDuration =
+                nonNullableValidServices.Aggregate(TimeSpan.Zero, (sum, next) => sum.Add(next.Duration));
 
             // Update the appointment and services through the repository
-            await _appointmentRepository.UpdateAppointmentWithServicesAsync(id, updateAppointmentDto, nonNullableValidServices, totalDuration);
+            await _appointmentRepository.UpdateAppointmentWithServicesAsync(id, updateAppointmentDto,
+                nonNullableValidServices, totalDuration);
         }
-
-
 
 
         public async Task UpdateAppointmentStatusAsync(int id, string status)
@@ -222,7 +236,8 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                     Duration = apptService.Service?.Duration ?? TimeSpan.Zero
                 }).ToList() ?? new List<ServiceListsRetrieveDto>();
 
-            var totalDuration = services.Sum(service => service.Duration.HasValue ? service.Duration.Value.TotalMinutes : 0);
+            var totalDuration =
+                services.Sum(service => service.Duration.HasValue ? service.Duration.Value.TotalMinutes : 0);
 
             return new AppointmentRetrieveDto
             {
@@ -243,6 +258,5 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 Services = services
             };
         }
-
     }
 }

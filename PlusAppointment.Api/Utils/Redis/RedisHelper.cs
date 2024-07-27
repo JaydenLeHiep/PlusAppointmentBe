@@ -1,6 +1,8 @@
+using System.Globalization;
 using StackExchange.Redis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+
 
 namespace PlusAppointment.Utils.Redis
 {
@@ -26,7 +28,6 @@ namespace PlusAppointment.Utils.Redis
             };
         }
 
-
         public async Task<T?> GetCacheAsync<T>(string key) where T : class
         {
             var db = _connectionMultiplexer.GetDatabase();
@@ -34,10 +35,7 @@ namespace PlusAppointment.Utils.Redis
 
             if (!cachedData.IsNullOrEmpty)
             {
-                // Convert RedisValue to string before deserialization
                 var jsonData = cachedData.ToString();
-
-                // Additional null check to satisfy the compiler
                 if (!string.IsNullOrEmpty(jsonData))
                 {
                     return JsonSerializer.Deserialize<T>(jsonData, _serializerOptions);
@@ -112,12 +110,32 @@ namespace PlusAppointment.Utils.Redis
             }
             else
             {
-                return; // If there's no data in cache, nothing to remove
+                return;
             }
 
             list = removeFunc(list);
 
             var serializedData = JsonSerializer.Serialize(list, _serializerOptions);
+            await db.StringSetAsync(key, serializedData, expiry);
+        }
+
+        public async Task<decimal?> GetDecimalCacheAsync(string key)
+        {
+            var db = _connectionMultiplexer.GetDatabase();
+            var cachedData = await db.StringGetAsync(key);
+
+            if (!cachedData.IsNullOrEmpty)
+            {
+                return decimal.TryParse(cachedData.ToString(), out var result) ? result : (decimal?)null;
+            }
+
+            return null;
+        }
+
+        public async Task SetDecimalCacheAsync(string key, decimal value, TimeSpan? expiry = null)
+        {
+            var db = _connectionMultiplexer.GetDatabase();
+            var serializedData = value.ToString(CultureInfo.InvariantCulture);
             await db.StringSetAsync(key, serializedData, expiry);
         }
     }

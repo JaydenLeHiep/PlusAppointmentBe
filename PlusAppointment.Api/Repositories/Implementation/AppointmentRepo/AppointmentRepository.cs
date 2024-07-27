@@ -4,6 +4,7 @@ using PlusAppointment.Data;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
 using PlusAppointment.Repositories.Interfaces.AppointmentRepo;
+using PlusAppointment.Repositories.Interfaces.CalculateMoneyRepo;
 using PlusAppointment.Utils.Redis;
 
 namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
@@ -12,16 +13,18 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
     {
         private readonly ApplicationDbContext _context;
         private readonly RedisHelper _redisHelper;
+        private readonly ICalculateMoneyRepo _calculateMoneyRepo;
 
-        public AppointmentRepository(ApplicationDbContext context, RedisHelper redisHelper)
+        public AppointmentRepository(ApplicationDbContext context, RedisHelper redisHelper, ICalculateMoneyRepo calculateMoneyRepo)
         {
             _context = context;
             _redisHelper = redisHelper;
+            _calculateMoneyRepo = calculateMoneyRepo;
         }
 
         private DateTime GetStartOfTodayUtc()
         {
-            return DateTime.UtcNow.Date; // This gives the start of today in UTC (00:00 of the current day)
+            return DateTime.UtcNow.Date;
         }
 
         public async Task<IEnumerable<Appointment>> GetAllAppointmentsAsync()
@@ -42,7 +45,6 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 .ThenInclude(apptService => apptService.Service!)
                 .ToListAsync();
 
-            // Convert AppointmentTime to local time
             foreach (var appointment in appointments)
             {
                 appointment.AppointmentTime = ConvertToLocalTime(appointment.AppointmentTime);
@@ -53,8 +55,6 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
 
             return appointments;
         }
-
-
 
         public async Task<Appointment?> GetAppointmentByIdAsync(int appointmentId)
         {
@@ -84,7 +84,6 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
             return appointment;
         }
 
-
         public async Task<bool> IsStaffAvailable(int staffId, DateTime appointmentTime, TimeSpan duration)
         {
             var endTime = appointmentTime.Add(duration);
@@ -98,11 +97,11 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 var existingAppointmentEndTime = appointment.AppointmentTime.Add(appointment.Duration);
                 if (appointment.AppointmentTime < endTime && existingAppointmentEndTime > appointmentTime)
                 {
-                    return false; // Overlap found
+                    return false;
                 }
             }
 
-            return true; // No overlap
+            return true;
         }
 
         public async Task<Customer?> GetByCustomerIdAsync(int customerId)
@@ -116,6 +115,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
             await _context.SaveChangesAsync();
 
             await UpdateAppointmentCacheAsync(appointment);
+            await _calculateMoneyRepo.InvalidateEarningsCacheAsync(appointment.StaffId);
         }
 
         public async Task UpdateAppointmentAsync(Appointment appointment)
@@ -124,27 +124,23 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
             await _context.SaveChangesAsync();
 
             await UpdateAppointmentCacheAsync(appointment);
+            await _calculateMoneyRepo.InvalidateEarningsCacheAsync(appointment.StaffId);
         }
 
-       
-
-        public async Task UpdateAppointmentWithServicesAsync(int appointmentId,
-            UpdateAppointmentDto updateAppointmentDto, List<Service> validServices, TimeSpan totalDuration)
+        public async Task UpdateAppointmentWithServicesAsync(int appointmentId, UpdateAppointmentDto updateAppointmentDto, List<Service> validServices, TimeSpan totalDuration)
         {
-            // Begin a new transaction
             using (var transaction = await _context.Database.BeginTransactionAsync())
             {
                 try
                 {
-                    // Update the appointment using raw SQL
                     var updateAppointmentQuery = @"
-                UPDATE ""Appointments""
-                SET 
-                    ""AppointmentTime"" = @appointmentTime,
-                    ""Duration"" = @duration,
-                    ""Comment"" = @comment,
-                    ""UpdatedAt"" = @updatedAt
-                WHERE ""AppointmentId"" = @appointmentId";
+                        UPDATE ""Appointments""
+                        SET 
+                            ""AppointmentTime"" = @appointmentTime,
+                            ""Duration"" = @duration,
+                            ""Comment"" = @comment,
+                            ""UpdatedAt"" = @updatedAt
+                        WHERE ""AppointmentId"" = @appointmentId";
                     await _context.Database.ExecuteSqlRawAsync(updateAppointmentQuery,
                         new NpgsqlParameter("@appointmentTime", updateAppointmentDto.AppointmentTime),
                         new NpgsqlParameter("@duration", totalDuration),
@@ -152,12 +148,10 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                         new NpgsqlParameter("@updatedAt", DateTime.UtcNow),
                         new NpgsqlParameter("@appointmentId", appointmentId));
 
-                    // Delete existing mappings
                     var deleteQuery = "DELETE FROM \"AppointmentServices\" WHERE \"AppointmentId\" = @appointmentId";
                     await _context.Database.ExecuteSqlRawAsync(deleteQuery,
                         new NpgsqlParameter("@appointmentId", appointmentId));
 
-                    // Insert new mappings
                     foreach (var service in validServices)
                     {
                         var insertQuery =
@@ -167,29 +161,29 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                             new NpgsqlParameter("@serviceId", service.ServiceId));
                     }
 
-                    // Commit the transaction
                     await transaction.CommitAsync();
                 }
                 catch (Exception)
                 {
-                    // Rollback the transaction if any error occurs
                     await transaction.RollbackAsync();
                     throw;
                 }
             }
-        }
 
+            var appointment = await _context.Appointments.FindAsync(appointmentId);
+            if (appointment != null)
+            {
+                await UpdateAppointmentCacheAsync(appointment);
+                await _calculateMoneyRepo.InvalidateEarningsCacheAsync(appointment.StaffId);
+            }
+        }
 
         public async Task UpdateAppointmentStatusAsync(Appointment appointment)
         {
-            // Attach the appointment to the context
             _context.Attach(appointment);
-
-            // Mark only the Status and UpdatedAt properties as modified
             _context.Entry(appointment).Property(a => a.Status).IsModified = true;
             _context.Entry(appointment).Property(a => a.UpdatedAt).IsModified = true;
 
-            // Ensure no changes are being tracked for the AppointmentServices collection
             if (appointment.AppointmentServices != null)
                 foreach (var service in appointment.AppointmentServices)
                 {
@@ -199,8 +193,8 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
             await _context.SaveChangesAsync();
 
             await UpdateAppointmentCacheAsync(appointment);
+            await _calculateMoneyRepo.InvalidateEarningsCacheAsync(appointment.StaffId);
         }
-
 
         public async Task DeleteAppointmentAsync(int appointmentId)
         {
@@ -211,6 +205,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 await _context.SaveChangesAsync();
 
                 await InvalidateAppointmentCacheAsync(appointment);
+                await _calculateMoneyRepo.InvalidateEarningsCacheAsync(appointment.StaffId);
             }
         }
 
@@ -236,7 +231,6 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 .Where(a => a.CustomerId == customerId && a.AppointmentTime >= startOfTodayUtc && a.Status != "Delete")
                 .ToListAsync();
 
-            // Convert AppointmentTime to local time
             foreach (var appointment in appointments)
             {
                 appointment.AppointmentTime = ConvertToLocalTime(appointment.AppointmentTime);
@@ -247,7 +241,6 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
 
             return appointments;
         }
-
 
         public async Task<IEnumerable<Appointment>> GetAppointmentsByBusinessIdAsync(int businessId)
         {
@@ -271,7 +264,6 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 .Where(a => a.BusinessId == businessId && a.AppointmentTime >= startOfTodayUtc && a.Status != "Delete")
                 .ToListAsync();
 
-            // Convert AppointmentTime to local time
             foreach (var appointment in appointments)
             {
                 appointment.AppointmentTime = ConvertToLocalTime(appointment.AppointmentTime);
@@ -305,7 +297,6 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 .Where(a => a.StaffId == staffId && a.AppointmentTime >= startOfTodayUtc && a.Status != "Delete")
                 .ToListAsync();
 
-            // Convert AppointmentTime to local time
             foreach (var appointment in appointments)
             {
                 appointment.AppointmentTime = ConvertToLocalTime(appointment.AppointmentTime);
@@ -317,14 +308,11 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
             return appointments;
         }
 
-
         private async Task UpdateAppointmentCacheAsync(Appointment appointment)
         {
             var appointmentCacheKey = $"appointment_{appointment.AppointmentId}";
             var appointmentCacheDto = MapToCacheDto(appointment);
             await _redisHelper.SetCacheAsync(appointmentCacheKey, appointmentCacheDto, TimeSpan.FromMinutes(10));
-
-            // Since AppointmentCacheDto includes fields like CustomerName, StaffName, etc., we don't need to update those separately.
 
             await _redisHelper.UpdateListCacheAsync<AppointmentCacheDto>(
                 $"appointments_customer_{appointment.CustomerId}",
@@ -392,7 +380,6 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
 
         private AppointmentCacheDto MapToCacheDto(Appointment appointment)
         {
-            // Ensure related entities are loaded
             _context.Entry(appointment).Reference(a => a.Customer).Load();
             _context.Entry(appointment).Reference(a => a.Staff).Load();
 
@@ -421,7 +408,6 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 ServiceIds = appointment.AppointmentServices?.Select(apptService => apptService.ServiceId).ToList() ?? new List<int>()
             };
         }
-
 
         private Appointment MapFromCacheDto(AppointmentCacheDto dto)
         {
@@ -452,11 +438,11 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                     { ServiceId = service.ServiceId, Service = service }).ToList()
             };
         }
+
         private DateTime ConvertToLocalTime(DateTime utcTime)
         {
             var localTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Vienna");
             return TimeZoneInfo.ConvertTimeFromUtc(utcTime, localTimeZone);
         }
-
     }
 }

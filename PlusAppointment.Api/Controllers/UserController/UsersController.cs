@@ -135,7 +135,7 @@ namespace PlusAppointment.Controllers.UserController
         {
             try
             {
-                await _userService.UpdateUserAsync(userId, userUpdateDto);
+                if (userUpdateDto != null) await _userService.UpdateUserAsync(userId, userUpdateDto);
                 return Ok(new { message = "User updated successfully." });
             }
             catch (Exception ex)

@@ -1,49 +1,18 @@
 version: '3.8'
 
 services:
-  db:
-    image: hieplecoding/plus_appointments_database:latest
-    container_name: plus_appointments_database
-    environment:
-      POSTGRES_DB: plus_appointments_database
-      POSTGRES_USER: hieple
-      POSTGRES_PASSWORD: hieple
-    ports:
-      - "5434:5432"
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    networks:
-      - plus_network
-
-  redis:
-    image: hieplecoding/plus_appointments_redis:latest
-    container_name: plus_appointments_redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - plus_network
-
   web:
     image: hieplecoding/plus_appointments_web:latest
-    container_name: plus_appointments_web
     ports:
-      - "8080:8080"
-    depends_on:
-      - db
-      - redis
+      - "8080:80"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=db;Database=plus_appointments_database;Username=hieple;Password=hieple
-      - ConnectionStrings__RedisConnection=plus_appointments_redis:6379
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Host=database-postgre-plus-appointment.c7q2waoq0gkz.eu-central-1.rds.amazonaws.com;Port=5432;Database=plus_appointments_database;Username=postgres;Password=your_password
+      - ConnectionStrings__RedisConnection=clustercfg.plusappointmentredis.bypyrn.euc1.cache.amazonaws.com:6379
     networks:
       - plus_network
 
 networks:
   plus_network:
     driver: bridge
-
-volumes:
-  db_data:
-  redis_data:

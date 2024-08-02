@@ -253,6 +253,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 AppointmentTime = appointment.AppointmentTime,
                 Duration = TimeSpan.FromMinutes(totalDuration),
                 Status = appointment.Status,
+                Comment = appointment.Comment,
                 CreatedAt = appointment.CreatedAt,
                 UpdatedAt = appointment.UpdatedAt,
                 Services = services

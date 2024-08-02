@@ -404,6 +404,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 StaffPhone = appointment.Staff?.Phone ?? string.Empty,
                 AppointmentTime = appointment.AppointmentTime,
                 Duration = TimeSpan.FromMinutes(totalDuration),
+                Comment = appointment.Comment ?? string.Empty,
                 Status = appointment.Status,
                 ServiceIds = appointment.AppointmentServices?.Select(apptService => apptService.ServiceId).ToList() ?? new List<int>()
             };

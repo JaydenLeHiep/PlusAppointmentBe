@@ -130,4 +130,10 @@ public class CustomerService: ICustomerService
     {
         await _customerRepository.DeleteCustomerAsync(id);
     }
+    
+    public async Task<IEnumerable<Customer>> SearchCustomersByNameOrPhoneAsync(string searchTerm)
+    {
+        var customers = await _customerRepository.SearchCustomersByNameOrPhoneAsync(searchTerm);
+        return customers.Where(c => c != null)!; // Filter out null values
+    }
 }

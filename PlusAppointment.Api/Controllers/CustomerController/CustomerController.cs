@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlusAppointment.Models.DTOs;
 using PlusAppointment.Services.Interfaces.CustomerService;
+using PlusAppointment.Models.Classes;
 
 namespace PlusAppointment.Controllers.CustomerController
 {
@@ -105,6 +106,27 @@ namespace PlusAppointment.Controllers.CustomerController
             {
                 return NotFound(new { message = ex.Message });
             }
+        }
+        
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchByNameOrPhone([FromQuery(Name = "name")] string searchTerm)
+        {
+            var customers = await _customerService.SearchCustomersByNameOrPhoneAsync(searchTerm);
+
+            if (!customers.Any())
+            {
+                return Ok(new 
+                { 
+                    message = "No customers found with the given search term.",
+                    customers = new List<Customer>() // Return an empty list for consistency
+                });
+            }
+
+            return Ok(new 
+            { 
+                message = "Customers found.",
+                customers = customers
+            });
         }
     }
 }

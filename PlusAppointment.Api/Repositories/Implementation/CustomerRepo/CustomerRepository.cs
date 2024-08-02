@@ -160,5 +160,26 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 },
                 TimeSpan.FromMinutes(10));
         }
+        
+        public async Task<IEnumerable<Customer?>> SearchCustomersByNameOrPhoneAsync(string searchTerm)
+        {
+            string cacheKey = $"customer_search_{searchTerm.ToLower()}";
+            var cachedCustomers = await _redisHelper.GetCacheAsync<List<Customer?>>(cacheKey);
+
+            if (cachedCustomers != null && cachedCustomers.Any())
+            {
+                return cachedCustomers;
+            }
+
+            var customers = await _context.Customers
+                .Where(c => c != null &&
+                            (c.Name != null && c.Name.ToLower().Contains(searchTerm.ToLower()) || 
+                             c.Phone != null && c.Phone.Contains(searchTerm)))
+                .ToListAsync();
+            
+            await _redisHelper.SetCacheAsync(cacheKey, customers, TimeSpan.FromMinutes(10));
+
+            return customers;
+        }
     }
 }

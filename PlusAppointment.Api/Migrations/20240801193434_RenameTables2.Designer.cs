@@ -12,8 +12,8 @@ using PlusAppointment.Data;
 namespace PlusAppointment.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240719130639_AddRefreshTokenToUser")]
-    partial class AddRefreshTokenToUser
+    [Migration("20240801193434_RenameTables2")]
+    partial class RenameTables2
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -69,7 +69,7 @@ namespace PlusAppointment.Migrations
 
                     b.HasIndex("StaffId");
 
-                    b.ToTable("Appointments");
+                    b.ToTable("appointments", (string)null);
                 });
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.AppointmentServiceMapping", b =>
@@ -84,7 +84,7 @@ namespace PlusAppointment.Migrations
 
                     b.HasIndex("ServiceId");
 
-                    b.ToTable("AppointmentServices");
+                    b.ToTable("appointment_services", (string)null);
                 });
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.Business", b =>
@@ -118,7 +118,7 @@ namespace PlusAppointment.Migrations
 
                     b.HasIndex("UserID");
 
-                    b.ToTable("Businesses");
+                    b.ToTable("businesses", (string)null);
                 });
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.Customer", b =>
@@ -140,7 +140,7 @@ namespace PlusAppointment.Migrations
 
                     b.HasKey("CustomerId");
 
-                    b.ToTable("Customers");
+                    b.ToTable("customers", (string)null);
                 });
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.Service", b =>
@@ -172,7 +172,7 @@ namespace PlusAppointment.Migrations
 
                     b.HasIndex("BusinessId");
 
-                    b.ToTable("Services");
+                    b.ToTable("services", (string)null);
                 });
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.Staff", b =>
@@ -206,7 +206,7 @@ namespace PlusAppointment.Migrations
 
                     b.HasIndex("BusinessId");
 
-                    b.ToTable("Staffs");
+                    b.ToTable("staffs", (string)null);
                 });
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.User", b =>
@@ -251,7 +251,7 @@ namespace PlusAppointment.Migrations
 
                     b.HasKey("UserId");
 
-                    b.ToTable("Users");
+                    b.ToTable("users", (string)null);
                 });
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.Appointment", b =>

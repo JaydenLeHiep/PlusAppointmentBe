@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PlusAppointment.Data;
@@ -11,9 +12,11 @@ using PlusAppointment.Data;
 namespace PlusAppointment.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240801171612_RenameTables")]
+    partial class RenameTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -26,47 +29,37 @@ namespace PlusAppointment.Migrations
                 {
                     b.Property<int>("AppointmentId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("appointment_id");
+                        .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AppointmentId"));
 
                     b.Property<DateTime>("AppointmentTime")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("appointment_time");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("BusinessId")
-                        .HasColumnType("integer")
-                        .HasColumnName("business_id");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Comment")
-                        .HasColumnType("text")
-                        .HasColumnName("comment");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("CustomerId")
-                        .HasColumnType("integer")
-                        .HasColumnName("customer_id");
+                        .HasColumnType("integer");
 
                     b.Property<TimeSpan>("Duration")
-                        .HasColumnType("interval")
-                        .HasColumnName("duration");
+                        .HasColumnType("interval");
 
                     b.Property<int>("StaffId")
-                        .HasColumnType("integer")
-                        .HasColumnName("staff_id");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("status");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("AppointmentId");
 
@@ -82,12 +75,10 @@ namespace PlusAppointment.Migrations
             modelBuilder.Entity("PlusAppointment.Models.Classes.AppointmentServiceMapping", b =>
                 {
                     b.Property<int>("AppointmentId")
-                        .HasColumnType("integer")
-                        .HasColumnName("appointment_id");
+                        .HasColumnType("integer");
 
                     b.Property<int>("ServiceId")
-                        .HasColumnType("integer")
-                        .HasColumnName("service_id");
+                        .HasColumnType("integer");
 
                     b.HasKey("AppointmentId", "ServiceId");
 
@@ -100,34 +91,28 @@ namespace PlusAppointment.Migrations
                 {
                     b.Property<int>("BusinessId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("business_id");
+                        .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("BusinessId"));
 
                     b.Property<string>("Address")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("address");
+                        .HasColumnType("text");
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("email");
+                        .HasColumnType("text");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
+                        .HasColumnType("text");
 
                     b.Property<string>("Phone")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("phone");
+                        .HasColumnType("text");
 
                     b.Property<int>("UserID")
-                        .HasColumnType("integer")
-                        .HasColumnName("user_id");
+                        .HasColumnType("integer");
 
                     b.HasKey("BusinessId");
 
@@ -140,22 +125,18 @@ namespace PlusAppointment.Migrations
                 {
                     b.Property<int>("CustomerId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("customer_id");
+                        .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("CustomerId"));
 
                     b.Property<string>("Email")
-                        .HasColumnType("text")
-                        .HasColumnName("email");
+                        .HasColumnType("text");
 
                     b.Property<string>("Name")
-                        .HasColumnType("text")
-                        .HasColumnName("name");
+                        .HasColumnType("text");
 
                     b.Property<string>("Phone")
-                        .HasColumnType("text")
-                        .HasColumnName("phone");
+                        .HasColumnType("text");
 
                     b.HasKey("CustomerId");
 
@@ -166,32 +147,26 @@ namespace PlusAppointment.Migrations
                 {
                     b.Property<int>("ServiceId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("service_id");
+                        .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ServiceId"));
 
                     b.Property<int>("BusinessId")
-                        .HasColumnType("integer")
-                        .HasColumnName("business_id");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("description");
+                        .HasColumnType("text");
 
                     b.Property<TimeSpan>("Duration")
-                        .HasColumnType("interval")
-                        .HasColumnName("duration");
+                        .HasColumnType("interval");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
+                        .HasColumnType("text");
 
                     b.Property<decimal>("Price")
-                        .HasColumnType("numeric")
-                        .HasColumnName("price");
+                        .HasColumnType("numeric");
 
                     b.HasKey("ServiceId");
 
@@ -204,34 +179,28 @@ namespace PlusAppointment.Migrations
                 {
                     b.Property<int>("StaffId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("staff_id");
+                        .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("StaffId"));
 
                     b.Property<int>("BusinessId")
-                        .HasColumnType("integer")
-                        .HasColumnName("business_id");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("email");
+                        .HasColumnType("text");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
+                        .HasColumnType("text");
 
                     b.Property<string>("Password")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("password");
+                        .HasColumnType("text");
 
                     b.Property<string>("Phone")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("phone");
+                        .HasColumnType("text");
 
                     b.HasKey("StaffId");
 
@@ -244,51 +213,41 @@ namespace PlusAppointment.Migrations
                 {
                     b.Property<int>("UserId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("user_id");
+                        .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("UserId"));
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("email");
+                        .HasColumnType("text");
 
                     b.Property<string>("Password")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("password");
+                        .HasColumnType("text");
 
                     b.Property<string>("Phone")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("phone");
+                        .HasColumnType("text");
 
                     b.Property<string>("RefreshToken")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("refresh_token");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("RefreshTokenExpiryTime")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("refresh_token_expiry_time");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Role")
-                        .HasColumnType("integer")
-                        .HasColumnName("role");
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Username")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("username");
+                        .HasColumnType("text");
 
                     b.HasKey("UserId");
 

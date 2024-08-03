@@ -22,6 +22,68 @@ namespace PlusAppointment.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            // Configure table names to be lowercase
+            modelBuilder.Entity<User>().ToTable("users");
+            modelBuilder.Entity<Business>().ToTable("businesses");
+            modelBuilder.Entity<Appointment>().ToTable("appointments");
+            modelBuilder.Entity<Service>().ToTable("services");
+            modelBuilder.Entity<Staff>().ToTable("staffs");
+            modelBuilder.Entity<Customer>().ToTable("customers");
+            modelBuilder.Entity<AppointmentServiceMapping>().ToTable("appointment_services");
+
+            // Configure column names to be lowercase
+            modelBuilder.Entity<User>().Property(u => u.UserId).HasColumnName("user_id");
+            modelBuilder.Entity<User>().Property(u => u.Username).HasColumnName("username");
+            modelBuilder.Entity<User>().Property(u => u.Password).HasColumnName("password");
+            modelBuilder.Entity<User>().Property(u => u.Email).HasColumnName("email");
+            modelBuilder.Entity<User>().Property(u => u.CreatedAt).HasColumnName("created_at");
+            modelBuilder.Entity<User>().Property(u => u.UpdatedAt).HasColumnName("updated_at");
+            modelBuilder.Entity<User>().Property(u => u.Role).HasColumnName("role");
+            modelBuilder.Entity<User>().Property(u => u.Phone).HasColumnName("phone");
+            modelBuilder.Entity<User>().Property(u => u.RefreshToken).HasColumnName("refresh_token");
+            modelBuilder.Entity<User>().Property(u => u.RefreshTokenExpiryTime).HasColumnName("refresh_token_expiry_time");
+
+            modelBuilder.Entity<Business>().Property(b => b.BusinessId).HasColumnName("business_id");
+            modelBuilder.Entity<Business>().Property(b => b.Name).HasColumnName("name");
+            modelBuilder.Entity<Business>().Property(b => b.Address).HasColumnName("address");
+            modelBuilder.Entity<Business>().Property(b => b.Phone).HasColumnName("phone");
+            modelBuilder.Entity<Business>().Property(b => b.Email).HasColumnName("email");
+            modelBuilder.Entity<Business>().Property(b => b.UserID).HasColumnName("user_id");
+
+            modelBuilder.Entity<Appointment>().Property(a => a.AppointmentId).HasColumnName("appointment_id");
+            modelBuilder.Entity<Appointment>().Property(a => a.CustomerId).HasColumnName("customer_id");
+            modelBuilder.Entity<Appointment>().Property(a => a.BusinessId).HasColumnName("business_id");
+            modelBuilder.Entity<Appointment>().Property(a => a.StaffId).HasColumnName("staff_id");
+            modelBuilder.Entity<Appointment>().Property(a => a.AppointmentTime).HasColumnName("appointment_time");
+            modelBuilder.Entity<Appointment>().Property(a => a.Duration).HasColumnName("duration");
+            modelBuilder.Entity<Appointment>().Property(a => a.Status).HasColumnName("status");
+            modelBuilder.Entity<Appointment>().Property(a => a.CreatedAt).HasColumnName("created_at");
+            modelBuilder.Entity<Appointment>().Property(a => a.UpdatedAt).HasColumnName("updated_at");
+            modelBuilder.Entity<Appointment>().Property(a => a.Comment).HasColumnName("comment");
+
+            modelBuilder.Entity<Service>().Property(s => s.ServiceId).HasColumnName("service_id");
+            modelBuilder.Entity<Service>().Property(s => s.Name).HasColumnName("name");
+            modelBuilder.Entity<Service>().Property(s => s.Description).HasColumnName("description");
+            modelBuilder.Entity<Service>().Property(s => s.Duration).HasColumnName("duration");
+            modelBuilder.Entity<Service>().Property(s => s.Price).HasColumnName("price");
+            modelBuilder.Entity<Service>().Property(s => s.BusinessId).HasColumnName("business_id");
+
+            modelBuilder.Entity<Staff>().Property(s => s.StaffId).HasColumnName("staff_id");
+            modelBuilder.Entity<Staff>().Property(s => s.BusinessId).HasColumnName("business_id");
+            modelBuilder.Entity<Staff>().Property(s => s.Name).HasColumnName("name");
+            modelBuilder.Entity<Staff>().Property(s => s.Email).HasColumnName("email");
+            modelBuilder.Entity<Staff>().Property(s => s.Phone).HasColumnName("phone");
+            modelBuilder.Entity<Staff>().Property(s => s.Password).HasColumnName("password");
+
+            modelBuilder.Entity<Customer>().Property(c => c.CustomerId).HasColumnName("customer_id");
+            modelBuilder.Entity<Customer>().Property(c => c.Name).HasColumnName("name");
+            modelBuilder.Entity<Customer>().Property(c => c.Email).HasColumnName("email");
+            modelBuilder.Entity<Customer>().Property(c => c.Phone).HasColumnName("phone");
+
+            modelBuilder.Entity<AppointmentServiceMapping>().Property(apptService => apptService.AppointmentId).HasColumnName("appointment_id");
+            modelBuilder.Entity<AppointmentServiceMapping>().Property(apptService => apptService.ServiceId).HasColumnName("service_id");
+
+            // Configure relationships
             modelBuilder.Entity<Business>()
                 .HasOne(b => b.User)
                 .WithMany(u => u.Businesses)

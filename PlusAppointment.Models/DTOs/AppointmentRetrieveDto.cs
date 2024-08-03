@@ -16,7 +16,7 @@ public class AppointmentRetrieveDto
     public string Status { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
-    public string? Comment { get; set; }
+    public string Comment { get; set; } = string.Empty;
     public List<ServiceListsRetrieveDto>? Services { get; set; }
 }
 public class ServiceListsRetrieveDto

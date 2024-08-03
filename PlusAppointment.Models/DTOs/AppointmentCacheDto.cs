@@ -10,6 +10,7 @@ public class AppointmentCacheDto
     public string StaffPhone { get; set; } = string.Empty;
     public DateTime AppointmentTime { get; set; }
     public TimeSpan Duration { get; set; }
+    public string Comment { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public List<int> ServiceIds { get; set; } = new List<int>();
 }

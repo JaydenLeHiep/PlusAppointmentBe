@@ -435,6 +435,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 AppointmentTime = dto.AppointmentTime,
                 Duration = dto.Duration,
                 Status = dto.Status,
+                Comment = dto.Comment,
                 AppointmentServices = services.Select(service => new AppointmentServiceMapping
                     { ServiceId = service.ServiceId, Service = service }).ToList()
             };

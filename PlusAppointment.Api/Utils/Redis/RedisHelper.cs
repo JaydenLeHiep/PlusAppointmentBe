@@ -20,6 +20,7 @@ namespace PlusAppointment.Utils.Redis
             }
 
             _connectionMultiplexer = ConnectionMultiplexer.Connect(redisConnectionString);
+            
 
             _serializerOptions = new JsonSerializerOptions
             {

@@ -12,8 +12,7 @@ namespace PlusAppointment.Repositories.Interfaces.AppointmentRepo
         Task UpdateAppointmentStatusAsync(Appointment appointment);
         
 
-        Task UpdateAppointmentWithServicesAsync(int appointmentId, UpdateAppointmentDto updateAppointmentDto,
-            List<Service> validServices, TimeSpan totalDuration);
+        Task UpdateAppointmentWithServicesAsync(int appointmentId, UpdateAppointmentDto updateAppointmentDto);
         Task DeleteAppointmentAsync(int appointmentId);
         Task<IEnumerable<Appointment>> GetAppointmentsByCustomerIdAsync(int customerId);
         Task<IEnumerable<Appointment>> GetAppointmentsByBusinessIdAsync(int businessId);

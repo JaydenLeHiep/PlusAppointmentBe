@@ -138,11 +138,12 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             // }
 
             // Attempt to send an SMS notification instead of email
-            var smsSent = await _smsTextMagicService.SendSmsAsync(customer.Phone ?? string.Empty, bodySms);
-            if (!smsSent)
-            {
-                return false;
-            }
+            // uncomment when going to production
+            // var smsSent = await _smsTextMagicService.SendSmsAsync(customer.Phone ?? string.Empty, bodySms);
+            // if (!smsSent)
+            // {
+            //     return false;
+            // }
             
             var bodyEmail =
                 $"Plus Appointment. Your appointment at {business.Name} tomorrow.";

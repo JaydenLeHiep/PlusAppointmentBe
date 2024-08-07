@@ -161,30 +161,10 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
         public async Task UpdateAppointmentAsync(int id, UpdateAppointmentDto updateAppointmentDto)
         {
-            // Validate Services
-            var services = await _businessRepository.GetServicesByBusinessIdAsync(updateAppointmentDto.BusinessId);
-            var validServices = services.Where(s => s != null && updateAppointmentDto.ServiceIds.Contains(s.ServiceId))
-                .ToList();
-            if (!validServices.Any())
-            {
-                throw new ArgumentException("Invalid ServiceIds for the given BusinessId");
-            }
-
-            // Check if any service in validServices is null
-            if (validServices.Any(service => service == null))
-            {
-                throw new ArgumentException("One or more services are invalid.");
-            }
-
-            // Cast validServices to a list of non-nullable Service objects
-            var nonNullableValidServices = validServices.Cast<Service>().ToList();
-
-            var totalDuration =
-                nonNullableValidServices.Aggregate(TimeSpan.Zero, (sum, next) => sum.Add(next.Duration));
-
+            // No need to validate services here as it's handled on the frontend
+    
             // Update the appointment and services through the repository
-            await _appointmentRepository.UpdateAppointmentWithServicesAsync(id, updateAppointmentDto,
-                nonNullableValidServices, totalDuration);
+            await _appointmentRepository.UpdateAppointmentWithServicesAsync(id, updateAppointmentDto);
         }
 
 

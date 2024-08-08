@@ -88,20 +88,40 @@ builder.Services.AddSingleton<SmsService>();
 builder.Services.AddSingleton<RedisHelper>();
 builder.Services.AddTransient<SmsTextMagicService>();
 
-
 // Configure Redis
 var redisConnectionString = builder.Configuration.GetConnectionString("RedisConnection");
 
 if (string.IsNullOrEmpty(redisConnectionString))
 {
+    Console.WriteLine("Redis connection string is not configured.");
     throw new InvalidOperationException("Redis connection string is not configured.");
 }
 
-var configurationOptions = ConfigurationOptions.Parse(redisConnectionString);
-configurationOptions.AbortOnConnectFail = false;
-var redis = ConnectionMultiplexer.Connect(configurationOptions);
+ConfigurationOptions configurationOptions;
+try
+{
+    configurationOptions = ConfigurationOptions.Parse(redisConnectionString);
+    configurationOptions.AbortOnConnectFail = false;
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Failed to parse Redis connection string: {ex.Message}");
+    throw;
+}
 
-builder.Services.AddSingleton<IConnectionMultiplexer>(redis);
+IConnectionMultiplexer redis;
+try
+{
+    redis = ConnectionMultiplexer.Connect(configurationOptions);
+    Console.WriteLine("Successfully connected to Redis.");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Failed to connect to Redis: {ex.Message}");
+    throw;
+}
+
+builder.Services.AddSingleton(redis);
 
 // Configure Hangfire to use In-Memory storage
 builder.Services.AddHangfire(config =>

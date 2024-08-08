@@ -121,7 +121,7 @@ namespace PlusAppointment.Controllers.UserController
             {
                 HttpOnly = true,
                 Secure = false, // Change to true in production (HTTPS)
-                SameSite = SameSiteMode.Strict, // Required for cross-site cookies
+                SameSite = SameSiteMode.Lax, // Required for cross-site cookies
                 Expires = DateTime.UtcNow.AddDays(30)
             };
             Response.Cookies.Append("refreshToken", newRefreshToken, cookieOptions);

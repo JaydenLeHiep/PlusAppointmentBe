@@ -16,11 +16,22 @@ namespace PlusAppointment.Utils.Redis
             var redisConnectionString = configuration.GetConnectionString("RedisConnection");
             if (string.IsNullOrEmpty(redisConnectionString))
             {
+                Console.WriteLine("Redis connection string is missing in the configuration.");
                 throw new ArgumentException("Redis connection string is missing in the configuration.");
             }
 
-            _connectionMultiplexer = ConnectionMultiplexer.Connect(redisConnectionString);
-            
+            try
+            {
+                var configurationOptions = ConfigurationOptions.Parse(redisConnectionString);
+                configurationOptions.AbortOnConnectFail = false;
+                _connectionMultiplexer = ConnectionMultiplexer.Connect(configurationOptions);
+                Console.WriteLine("Successfully connected to Redis.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to connect to Redis: {ex.Message}");
+                throw;
+            }
 
             _serializerOptions = new JsonSerializerOptions
             {
@@ -61,7 +72,7 @@ namespace PlusAppointment.Utils.Redis
 
         public async Task DeleteKeysByPatternAsync(string pattern)
         {
-            var server = _connectionMultiplexer.GetServer(_connectionMultiplexer.Configuration);
+            var server = _connectionMultiplexer.GetServer(_connectionMultiplexer.GetEndPoints()[0]);
             var keys = server.Keys(pattern: pattern);
 
             foreach (var key in keys)

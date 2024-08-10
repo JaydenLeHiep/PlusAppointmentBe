@@ -82,6 +82,14 @@ namespace PlusAppointment.Controllers.UserController
             };
 
             // Setting the refresh token as HTTP-only cookie
+            // for PRODUCTION!!
+            // var cookieOptions = new CookieOptions
+            // {
+            //     HttpOnly = true,
+            //     Secure = true, // Change to true in production (HTTPS)
+            //     SameSite = SameSiteMode.None, // Required for cross-site cookies
+            //     Expires = DateTime.UtcNow.AddDays(30)
+            // };
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = true,
@@ -117,11 +125,19 @@ namespace PlusAppointment.Controllers.UserController
             }
 
             // Update the refresh token cookie
+            // for PRODUCTION!!
+            // var cookieOptions = new CookieOptions
+            // {
+            //     HttpOnly = true,
+            //     Secure = true, // Change to true in production (HTTPS)
+            //     SameSite = SameSiteMode.None, // Required for cross-site cookies
+            //     Expires = DateTime.UtcNow.AddDays(30)
+            // };
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = true,
                 Secure = false, // Change to true in production (HTTPS)
-                SameSite = SameSiteMode.Lax, // Required for cross-site cookies
+                SameSite = SameSiteMode.Strict, // Required for cross-site cookies
                 Expires = DateTime.UtcNow.AddDays(30)
             };
             Response.Cookies.Append("refreshToken", newRefreshToken, cookieOptions);

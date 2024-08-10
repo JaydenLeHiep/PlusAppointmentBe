@@ -177,12 +177,16 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontendOnly", builder =>
     {
-        builder.WithOrigins("http://localhost:3000", "http://18.159.214.207", "http://plus-appointments-alb-1330428496.eu-central-1.elb.amazonaws.com")
-               .AllowAnyMethod()
-               .AllowAnyHeader()
-               .AllowCredentials();
+        builder.WithOrigins("http://localhost:3000", 
+                "http://18.159.214.207", 
+                "http://plus-appointments-alb-1330428496.eu-central-1.elb.amazonaws.com",
+                "https://plus-appointment.com")
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
     });
 });
+
 
 var app = builder.Build();
 

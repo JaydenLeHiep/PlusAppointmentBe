@@ -43,15 +43,15 @@ namespace PlusAppointment.Services.Implementations.StaffService
         {
             ValidateStaffDto(staffDto);
 
-            if (staffDto.Email != null && await _staffRepository.EmailExistsAsync(staffDto.Email))
-            {
-                throw new Exception("Email already exists");
-            }
-
-            if (staffDto.Phone != null && await _staffRepository.PhoneExistsAsync(staffDto.Phone))
-            {
-                throw new Exception("Phone number already exists");
-            }
+            // if (staffDto.Email != null && await _staffRepository.EmailExistsAsync(staffDto.Email))
+            // {
+            //     throw new Exception("Email already exists");
+            // }
+            //
+            // if (staffDto.Phone != null && await _staffRepository.PhoneExistsAsync(staffDto.Phone))
+            // {
+            //     throw new Exception("Phone number already exists");
+            // }
 
             var staff = CreateStaffFromDto(staffDto, staffDto.BusinessId);
 
@@ -158,15 +158,15 @@ namespace PlusAppointment.Services.Implementations.StaffService
                 throw new ArgumentNullException(nameof(staffDto), "Staff DTO cannot be null");
             }
 
-            if (string.IsNullOrEmpty(staffDto.Email))
-            {
-                throw new ArgumentException("Email cannot be null or empty.", nameof(staffDto.Email));
-            }
-
-            if (string.IsNullOrEmpty(staffDto.Phone))
-            {
-                throw new ArgumentException("Phone cannot be null or empty.", nameof(staffDto.Phone));
-            }
+            // if (string.IsNullOrEmpty(staffDto.Email))
+            // {
+            //     throw new ArgumentException("Email cannot be null or empty.", nameof(staffDto.Email));
+            // }
+            //
+            // if (string.IsNullOrEmpty(staffDto.Phone))
+            // {
+            //     throw new ArgumentException("Phone cannot be null or empty.", nameof(staffDto.Phone));
+            // }
 
             if (string.IsNullOrEmpty(staffDto.Password))
             {

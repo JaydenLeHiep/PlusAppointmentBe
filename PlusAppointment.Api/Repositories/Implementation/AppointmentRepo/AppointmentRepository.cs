@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using PlusAppointment.Data;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
@@ -13,14 +12,14 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
     {
         private readonly ApplicationDbContext _context;
         private readonly RedisHelper _redisHelper;
-        private readonly ICalculateMoneyRepo _calculateMoneyRepo;
+        //private readonly ICalculateMoneyRepo _calculateMoneyRepo;
 
         public AppointmentRepository(ApplicationDbContext context, RedisHelper redisHelper,
             ICalculateMoneyRepo calculateMoneyRepo)
         {
             _context = context;
             _redisHelper = redisHelper;
-            _calculateMoneyRepo = calculateMoneyRepo;
+            //_calculateMoneyRepo = calculateMoneyRepo;
         }
 
         private DateTime GetStartOfTodayUtc()
@@ -138,7 +137,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 {
                     // Fetch the current appointment
                     var appointment = await _context.Appointments
-                        .Include(a => a.AppointmentServices)
+                        .Include(a => a.AppointmentServices)!
                         .ThenInclude(asm => asm.Service)
                         .FirstOrDefaultAsync(a => a.AppointmentId == appointmentId);
 
@@ -152,15 +151,15 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                     appointment.Comment = updateAppointmentDto.Comment;
                     appointment.UpdatedAt = DateTime.UtcNow;
 
-                    // Update services
+                    // Get the current services associated with the appointment
                     if (appointment.AppointmentServices != null)
                     {
                         var currentServiceIds = appointment.AppointmentServices.Select(asm => asm.ServiceId).ToList();
-                        var newServiceIds = updateAppointmentDto.ServiceIds.ToList();
+                        var updatedServiceIds = updateAppointmentDto.Services.Select(s => s.ServiceId).ToList();
 
-                        // Remove services that are no longer in the updated list
+                        // Identify services to remove
                         var servicesToRemove = appointment.AppointmentServices
-                            .Where(asm => !newServiceIds.Contains(asm.ServiceId))
+                            .Where(asm => !updatedServiceIds.Contains(asm.ServiceId))
                             .ToList();
 
                         foreach (var serviceToRemove in servicesToRemove)
@@ -168,59 +167,58 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                             appointment.AppointmentServices.Remove(serviceToRemove);
                         }
 
-                        // Add new services
-                        var servicesToAdd = newServiceIds.Except(currentServiceIds);
-                        foreach (var serviceId in servicesToAdd)
-                        {
-                            appointment.AppointmentServices.Add(new AppointmentServiceMapping
-                            {
-                                AppointmentId = appointmentId,
-                                ServiceId = serviceId
-                            });
-                        }
-                    }
-                    else
-                    {
-                        appointment.AppointmentServices = new List<AppointmentServiceMapping>();
-                        foreach (var serviceId in updateAppointmentDto.ServiceIds)
-                        {
-                            appointment.AppointmentServices.Add(new AppointmentServiceMapping
-                            {
-                                AppointmentId = appointmentId,
-                                ServiceId = serviceId
-                            });
-                        }
-                    }
+                        // Identify services to add and add them to the appointment
+                        var servicesToAdd = updateAppointmentDto.Services
+                            .Where(s => !currentServiceIds.Contains(s.ServiceId))
+                            .ToList();
 
-                    // Recalculate total duration
-                    TimeSpan totalDuration = TimeSpan.Zero;
-                    if (appointment.AppointmentServices != null)
-                    {
-                        foreach (var asm in appointment.AppointmentServices)
+                        foreach (var serviceDto in servicesToAdd)
                         {
-                            if (asm.Service != null)
+                            // Fetch the service details from the database
+                            var service = await _context.Services.FindAsync(serviceDto.ServiceId);
+                            if (service != null)
                             {
-                                totalDuration += asm.Service.Duration;
-                            }
-                            else
-                            {
-                                var service = await _context.Services.FindAsync(asm.ServiceId);
-                                if (service != null)
+                                appointment.AppointmentServices.Add(new AppointmentServiceMapping
                                 {
-                                    totalDuration += service.Duration;
-                                }
+                                    AppointmentId = appointmentId,
+                                    ServiceId = serviceDto.ServiceId,
+                                    Service = service
+                                });
                             }
                         }
                     }
 
+                    // Recalculate the total duration
+                    TimeSpan totalDuration = TimeSpan.Zero;
+
+                    foreach (var serviceDto in updateAppointmentDto.Services)
+                    {
+                        // Check if service is new or existing
+                        var appointmentService = appointment.AppointmentServices
+                            .FirstOrDefault(asm => asm.ServiceId == serviceDto.ServiceId);
+
+                        if (serviceDto.UpdatedDuration.HasValue)
+                        {
+                            // Use updated duration provided by user
+                            totalDuration += serviceDto.UpdatedDuration.Value;
+                        }
+                        else if (appointmentService != null && appointmentService.Service != null)
+                        {
+                            // Use original service duration
+                            totalDuration += appointmentService.Service.Duration;
+                        }
+                    }
+
+                    // Update the appointment's total duration
                     appointment.Duration = totalDuration;
 
-                    // Save changes
+                    // Save changes to the database
                     await _context.SaveChangesAsync();
 
+                    // Commit the transaction
                     await transaction.CommitAsync();
 
-                    // Update cache
+                    // Update the cache if necessary
                     await UpdateAppointmentCacheAsync(appointment);
                 }
                 catch (Exception)
@@ -230,6 +228,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 }
             }
         }
+
 
         public async Task UpdateAppointmentStatusAsync(Appointment appointment)
         {
@@ -294,6 +293,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
 
             return appointments;
         }
+
         public async Task<IEnumerable<Appointment>> GetCustomerAppointmentHistoryAsync(int customerId)
         {
             string cacheKey = $"appointments_customer_history_{customerId}";
@@ -472,9 +472,8 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                     .Include(apptService => apptService.Service).Load();
             }
 
-            var totalDuration =
-                appointment.AppointmentServices?.Sum(apptService => apptService.Service?.Duration.TotalMinutes ?? 0) ??
-                0;
+            // Calculate the total duration based on actual service duration in the appointment
+            var totalDuration = appointment.Duration.TotalMinutes;
 
             return new AppointmentCacheDto
             {
@@ -487,13 +486,14 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 StaffName = appointment.Staff?.Name ?? string.Empty,
                 StaffPhone = appointment.Staff?.Phone ?? string.Empty,
                 AppointmentTime = appointment.AppointmentTime,
-                Duration = TimeSpan.FromMinutes(totalDuration),
+                Duration = TimeSpan.FromMinutes(totalDuration),  // Use the actual duration from the appointment
                 Comment = appointment.Comment ?? string.Empty,
                 Status = appointment.Status,
                 ServiceIds = appointment.AppointmentServices?.Select(apptService => apptService.ServiceId).ToList() ??
                              new List<int>()
             };
         }
+
 
         private Appointment MapFromCacheDto(AppointmentCacheDto dto)
         {

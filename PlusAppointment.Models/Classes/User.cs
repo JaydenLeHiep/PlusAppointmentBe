@@ -16,12 +16,13 @@ namespace PlusAppointment.Models.Classes
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public Role Role { get; set; }
-        public string RefreshToken { get; set; } = String.Empty;// Add this property
-        public DateTime RefreshTokenExpiryTime { get; set; } // Add this property
+
 
         [JsonConverter(typeof(BusinessCollectionConverter))]
         public ICollection<Business> Businesses { get; set; } = new List<Business>();
-
+        
+        public ICollection<UserRefreshToken> RefreshTokens { get; set; } = new List<UserRefreshToken>();
+        
         //public User() { } // Parameterless constructor for deserialization
 
         public User(string username, string password, string email, string phone, Role role)

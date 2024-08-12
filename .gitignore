@@ -79,4 +79,5 @@ appsettings.Development.json
 # Do not ignore the main appsettings.json file
 !appsettings.json
 
+PlusAppointment.Api/appsettings.json
 

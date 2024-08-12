@@ -21,5 +21,7 @@ namespace PlusAppointment.Repositories.Interfaces.AppointmentRepo
         Task<bool> IsStaffAvailable(int staffId, DateTime appointmentTime, TimeSpan duration);
         
         Task<Customer?> GetByCustomerIdAsync(int customerId);
+        
+        Task<IEnumerable<Appointment>> GetCustomerAppointmentHistoryAsync(int customerId);
     }
 }

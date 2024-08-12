@@ -281,7 +281,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 .Include(a => a.Staff)
                 .Include(a => a.AppointmentServices)!
                 .ThenInclude(apptService => apptService.Service)
-                .Where(a => a.CustomerId == customerId && a.AppointmentTime >= startOfTodayUtc && a.Status != "Delete")
+                .Where(a => a.CustomerId == customerId && a.AppointmentTime >= startOfTodayUtc)
                 .ToListAsync();
 
             foreach (var appointment in appointments)
@@ -294,6 +294,36 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
 
             return appointments;
         }
+        public async Task<IEnumerable<Appointment>> GetCustomerAppointmentHistoryAsync(int customerId)
+        {
+            string cacheKey = $"appointments_customer_history_{customerId}";
+            var cachedAppointments = await _redisHelper.GetCacheAsync<List<AppointmentCacheDto>>(cacheKey);
+
+            if (cachedAppointments != null && cachedAppointments.Any())
+            {
+                return cachedAppointments.Select(dto => MapFromCacheDto(dto));
+            }
+
+            var appointments = await _context.Appointments
+                .Include(a => a.Customer)
+                .Include(a => a.Business)
+                .Include(a => a.Staff)
+                .Include(a => a.AppointmentServices)!
+                .ThenInclude(apptService => apptService.Service)
+                .Where(a => a.CustomerId == customerId)
+                .ToListAsync();
+
+            foreach (var appointment in appointments)
+            {
+                appointment.AppointmentTime = ConvertToLocalTime(appointment.AppointmentTime);
+            }
+
+            var appointmentCacheDtos = appointments.Select(MapToCacheDto).ToList();
+            await _redisHelper.SetCacheAsync(cacheKey, appointmentCacheDtos, TimeSpan.FromMinutes(10));
+
+            return appointments;
+        }
+
 
         public async Task<IEnumerable<Appointment>> GetAppointmentsByBusinessIdAsync(int businessId)
         {
@@ -314,7 +344,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 .Include(a => a.Staff)
                 .Include(a => a.AppointmentServices)!
                 .ThenInclude(apptService => apptService.Service)
-                .Where(a => a.BusinessId == businessId && a.AppointmentTime >= startOfTodayUtc && a.Status != "Delete")
+                .Where(a => a.BusinessId == businessId && a.AppointmentTime >= startOfTodayUtc)
                 .ToListAsync();
 
             foreach (var appointment in appointments)
@@ -337,7 +367,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
             if (cachedAppointments != null && cachedAppointments.Any())
             {
                 return cachedAppointments
-                    .Where(dto => dto.AppointmentTime >= startOfTodayUtc && dto.Status != "Delete")
+                    .Where(dto => dto.AppointmentTime >= startOfTodayUtc)
                     .Select(dto => MapFromCacheDto(dto));
             }
 
@@ -347,7 +377,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 .Include(a => a.Staff)
                 .Include(a => a.AppointmentServices)!
                 .ThenInclude(apptService => apptService.Service)
-                .Where(a => a.StaffId == staffId && a.AppointmentTime >= startOfTodayUtc && a.Status != "Delete")
+                .Where(a => a.StaffId == staffId && a.AppointmentTime >= startOfTodayUtc)
                 .ToListAsync();
 
             foreach (var appointment in appointments)

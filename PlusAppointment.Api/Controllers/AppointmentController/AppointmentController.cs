@@ -74,6 +74,26 @@ public class AppointmentsController : ControllerBase
         var appointments = await _appointmentService.GetAppointmentsByCustomerIdAsync(customerId);
         return Ok(appointments);
     }
+    [HttpGet("customer/history/customer_id={customerId}")]
+    public async Task<IActionResult> GetCustomerAppointmentHistory(int customerId)
+    {
+        var userRole = HttpContext.Items["UserRole"]?.ToString();
+        if (userRole != Role.Admin.ToString() && userRole != Role.Customer.ToString() && userRole != Role.Owner.ToString())
+        {
+            return NotFound(new { message = "You are not authorized to view this business." });
+        }
+
+        var appointments = await _appointmentService.GetCustomerAppointmentHistoryAsync(customerId);
+
+        if (appointments == null || !appointments.Any())
+        {
+            return NotFound(new { message = "No appointment history found for the customer." });
+        }
+
+        return Ok(appointments);
+    }
+
+
 
     [HttpGet("business/business_id={businessId}")]
     public async Task<IActionResult> GetByBusinessId(int businessId)

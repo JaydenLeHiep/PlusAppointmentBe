@@ -193,6 +193,12 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             var appointments = await _appointmentRepository.GetAppointmentsByCustomerIdAsync(customerId);
             return appointments.Select(a => MapToDto(a));
         }
+        public async Task<IEnumerable<AppointmentRetrieveDto>> GetCustomerAppointmentHistoryAsync(int customerId)
+        {
+            var appointments = await _appointmentRepository.GetCustomerAppointmentHistoryAsync(customerId);
+            return appointments.Select(a => MapToDto(a));
+        }
+
 
         public async Task<IEnumerable<AppointmentRetrieveDto>> GetAppointmentsByBusinessIdAsync(int businessId)
         {

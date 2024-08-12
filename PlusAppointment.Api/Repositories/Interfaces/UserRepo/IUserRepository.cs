@@ -12,6 +12,10 @@ public interface IUserRepository: IRepository<User>
     Task<User?> GetUserByEmailAsync(string email);
     Task<User?> GetUserByPhoneAsync(string phone);
     
-
+    // New methods for handling refresh tokens
+    Task<UserRefreshToken?> GetRefreshTokenAsync(string refreshToken);
+    Task AddRefreshTokenAsync(UserRefreshToken refreshToken);
+    Task DeleteRefreshTokenAsync(UserRefreshToken refreshToken);
+    Task DeleteAllRefreshTokensForUserAsync(int userId);
     
 }

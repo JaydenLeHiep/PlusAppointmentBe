@@ -157,6 +157,34 @@ namespace PlusAppointment.Repositories.Implementation.UserRepo
             await _redisHelper.SetCacheAsync(cacheKey, user, TimeSpan.FromMinutes(10));
             return user;
         }
+        
+        // New method to get a refresh token
+        public async Task<UserRefreshToken?> GetRefreshTokenAsync(string refreshToken)
+        {
+            return await _context.UserRefreshTokens.FirstOrDefaultAsync(rt => rt.Token == refreshToken);
+        }
+
+        // New method to add a refresh token
+        public async Task AddRefreshTokenAsync(UserRefreshToken refreshToken)
+        {
+            await _context.UserRefreshTokens.AddAsync(refreshToken);
+            await _context.SaveChangesAsync();
+        }
+
+        // New method to delete a specific refresh token
+        public async Task DeleteRefreshTokenAsync(UserRefreshToken refreshToken)
+        {
+            _context.UserRefreshTokens.Remove(refreshToken);
+            await _context.SaveChangesAsync();
+        }
+
+        // New method to delete all refresh tokens for a user (e.g., on logout from all devices)
+        public async Task DeleteAllRefreshTokensForUserAsync(int userId)
+        {
+            var refreshTokens = _context.UserRefreshTokens.Where(rt => rt.UserId == userId);
+            _context.UserRefreshTokens.RemoveRange(refreshTokens);
+            await _context.SaveChangesAsync();
+        }
 
         private async Task UpdateUserCacheAsync(User user)
         {

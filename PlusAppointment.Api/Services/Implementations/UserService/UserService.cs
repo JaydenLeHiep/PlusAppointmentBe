@@ -104,6 +104,10 @@ namespace PlusAppointment.Services.Implementations.UserService
         {
             await _userRepository.DeleteAsync(id);
         }
+        
+        // change to add multiple refresh token
+
+
 
         public async Task<(string? token, string? refreshToken, User? user)> LoginAsync(LoginDto loginDto)
         {
@@ -117,10 +121,14 @@ namespace PlusAppointment.Services.Implementations.UserService
             var token = JwtUtility.GenerateJwtToken(user, _configuration);
             var refreshToken = JwtUtility.GenerateRefreshToken();
 
-            user.RefreshToken = refreshToken;
-            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+            var userRefreshToken = new UserRefreshToken
+            {
+                UserId = user.UserId,
+                Token = refreshToken,
+                ExpiryTime = DateTime.UtcNow.AddDays(7)
+            };
 
-            await _userRepository.UpdateAsync(user);
+            await _userRepository.AddRefreshTokenAsync(userRefreshToken);
 
             return (token, refreshToken, user);
         }
@@ -139,8 +147,14 @@ namespace PlusAppointment.Services.Implementations.UserService
                 return (null, null);
             }
 
+            var storedRefreshToken = await _userRepository.GetRefreshTokenAsync(refreshToken);
+            if (storedRefreshToken == null || storedRefreshToken.ExpiryTime <= DateTime.UtcNow)
+            {
+                return (null, null);
+            }
+
             var user = await _userRepository.GetByIdAsync(userId);
-            if (user == null || user.RefreshToken != refreshToken || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
+            if (user == null)
             {
                 return (null, null);
             }
@@ -148,9 +162,16 @@ namespace PlusAppointment.Services.Implementations.UserService
             var newAccessToken = JwtUtility.GenerateJwtToken(user, _configuration);
             var newRefreshToken = JwtUtility.GenerateRefreshToken();
 
-            user.RefreshToken = newRefreshToken;
-            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
-            await _userRepository.UpdateAsync(user);
+            await _userRepository.DeleteRefreshTokenAsync(storedRefreshToken);
+
+            var newUserRefreshToken = new UserRefreshToken
+            {
+                UserId = user.UserId,
+                Token = newRefreshToken,
+                ExpiryTime = DateTime.UtcNow.AddDays(7)
+            };
+
+            await _userRepository.AddRefreshTokenAsync(newUserRefreshToken);
 
             return (newAccessToken, newRefreshToken);
         }

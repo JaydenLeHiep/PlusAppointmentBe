@@ -17,7 +17,8 @@ namespace PlusAppointment.Data
         public DbSet<Staff> Staffs { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<AppointmentServiceMapping> AppointmentServices { get; set; }
-
+        
+        public DbSet<UserRefreshToken> UserRefreshTokens { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -40,8 +41,7 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<User>().Property(u => u.UpdatedAt).HasColumnName("updated_at");
             modelBuilder.Entity<User>().Property(u => u.Role).HasColumnName("role");
             modelBuilder.Entity<User>().Property(u => u.Phone).HasColumnName("phone");
-            modelBuilder.Entity<User>().Property(u => u.RefreshToken).HasColumnName("refresh_token");
-            modelBuilder.Entity<User>().Property(u => u.RefreshTokenExpiryTime).HasColumnName("refresh_token_expiry_time");
+
 
             modelBuilder.Entity<Business>().Property(b => b.BusinessId).HasColumnName("business_id");
             modelBuilder.Entity<Business>().Property(b => b.Name).HasColumnName("name");
@@ -82,6 +82,13 @@ namespace PlusAppointment.Data
 
             modelBuilder.Entity<AppointmentServiceMapping>().Property(apptService => apptService.AppointmentId).HasColumnName("appointment_id");
             modelBuilder.Entity<AppointmentServiceMapping>().Property(apptService => apptService.ServiceId).HasColumnName("service_id");
+            
+            // Add configuration for UserRefreshToken table
+            modelBuilder.Entity<UserRefreshToken>().ToTable("user_refresh_tokens");
+            modelBuilder.Entity<UserRefreshToken>().Property(urt => urt.Id).HasColumnName("id");
+            modelBuilder.Entity<UserRefreshToken>().Property(urt => urt.UserId).HasColumnName("user_id");
+            modelBuilder.Entity<UserRefreshToken>().Property(urt => urt.Token).HasColumnName("token");
+            modelBuilder.Entity<UserRefreshToken>().Property(urt => urt.ExpiryTime).HasColumnName("expiry_time");
 
             // Configure relationships
             modelBuilder.Entity<Business>()
@@ -126,6 +133,11 @@ namespace PlusAppointment.Data
                 .HasOne(apptService => apptService.Service)
                 .WithMany(s => s.AppointmentServices)
                 .HasForeignKey(apptService => apptService.ServiceId);
+            
+            modelBuilder.Entity<UserRefreshToken>()
+                .HasOne(urt => urt.User)
+                .WithMany(u => u.RefreshTokens)
+                .HasForeignKey(urt => urt.UserId);
 
             // Add indexes to improve performance
             modelBuilder.Entity<Business>()
@@ -145,6 +157,11 @@ namespace PlusAppointment.Data
 
             modelBuilder.Entity<Service>()
                 .HasIndex(s => s.BusinessId);
+            
+            // Indexes
+            modelBuilder.Entity<UserRefreshToken>()
+                .HasIndex(urt => urt.Token)
+                .IsUnique();
         }
     }
 }

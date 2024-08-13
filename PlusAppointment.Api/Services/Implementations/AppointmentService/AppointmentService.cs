@@ -76,28 +76,28 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 return false;
             }
 
-            // Adjust the appointment time by subtracting 2 hours
-            var adjustedAppointmentTime = appointmentDto.AppointmentTime.AddHours(-2);
-            var timeNow = DateTime.UtcNow;
-
-            // Check if the appointment time is in the past
-            if (adjustedAppointmentTime < timeNow)
-            {
-                throw new InvalidOperationException("Cannot book an appointment in the past.");
-            }
+            // // Adjust the appointment time by subtracting 2 hours
+            // var adjustedAppointmentTime = appointmentDto.AppointmentTime.AddHours(2);
+            // var timeNow = DateTime.UtcNow;
+            //
+            // // Check if the appointment time is in the past
+            // if (adjustedAppointmentTime < timeNow)
+            // {
+            //     throw new InvalidOperationException("Cannot book an appointment in the past.");
+            // }
 
             // Check if the staff is available
             var totalDuration =
                 validServices.Aggregate(TimeSpan.Zero, (sum, next) => sum.Add(next?.Duration ?? TimeSpan.Zero));
-            var isAvailable = await _appointmentRepository.IsStaffAvailable(
-                appointmentDto.StaffId,
-                adjustedAppointmentTime,
-                totalDuration);
-
-            if (!isAvailable)
-            {
-                throw new InvalidOperationException("The staff is not available at the requested time.");
-            }
+            // var isAvailable = await _appointmentRepository.IsStaffAvailable(
+            //     appointmentDto.StaffId,
+            //     adjustedAppointmentTime,
+            //     totalDuration);
+            //
+            // if (!isAvailable)
+            // {
+            //     throw new InvalidOperationException("The staff is not available at the requested time.");
+            // }
 
             // Get the customer details
             var customer = await _appointmentRepository.GetByCustomerIdAsync(appointmentDto.CustomerId);
@@ -131,19 +131,19 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 $"Plus Appointment. Your appointment at {business.Name} for {localTimeAppointment} has been confirmed.";
 
             // Commented out the email sending code
-            // var emailSent = await _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, body);
-            // if (!emailSent)
-            // {
-            //     return false;
-            // }
+            var emailSent = await _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodySms);
+            if (!emailSent)
+            {
+                return false;
+            }
 
             // Attempt to send an SMS notification instead of email
             // uncomment when going to production
-            // var smsSent = await _smsTextMagicService.SendSmsAsync(customer.Phone ?? string.Empty, bodySms);
-            // if (!smsSent)
-            // {
-            //     return false;
-            // }
+            var smsSent = await _smsTextMagicService.SendSmsAsync(customer.Phone ?? string.Empty, bodySms);
+            if (!smsSent)
+            {
+                return false;
+            }
             
             var bodyEmail =
                 $"Plus Appointment. Your appointment at {business.Name} tomorrow.";

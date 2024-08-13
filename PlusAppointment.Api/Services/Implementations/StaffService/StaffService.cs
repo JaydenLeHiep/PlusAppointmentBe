@@ -176,15 +176,15 @@ namespace PlusAppointment.Services.Implementations.StaffService
 
         private Staff CreateStaffFromDto(StaffDto staffDto, int businessId)
         {
-            if (string.IsNullOrEmpty(staffDto.Email))
-            {
-                throw new ArgumentNullException(nameof(staffDto.Email), "Email cannot be null or empty.");
-            }
-
-            if (string.IsNullOrEmpty(staffDto.Phone))
-            {
-                throw new ArgumentNullException(nameof(staffDto.Phone), "Phone cannot be null or empty.");
-            }
+            // if (string.IsNullOrEmpty(staffDto.Email))
+            // {
+            //     throw new ArgumentNullException(nameof(staffDto.Email), "Email cannot be null or empty.");
+            // }
+            //
+            // if (string.IsNullOrEmpty(staffDto.Phone))
+            // {
+            //     throw new ArgumentNullException(nameof(staffDto.Phone), "Phone cannot be null or empty.");
+            // }
 
             if (string.IsNullOrEmpty(staffDto.Password))
             {

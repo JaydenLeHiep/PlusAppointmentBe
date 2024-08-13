@@ -23,7 +23,7 @@ namespace PlusAppointment.Utils.SendingEmail
         {
             var sendRequest = new SendEmailRequest
             {
-                Source = "hieplecoding@gmail.com",
+                Source = "contactus@plus-appointment.com",
                 Destination = new Destination
                 {
                     ToAddresses = new List<string> { toEmail }

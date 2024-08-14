@@ -395,7 +395,9 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
         {
             var appointmentCacheKey = $"appointment_{appointment.AppointmentId}";
             var appointmentCacheDto = MapToCacheDto(appointment);
-            await _redisHelper.SetCacheAsync(appointmentCacheKey, appointmentCacheDto, TimeSpan.FromMinutes(10));
+    
+            // Set cache with 24-hour expiration
+            await _redisHelper.SetCacheAsync(appointmentCacheKey, appointmentCacheDto, TimeSpan.FromDays(1));
 
             await _redisHelper.UpdateListCacheAsync<AppointmentCacheDto>(
                 $"appointments_customer_{appointment.CustomerId}",
@@ -405,7 +407,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                     list.Add(appointmentCacheDto);
                     return list;
                 },
-                TimeSpan.FromMinutes(10));
+                TimeSpan.FromDays(1));  // Set list cache with 24-hour expiration
 
             await _redisHelper.UpdateListCacheAsync<AppointmentCacheDto>(
                 $"appointments_business_{appointment.BusinessId}",
@@ -415,7 +417,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                     list.Add(appointmentCacheDto);
                     return list;
                 },
-                TimeSpan.FromMinutes(10));
+                TimeSpan.FromDays(1));  // Set list cache with 24-hour expiration
 
             await _redisHelper.UpdateListCacheAsync<AppointmentCacheDto>(
                 $"appointments_staff_{appointment.StaffId}",
@@ -425,7 +427,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                     list.Add(appointmentCacheDto);
                     return list;
                 },
-                TimeSpan.FromMinutes(10));
+                TimeSpan.FromDays(1));  // Set list cache with 24-hour expiration
         }
 
         private async Task InvalidateAppointmentCacheAsync(Appointment appointment)
@@ -440,7 +442,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                     list.RemoveAll(a => a.AppointmentId == appointment.AppointmentId);
                     return list;
                 },
-                TimeSpan.FromMinutes(10));
+                TimeSpan.FromDays(1));  // Set list cache with 24-hour expiration
 
             await _redisHelper.RemoveFromListCacheAsync<AppointmentCacheDto>(
                 $"appointments_business_{appointment.BusinessId}",
@@ -449,7 +451,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                     list.RemoveAll(a => a.AppointmentId == appointment.AppointmentId);
                     return list;
                 },
-                TimeSpan.FromMinutes(10));
+                TimeSpan.FromDays(1));  // Set list cache with 24-hour expiration
 
             await _redisHelper.RemoveFromListCacheAsync<AppointmentCacheDto>(
                 $"appointments_staff_{appointment.StaffId}",
@@ -458,8 +460,9 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                     list.RemoveAll(a => a.AppointmentId == appointment.AppointmentId);
                     return list;
                 },
-                TimeSpan.FromMinutes(10));
+                TimeSpan.FromDays(1));  // Set list cache with 24-hour expiration
         }
+
 
         private AppointmentCacheDto MapToCacheDto(Appointment appointment)
         {
@@ -486,7 +489,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 StaffName = appointment.Staff?.Name ?? string.Empty,
                 StaffPhone = appointment.Staff?.Phone ?? string.Empty,
                 AppointmentTime = appointment.AppointmentTime,
-                Duration = TimeSpan.FromMinutes(totalDuration),  // Use the actual duration from the appointment
+                Duration = appointment.Duration,  // Use the actual duration from the appointment
                 Comment = appointment.Comment ?? string.Empty,
                 Status = appointment.Status,
                 ServiceIds = appointment.AppointmentServices?.Select(apptService => apptService.ServiceId).ToList() ??

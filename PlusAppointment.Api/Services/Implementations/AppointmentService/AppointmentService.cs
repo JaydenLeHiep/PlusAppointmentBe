@@ -13,7 +13,9 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
     {
         private readonly IAppointmentRepository _appointmentRepository;
         private readonly IBusinessRepository _businessRepository;
+
         private readonly EmailService _emailService;
+
         //private readonly SmsService _smsService;
         private readonly SmsTextMagicService _smsTextMagicService;
 
@@ -76,28 +78,9 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 return false;
             }
 
-            // // Adjust the appointment time by subtracting 2 hours
-            // var adjustedAppointmentTime = appointmentDto.AppointmentTime.AddHours(2);
-            // var timeNow = DateTime.UtcNow;
-            //
-            // // Check if the appointment time is in the past
-            // if (adjustedAppointmentTime < timeNow)
-            // {
-            //     throw new InvalidOperationException("Cannot book an appointment in the past.");
-            // }
-
             // Check if the staff is available
             var totalDuration =
                 validServices.Aggregate(TimeSpan.Zero, (sum, next) => sum.Add(next?.Duration ?? TimeSpan.Zero));
-            // var isAvailable = await _appointmentRepository.IsStaffAvailable(
-            //     appointmentDto.StaffId,
-            //     adjustedAppointmentTime,
-            //     totalDuration);
-            //
-            // if (!isAvailable)
-            // {
-            //     throw new InvalidOperationException("The staff is not available at the requested time.");
-            // }
 
             // Get the customer details
             var customer = await _appointmentRepository.GetByCustomerIdAsync(appointmentDto.CustomerId);
@@ -124,37 +107,59 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                     }).ToList()
             };
 
+            var errors = new List<string>();
+
             // Try to send the email first
             var localTimeAppointment = ConvertToLocalTime(appointmentDto.AppointmentTime);
             var subject = "Appointment Confirmation";
             var bodySms =
                 $"Plus Appointment. Your appointment at {business.Name} for {localTimeAppointment} has been confirmed.";
 
-            // Commented out the email sending code
-            var emailSent = await _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodySms);
-            if (!emailSent)
+            try
             {
-                return false;
+                var emailSent = await _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodySms);
+                if (!emailSent)
+                {
+                    errors.Add("Failed to send confirmation email.");
+                }
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"Error sending confirmation email: {ex.Message}");
             }
 
-            // Attempt to send an SMS notification instead of email
-            // uncomment when going to production
-            var smsSent = await _smsTextMagicService.SendSmsAsync(customer.Phone ?? string.Empty, bodySms);
-            if (!smsSent)
+            // Attempt to send an SMS notification
+            try
             {
-                return false;
+                var smsSent = await _smsTextMagicService.SendSmsAsync(customer.Phone ?? string.Empty, bodySms);
+                if (!smsSent)
+                {
+                    errors.Add("Failed to send SMS notification.");
+                }
             }
-            
-            var bodyEmail =
-                $"Plus Appointment. Your appointment at {business.Name} tomorrow.";
-            // Save the appointment if the SMS was sent successfully
+            catch (Exception ex)
+            {
+                errors.Add($"Error sending SMS notification: {ex.Message}");
+            }
+
+            // Save the appointment even if sending email or SMS failed
             await _appointmentRepository.AddAppointmentAsync(appointment);
 
             // Schedule SMS reminder
+            var bodyEmail = $"Plus Appointment. Your appointment at {business.Name} tomorrow.";
             var sendTime = localTimeAppointment.AddDays(-1);
             BackgroundJob.Schedule(
                 () => _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodyEmail),
                 sendTime);
+
+            if (errors.Any())
+            {
+                // Log the errors or handle them as needed
+                foreach (var error in errors)
+                {
+                    //_logger.LogError(error);
+                }
+            }
 
             return true;
         }
@@ -163,7 +168,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
         public async Task UpdateAppointmentAsync(int id, UpdateAppointmentDto updateAppointmentDto)
         {
             // No need to validate services here as it's handled on the frontend
-    
+
             // Update the appointment and services through the repository
             await _appointmentRepository.UpdateAppointmentWithServicesAsync(id, updateAppointmentDto);
         }
@@ -193,6 +198,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             var appointments = await _appointmentRepository.GetAppointmentsByCustomerIdAsync(customerId);
             return appointments.Select(a => MapToDto(a));
         }
+
         public async Task<IEnumerable<AppointmentRetrieveDto>> GetCustomerAppointmentHistoryAsync(int customerId)
         {
             var appointments = await _appointmentRepository.GetCustomerAppointmentHistoryAsync(customerId);
@@ -223,8 +229,8 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                     Duration = apptService.Service?.Duration ?? TimeSpan.Zero
                 }).ToList() ?? new List<ServiceListsRetrieveDto>();
 
-            var totalDuration =
-                services.Sum(service => service.Duration.HasValue ? service.Duration.Value.TotalMinutes : 0);
+            // var totalDuration =
+            //     services.Sum(service => service.Duration.HasValue ? service.Duration.Value.TotalMinutes : 0);
 
             return new AppointmentRetrieveDto
             {
@@ -238,9 +244,9 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 StaffId = appointment.StaffId,
                 StaffName = appointment.Staff?.Name ?? "Unknown Staff Name",
                 AppointmentTime = appointment.AppointmentTime,
-                Duration = TimeSpan.FromMinutes(totalDuration),
+                Duration = appointment.Duration,
                 Status = appointment.Status,
-                Comment = appointment.Comment,
+                Comment = appointment.Comment ?? "Unknown comment",
                 CreatedAt = appointment.CreatedAt,
                 UpdatedAt = appointment.UpdatedAt,
                 Services = services

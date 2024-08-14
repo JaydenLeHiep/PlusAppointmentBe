@@ -135,7 +135,7 @@ public class AppointmentsController : ControllerBase
 
             if (!appointmentAdded)
             {
-                return BadRequest(new { message = "Appointment could not be added because the email was not sent." });
+                return BadRequest(new { message = "Appointment could not be added because some errors." });
             }
 
             return Ok(new { message = "Appointment added successfully" });

@@ -107,59 +107,60 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                     }).ToList()
             };
 
-            var errors = new List<string>();
+            // TURN ON FOR PRODUCTION****
+            //var errors = new List<string>();
 
-            // Try to send the email first
-            var localTimeAppointment = ConvertToLocalTime(appointmentDto.AppointmentTime);
-            var subject = "Appointment Confirmation";
-            var bodySms =
-                $"Plus Appointment. Your appointment at {business.Name} for {localTimeAppointment} has been confirmed.";
+            // // Try to send the email first
+            // var localTimeAppointment = ConvertToLocalTime(appointmentDto.AppointmentTime);
+            // var subject = "Appointment Confirmation";
+            // var bodySms =
+            //     $"Plus Appointment. Your appointment at {business.Name} for {localTimeAppointment} has been confirmed.";
+            //
+            // try
+            // {
+            //     var emailSent = await _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodySms);
+            //     if (!emailSent)
+            //     {
+            //         errors.Add("Failed to send confirmation email.");
+            //     }
+            // }
+            // catch (Exception ex)
+            // {
+            //     errors.Add($"Error sending confirmation email: {ex.Message}");
+            // }
+            //
+            // // Attempt to send an SMS notification
+            // try
+            // {
+            //     var smsSent = await _smsTextMagicService.SendSmsAsync(customer.Phone ?? string.Empty, bodySms);
+            //     if (!smsSent)
+            //     {
+            //         errors.Add("Failed to send SMS notification.");
+            //     }
+            // }
+            // catch (Exception ex)
+            // {
+            //     errors.Add($"Error sending SMS notification: {ex.Message}");
+            // }
+            //
+            // // Save the appointment even if sending email or SMS failed
+            // await _appointmentRepository.AddAppointmentAsync(appointment);
+            //
+            // // Schedule SMS reminder
+            // var bodyEmail = $"Plus Appointment. Your appointment at {business.Name} tomorrow.";
+            // var sendTime = localTimeAppointment.AddDays(-1);
+            // BackgroundJob.Schedule(
+            //     () => _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodyEmail),
+            //     sendTime);
 
-            try
-            {
-                var emailSent = await _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodySms);
-                if (!emailSent)
-                {
-                    errors.Add("Failed to send confirmation email.");
-                }
-            }
-            catch (Exception ex)
-            {
-                errors.Add($"Error sending confirmation email: {ex.Message}");
-            }
-
-            // Attempt to send an SMS notification
-            try
-            {
-                var smsSent = await _smsTextMagicService.SendSmsAsync(customer.Phone ?? string.Empty, bodySms);
-                if (!smsSent)
-                {
-                    errors.Add("Failed to send SMS notification.");
-                }
-            }
-            catch (Exception ex)
-            {
-                errors.Add($"Error sending SMS notification: {ex.Message}");
-            }
-
-            // Save the appointment even if sending email or SMS failed
-            await _appointmentRepository.AddAppointmentAsync(appointment);
-
-            // Schedule SMS reminder
-            var bodyEmail = $"Plus Appointment. Your appointment at {business.Name} tomorrow.";
-            var sendTime = localTimeAppointment.AddDays(-1);
-            BackgroundJob.Schedule(
-                () => _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodyEmail),
-                sendTime);
-
-            if (errors.Any())
-            {
-                // Log the errors or handle them as needed
-                foreach (var error in errors)
-                {
-                    //_logger.LogError(error);
-                }
-            }
+            // if (errors.Any())
+            // {
+            //     // Log the errors or handle them as needed
+            //     foreach (var error in errors)
+            //     {
+            //         //_logger.LogError(error);
+            //     }
+            // }
 
             return true;
         }

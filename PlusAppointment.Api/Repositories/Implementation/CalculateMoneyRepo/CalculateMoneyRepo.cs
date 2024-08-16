@@ -39,27 +39,28 @@ namespace PlusAppointment.Repositories.Implementation.CalculateMoneyRepo
             //    return cachedEarnings.Value;
             //}
 
-            var utcSpecificDate = DateTime.SpecifyKind(specificDate, DateTimeKind.Utc);
-            var appointments = await _context.Appointments
-                .Where(a => a.StaffId == staffId && a.AppointmentTime.Date == utcSpecificDate.Date && a.Status == "Done")
-                .Include(a => a.AppointmentServices!)
-                .ThenInclude(apptService => apptService.Service)
-                .ToListAsync();
-
-            if (!appointments.Any())
-            {
-                return 0;
-            }
-
-            decimal totalEarnings = appointments
-                .SelectMany(a => a.AppointmentServices!)
-                .Where(apptService => apptService.Service != null)
-                .Sum(apptService => apptService.Service!.Price); // Ensure non-null access
-
-            var calculatedEarnings = totalEarnings * commission;
-            //await _redisHelper.SetDecimalCacheAsync(cacheKey, calculatedEarnings, TimeSpan.FromMinutes(10));
-
-            return calculatedEarnings;
+            // var utcSpecificDate = DateTime.SpecifyKind(specificDate, DateTimeKind.Utc);
+            // var appointments = await _context.Appointments
+            //     .Where(a => a.StaffId == staffId && a.AppointmentTime.Date == utcSpecificDate.Date && a.Status == "Done")
+            //     .Include(a => a.AppointmentServices!)
+            //     .ThenInclude(apptService => apptService.Service)
+            //     .ToListAsync();
+            //
+            // if (!appointments.Any())
+            // {
+            //     return 0;
+            // }
+            //
+            // decimal totalEarnings = appointments
+            //     .SelectMany(a => a.AppointmentServices!)
+            //     .Where(apptService => apptService.Service != null)
+            //     .Sum(apptService => apptService.Service!.Price); // Ensure non-null access
+            //
+            // var calculatedEarnings = totalEarnings * commission;
+            // //await _redisHelper.SetDecimalCacheAsync(cacheKey, calculatedEarnings, TimeSpan.FromMinutes(10));
+            //
+            // return calculatedEarnings;
+            throw new NotImplementedException();
         }
 
         private async Task<decimal> CalculateEarningsAsync(int staffId, TimeSpan timeSpan, string period, decimal commission)
@@ -82,26 +83,27 @@ namespace PlusAppointment.Repositories.Implementation.CalculateMoneyRepo
             //    return cachedEarnings.Value;
             //}
 
-            var appointments = await _context.Appointments
-                .Where(a => a.StaffId == staffId && a.AppointmentTime >= startDate && a.AppointmentTime <= endDate && a.Status == "Done")
-                .Include(a => a.AppointmentServices!)
-                    .ThenInclude(apptService => apptService.Service)
-                .ToListAsync();
-
-            if (!appointments.Any())
-            {
-                return 0;
-            }
-
-            decimal totalEarnings = appointments
-                .SelectMany(a => a.AppointmentServices!)
-                .Where(apptService => apptService.Service != null)
-                .Sum(apptService => apptService.Service!.Price); // Ensure non-null access
-
-            var calculatedEarnings = totalEarnings * commission;
-            //await _redisHelper.SetDecimalCacheAsync(cacheKey, calculatedEarnings, TimeSpan.FromMinutes(10));
-
-            return calculatedEarnings;
+            // var appointments = await _context.Appointments
+            //     .Where(a => a.StaffId == staffId && a.AppointmentTime >= startDate && a.AppointmentTime <= endDate && a.Status == "Done")
+            //     .Include(a => a.AppointmentServices!)
+            //         .ThenInclude(apptService => apptService.Service)
+            //     .ToListAsync();
+            //
+            // if (!appointments.Any())
+            // {
+            //     return 0;
+            // }
+            //
+            // decimal totalEarnings = appointments
+            //     .SelectMany(a => a.AppointmentServices!)
+            //     .Where(apptService => apptService.Service != null)
+            //     .Sum(apptService => apptService.Service!.Price); // Ensure non-null access
+            //
+            // var calculatedEarnings = totalEarnings * commission;
+            // //await _redisHelper.SetDecimalCacheAsync(cacheKey, calculatedEarnings, TimeSpan.FromMinutes(10));
+            //
+            // return calculatedEarnings;
+            throw new NotImplementedException();
         }
 
         public async Task InvalidateEarningsCacheAsync(int staffId)

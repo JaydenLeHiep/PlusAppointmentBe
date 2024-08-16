@@ -10,6 +10,6 @@ namespace PlusAppointment.Models.Classes
         public int BusinessId { get; set; } // Foreign key
         public Business? Business { get; set; } // Navigation property
 
-        public ICollection<AppointmentServiceMapping>? AppointmentServices { get; set; }
+        public ICollection<AppointmentServiceStaffMapping>? AppointmentServicesStaffs { get; set; }
     }
 }

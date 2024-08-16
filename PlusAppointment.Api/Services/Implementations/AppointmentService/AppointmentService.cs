@@ -49,62 +49,25 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
         public async Task<bool> AddAppointmentAsync(AppointmentDto appointmentDto)
         {
-            // Validate the BusinessId
-            var business = await _businessRepository.GetByIdAsync(appointmentDto.BusinessId);
-            if (business == null)
+            // Create mappings for services and staff
+            var mappings = appointmentDto.Services.Select(serviceStaff => new AppointmentServiceStaffMapping
             {
-                throw new ArgumentException("Invalid BusinessId");
-            }
+                ServiceId = serviceStaff.ServiceId,
+                StaffId = serviceStaff.StaffId
+            }).ToList();
 
-            // Validate the StaffId
-            var staff = await _businessRepository.GetStaffByBusinessIdAsync(appointmentDto.BusinessId);
-            if (staff == null || !staff.Any(s => s != null && s.StaffId == appointmentDto.StaffId))
-            {
-                throw new ArgumentException("Invalid StaffId for the given BusinessId");
-            }
-
-            // Validate Services
-            var services = await _businessRepository.GetServicesByBusinessIdAsync(appointmentDto.BusinessId);
-            var validServices = services.Where(s => s != null && appointmentDto.ServiceIds.Contains(s.ServiceId))
-                .ToList();
-            if (validServices == null || !validServices.Any())
-            {
-                throw new ArgumentException("Invalid ServiceIds for the given BusinessId");
-            }
-
-            // Check if any service in validServices is null
-            if (validServices.Any(service => service == null))
-            {
-                return false;
-            }
-
-            // Check if the staff is available
-            var totalDuration =
-                validServices.Aggregate(TimeSpan.Zero, (sum, next) => sum.Add(next?.Duration ?? TimeSpan.Zero));
-
-            // Get the customer details
-            var customer = await _appointmentRepository.GetByCustomerIdAsync(appointmentDto.CustomerId);
-            if (customer == null)
-            {
-                throw new ArgumentException("Invalid CustomerId");
-            }
-
+            // Create the Appointment entity
             var appointment = new Appointment
             {
                 CustomerId = appointmentDto.CustomerId,
                 BusinessId = appointmentDto.BusinessId,
-                StaffId = appointmentDto.StaffId,
                 AppointmentTime = DateTime.SpecifyKind(appointmentDto.AppointmentTime, DateTimeKind.Utc),
-                Duration = totalDuration,
+                Duration = TimeSpan.Zero, // We'll calculate the correct duration in the repository
                 Status = "Pending",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 Comment = appointmentDto.Comment,
-                AppointmentServices = validServices
-                    .Select(service => new AppointmentServiceMapping
-                    {
-                        ServiceId = service!.ServiceId
-                    }).ToList()
+                AppointmentServices = mappings
             };
 
             // TURN ON FOR PRODUCTION****
@@ -144,7 +107,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             // }
             //
             // // Save the appointment even if sending email or SMS failed
-            // await _appointmentRepository.AddAppointmentAsync(appointment);
+            await _appointmentRepository.AddAppointmentAsync(appointment);
             //
             // // Schedule SMS reminder
             // var bodyEmail = $"Plus Appointment. Your appointment at {business.Name} tomorrow.";
@@ -223,15 +186,14 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
         private AppointmentRetrieveDto MapToDto(Appointment appointment)
         {
             var services = appointment.AppointmentServices?
-                .Select(apptService => new ServiceListsRetrieveDto
+                .Select(apptService => new ServiceStaffListsRetrieveDto
                 {
                     ServiceId = apptService.ServiceId,
                     Name = apptService.Service?.Name ?? "Unknown Service Name",
-                    Duration = apptService.Service?.Duration ?? TimeSpan.Zero
-                }).ToList() ?? new List<ServiceListsRetrieveDto>();
-
-            // var totalDuration =
-            //     services.Sum(service => service.Duration.HasValue ? service.Duration.Value.TotalMinutes : 0);
+                    Duration = apptService.Service?.Duration ?? TimeSpan.Zero,
+                    StaffId = apptService.StaffId,
+                    StaffName = apptService.Staff?.Name ?? "Unknown Staff Name"
+                }).ToList() ?? new List<ServiceStaffListsRetrieveDto>();
 
             return new AppointmentRetrieveDto
             {
@@ -242,16 +204,16 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 CustomerEmail = appointment.Customer?.Email ?? "Unknown Customer Email",
                 BusinessId = appointment.BusinessId,
                 BusinessName = appointment.Business?.Name ?? "Unknown Business Name",
-                StaffId = appointment.StaffId,
-                StaffName = appointment.Staff?.Name ?? "Unknown Staff Name",
                 AppointmentTime = appointment.AppointmentTime,
                 Duration = appointment.Duration,
                 Status = appointment.Status,
-                Comment = appointment.Comment ?? "Unknown comment",
+                Comment = appointment.Comment ?? "No comment",
                 CreatedAt = appointment.CreatedAt,
                 UpdatedAt = appointment.UpdatedAt,
                 Services = services
             };
         }
+
+
     }
 }

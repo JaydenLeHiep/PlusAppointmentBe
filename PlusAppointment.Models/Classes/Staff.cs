@@ -11,7 +11,7 @@ namespace PlusAppointment.Models.Classes
         public string Email { get; set; } = String.Empty;
         public string Phone { get; set; } = String.Empty;
         public string Password { get; set; } = String.Empty;
-        public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
+        public ICollection<AppointmentServiceStaffMapping>? AppointmentServicesStaffs { get; set; }
 
         int IUserIdentity.Id => StaffId;
         string? IUserIdentity.Username => Name;

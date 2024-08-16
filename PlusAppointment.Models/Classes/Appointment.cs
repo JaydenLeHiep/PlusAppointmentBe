@@ -7,15 +7,14 @@ namespace PlusAppointment.Models.Classes
         public Customer? Customer { get; set; }
         public int BusinessId { get; set; }
         public Business? Business { get; set; }
-        public int StaffId { get; set; }
-        public Staff? Staff { get; set; }
+
         public DateTime AppointmentTime { get; set; }
         public TimeSpan Duration { get; set; }
         public string Status { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public string? Comment { get; set; }
-        public ICollection<AppointmentServiceMapping>? AppointmentServices { get; set; }
+        public ICollection<AppointmentServiceStaffMapping>? AppointmentServices { get; set; }
     }
 
 }

@@ -16,9 +16,9 @@ namespace PlusAppointment.Data
         public DbSet<Service> Services { get; set; }
         public DbSet<Staff> Staffs { get; set; }
         public DbSet<Customer> Customers { get; set; }
-        public DbSet<AppointmentServiceMapping> AppointmentServices { get; set; }
-        
+        public DbSet<AppointmentServiceStaffMapping> AppointmentServiceStaffs { get; set; }
         public DbSet<UserRefreshToken> UserRefreshTokens { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -30,7 +30,7 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<Service>().ToTable("services");
             modelBuilder.Entity<Staff>().ToTable("staffs");
             modelBuilder.Entity<Customer>().ToTable("customers");
-            modelBuilder.Entity<AppointmentServiceMapping>().ToTable("appointment_services");
+            modelBuilder.Entity<AppointmentServiceStaffMapping>().ToTable("appointment_services_staffs");
 
             // Configure column names to be lowercase
             modelBuilder.Entity<User>().Property(u => u.UserId).HasColumnName("user_id");
@@ -42,7 +42,6 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<User>().Property(u => u.Role).HasColumnName("role");
             modelBuilder.Entity<User>().Property(u => u.Phone).HasColumnName("phone");
 
-
             modelBuilder.Entity<Business>().Property(b => b.BusinessId).HasColumnName("business_id");
             modelBuilder.Entity<Business>().Property(b => b.Name).HasColumnName("name");
             modelBuilder.Entity<Business>().Property(b => b.Address).HasColumnName("address");
@@ -53,7 +52,6 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<Appointment>().Property(a => a.AppointmentId).HasColumnName("appointment_id");
             modelBuilder.Entity<Appointment>().Property(a => a.CustomerId).HasColumnName("customer_id");
             modelBuilder.Entity<Appointment>().Property(a => a.BusinessId).HasColumnName("business_id");
-            modelBuilder.Entity<Appointment>().Property(a => a.StaffId).HasColumnName("staff_id");
             modelBuilder.Entity<Appointment>().Property(a => a.AppointmentTime).HasColumnName("appointment_time");
             modelBuilder.Entity<Appointment>().Property(a => a.Duration).HasColumnName("duration");
             modelBuilder.Entity<Appointment>().Property(a => a.Status).HasColumnName("status");
@@ -80,9 +78,10 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<Customer>().Property(c => c.Email).HasColumnName("email");
             modelBuilder.Entity<Customer>().Property(c => c.Phone).HasColumnName("phone");
 
-            modelBuilder.Entity<AppointmentServiceMapping>().Property(apptService => apptService.AppointmentId).HasColumnName("appointment_id");
-            modelBuilder.Entity<AppointmentServiceMapping>().Property(apptService => apptService.ServiceId).HasColumnName("service_id");
-            
+            modelBuilder.Entity<AppointmentServiceStaffMapping>().Property(assm => assm.AppointmentId).HasColumnName("appointment_id");
+            modelBuilder.Entity<AppointmentServiceStaffMapping>().Property(assm => assm.ServiceId).HasColumnName("service_id");
+            modelBuilder.Entity<AppointmentServiceStaffMapping>().Property(assm => assm.StaffId).HasColumnName("staff_id");
+
             // Add configuration for UserRefreshToken table
             modelBuilder.Entity<UserRefreshToken>().ToTable("user_refresh_tokens");
             modelBuilder.Entity<UserRefreshToken>().Property(urt => urt.Id).HasColumnName("id");
@@ -106,11 +105,6 @@ namespace PlusAppointment.Data
                 .WithMany(b => b.Appointments)
                 .HasForeignKey(a => a.BusinessId);
 
-            modelBuilder.Entity<Appointment>()
-                .HasOne(a => a.Staff)
-                .WithMany(s => s.Appointments)
-                .HasForeignKey(a => a.StaffId);
-
             modelBuilder.Entity<Staff>()
                 .HasOne(s => s.Business)
                 .WithMany(b => b.Staffs)
@@ -121,23 +115,23 @@ namespace PlusAppointment.Data
                 .WithMany(b => b.Services)
                 .HasForeignKey(s => s.BusinessId);
 
-            modelBuilder.Entity<AppointmentServiceMapping>()
-                .HasKey(apptService => new { apptService.AppointmentId, apptService.ServiceId });
+            modelBuilder.Entity<AppointmentServiceStaffMapping>()
+                .HasKey(assm => new { assm.AppointmentId, assm.ServiceId, assm.StaffId });
 
-            modelBuilder.Entity<AppointmentServiceMapping>()
-                .HasOne(apptService => apptService.Appointment)
+            modelBuilder.Entity<AppointmentServiceStaffMapping>()
+                .HasOne(assm => assm.Appointment)
                 .WithMany(a => a.AppointmentServices)
-                .HasForeignKey(apptService => apptService.AppointmentId);
+                .HasForeignKey(assm => assm.AppointmentId);
 
-            modelBuilder.Entity<AppointmentServiceMapping>()
-                .HasOne(apptService => apptService.Service)
-                .WithMany(s => s.AppointmentServices)
-                .HasForeignKey(apptService => apptService.ServiceId);
-            
-            modelBuilder.Entity<UserRefreshToken>()
-                .HasOne(urt => urt.User)
-                .WithMany(u => u.RefreshTokens)
-                .HasForeignKey(urt => urt.UserId);
+            modelBuilder.Entity<AppointmentServiceStaffMapping>()
+                .HasOne(assm => assm.Service)
+                .WithMany(s => s.AppointmentServicesStaffs)
+                .HasForeignKey(assm => assm.ServiceId);
+
+            modelBuilder.Entity<AppointmentServiceStaffMapping>()
+                .HasOne(assm => assm.Staff)
+                .WithMany(s => s.AppointmentServicesStaffs)
+                .HasForeignKey(assm => assm.StaffId);
 
             // Add indexes to improve performance
             modelBuilder.Entity<Business>()
@@ -148,9 +142,6 @@ namespace PlusAppointment.Data
 
             modelBuilder.Entity<Appointment>()
                 .HasIndex(a => a.BusinessId);
-
-            modelBuilder.Entity<Appointment>()
-                .HasIndex(a => a.StaffId);
 
             modelBuilder.Entity<Staff>()
                 .HasIndex(s => s.BusinessId);

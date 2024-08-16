@@ -17,13 +17,15 @@ public class AppointmentRetrieveDto
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public string Comment { get; set; } = string.Empty;
-    public List<ServiceListsRetrieveDto>? Services { get; set; }
+    public List<ServiceStaffListsRetrieveDto>? Services { get; set; }
 }
-public class ServiceListsRetrieveDto
+public class ServiceStaffListsRetrieveDto
 {
     public int ServiceId { get; set; }
     public string? Name { get; set; }
     public string? Description { get; set; }
     public TimeSpan? Duration { get; set; }
     public decimal? Price { get; set; }
+    public int StaffId { get; set; }
+    public string StaffName { get; set; } = string.Empty;
 }

@@ -1,15 +1,17 @@
-namespace PlusAppointment.Models.DTOs;
-
-public class UpdateAppointmentDto
+namespace PlusAppointment.Models.DTOs
 {
-    public int BusinessId { get; set; }
-    public List<ServiceDurationDto> Services { get; set; } // List of services with potential updated durations
-    public DateTime AppointmentTime { get; set; }
-    public string Comment { get; set; }
-}
+    public class UpdateAppointmentDto
+    {
+        public int BusinessId { get; set; }
+        public List<ServiceStaffDurationDto> Services { get; set; } = new(); // List of services with potential updated durations and associated staff
+        public DateTime AppointmentTime { get; set; }
+        public string Comment { get; set; } = string.Empty;
+    }
 
-public class ServiceDurationDto
-{
-    public int ServiceId { get; set; }
-    public TimeSpan? UpdatedDuration { get; set; } // Nullable to check if the duration has been updated
+    public class ServiceStaffDurationDto
+    {
+        public int ServiceId { get; set; }
+        public int StaffId { get; set; } // Associated staff member for the service
+        public TimeSpan? UpdatedDuration { get; set; } // Nullable to check if the duration has been updated
+    }
 }

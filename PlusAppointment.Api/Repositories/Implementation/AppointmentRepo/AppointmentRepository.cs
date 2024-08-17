@@ -4,7 +4,8 @@ using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
 using PlusAppointment.Repositories.Interfaces.AppointmentRepo;
 using PlusAppointment.Utils.Redis;
-using System.Linq;
+using Npgsql;
+using NpgsqlTypes;
 
 namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
 {
@@ -113,28 +114,84 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
 
         public async Task AddAppointmentAsync(Appointment appointment)
         {
-            // Load the services from the database based on the service IDs in the mappings
-            if (appointment.AppointmentServices != null)
+            await using var connection = new NpgsqlConnection(_context.Database.GetConnectionString());
+            await connection.OpenAsync();
+
+            await using var transaction = await connection.BeginTransactionAsync();
+
+            try
             {
-                var serviceIds = appointment.AppointmentServices.Select(mapping => mapping.ServiceId).ToList();
-                var services = await _context.Services
-                    .Where(s => serviceIds.Contains(s.ServiceId))
-                    .ToDictionaryAsync(s => s.ServiceId, s => s);
+                // Insert the appointment
+                var appointmentSql = @"
+            INSERT INTO appointments (customer_id, business_id, appointment_time, duration, status, created_at, updated_at, comment)
+            VALUES (@CustomerId, @BusinessId, @AppointmentTime, @Duration, @Status, @CreatedAt, @UpdatedAt, @Comment)
+            RETURNING appointment_id;";
 
-                // Calculate the total duration based on the loaded services
-                var totalDuration = appointment.AppointmentServices
-                    .Select(mapping => services[mapping.ServiceId].Duration)
-                    .Aggregate(TimeSpan.Zero, (sum, next) => sum.Add(next));
+                await using var cmd = new NpgsqlCommand(appointmentSql, connection, transaction);
+                cmd.Parameters.AddWithValue("@CustomerId", appointment.CustomerId);
+                cmd.Parameters.AddWithValue("@BusinessId", appointment.BusinessId);
+                cmd.Parameters.AddWithValue("@AppointmentTime", appointment.AppointmentTime);
+                cmd.Parameters.AddWithValue("@Duration", NpgsqlDbType.Interval, appointment.Duration);
+                cmd.Parameters.AddWithValue("@Status", appointment.Status);
+                cmd.Parameters.AddWithValue("@CreatedAt", appointment.CreatedAt);
+                cmd.Parameters.AddWithValue("@UpdatedAt", appointment.UpdatedAt);
+                cmd.Parameters.AddWithValue("@Comment", (object)appointment.Comment ?? DBNull.Value);
 
-                // Update the appointment's duration
-                appointment.Duration = totalDuration;
+                var appointmentId = (int)await cmd.ExecuteScalarAsync();
+                appointment.AppointmentId = appointmentId;
+
+                if (appointment.AppointmentServices != null && appointment.AppointmentServices.Any())
+                {
+                    // Insert AppointmentServiceStaffMappings
+                    var mappingSql = @"
+                INSERT INTO appointment_services_staffs (appointment_id, service_id, staff_id)
+                VALUES (@AppointmentId, @ServiceId, @StaffId)";
+
+                    await using var mappingCmd = new NpgsqlCommand(mappingSql, connection, transaction);
+                    mappingCmd.Parameters.Add("@AppointmentId", NpgsqlDbType.Integer);
+                    mappingCmd.Parameters.Add("@ServiceId", NpgsqlDbType.Integer);
+                    mappingCmd.Parameters.Add("@StaffId", NpgsqlDbType.Integer);
+
+                    foreach (var mapping in appointment.AppointmentServices)
+                    {
+                        mappingCmd.Parameters["@AppointmentId"].Value = appointmentId;
+                        mappingCmd.Parameters["@ServiceId"].Value = mapping.ServiceId;
+                        mappingCmd.Parameters["@StaffId"].Value = mapping.StaffId;
+                        await mappingCmd.ExecuteNonQueryAsync();
+                    }
+
+                    // Calculate and update total duration
+                    var serviceIds = appointment.AppointmentServices.Select(mapping => mapping.ServiceId).Distinct()
+                        .ToList();
+                    var services = await _context.Services
+                        .Where(s => serviceIds.Contains(s.ServiceId))
+                        .ToDictionaryAsync(s => s.ServiceId, s => s.Duration);
+
+                    var totalDuration = appointment.AppointmentServices
+                        .Select(mapping => services[mapping.ServiceId])
+                        .Aggregate(TimeSpan.Zero, (sum, next) => sum.Add(next));
+
+                    var updateDurationSql = @"
+                UPDATE appointments
+                SET duration = @Duration
+                WHERE appointment_id = @AppointmentId";
+
+                    await using var updateCmd = new NpgsqlCommand(updateDurationSql, connection, transaction);
+                    updateCmd.Parameters.AddWithValue("@Duration", NpgsqlDbType.Interval, totalDuration);
+                    updateCmd.Parameters.AddWithValue("@AppointmentId", appointmentId);
+                    await updateCmd.ExecuteNonQueryAsync();
+
+                    appointment.Duration = totalDuration;
+                }
+
+                await transaction.CommitAsync();
+                await UpdateAppointmentCacheAsync(appointment);
             }
-
-            // Save the appointment to the database
-            await _context.Appointments.AddAsync(appointment);
-            await _context.SaveChangesAsync();
-
-            await UpdateAppointmentCacheAsync(appointment);
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
 
@@ -149,79 +206,106 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
         public async Task UpdateAppointmentWithServicesAsync(int appointmentId,
             UpdateAppointmentDto updateAppointmentDto)
         {
-            using (var transaction = await _context.Database.BeginTransactionAsync())
+            using var connection = new NpgsqlConnection(_context.Database.GetConnectionString());
+            await connection.OpenAsync();
+
+            using var transaction = await connection.BeginTransactionAsync();
+
+            try
             {
-                try
+                // Update appointment details
+                var updateAppointmentSql = @"
+            UPDATE appointments 
+            SET appointment_time = @AppointmentTime, 
+                comment = @Comment, 
+                updated_at = @UpdatedAt
+            WHERE appointment_id = @AppointmentId";
+
+                using var updateAppointmentCmd = new NpgsqlCommand(updateAppointmentSql, connection, transaction);
+                updateAppointmentCmd.Parameters.AddWithValue("AppointmentTime", updateAppointmentDto.AppointmentTime);
+                updateAppointmentCmd.Parameters.AddWithValue("Comment",
+                    updateAppointmentDto.Comment ?? (object)DBNull.Value);
+                updateAppointmentCmd.Parameters.AddWithValue("UpdatedAt", DateTime.UtcNow);
+                updateAppointmentCmd.Parameters.AddWithValue("AppointmentId", appointmentId);
+
+                await updateAppointmentCmd.ExecuteNonQueryAsync();
+
+                // Remove existing service mappings
+                var deleteServicesSql = "DELETE FROM appointment_services_staffs WHERE appointment_id = @AppointmentId";
+                using var deleteServicesCmd = new NpgsqlCommand(deleteServicesSql, connection, transaction);
+                deleteServicesCmd.Parameters.AddWithValue("AppointmentId", appointmentId);
+                await deleteServicesCmd.ExecuteNonQueryAsync();
+
+                // Insert new service mappings
+                var insertServiceSql = @"
+            INSERT INTO appointment_services_staffs (appointment_id, service_id, staff_id)
+            VALUES (@AppointmentId, @ServiceId, @StaffId)";
+
+                using var insertServiceCmd = new NpgsqlCommand(insertServiceSql, connection, transaction);
+                insertServiceCmd.Parameters.Add("AppointmentId", NpgsqlDbType.Integer);
+                insertServiceCmd.Parameters.Add("ServiceId", NpgsqlDbType.Integer);
+                insertServiceCmd.Parameters.Add("StaffId", NpgsqlDbType.Integer);
+
+                TimeSpan totalDuration = TimeSpan.Zero;
+
+                foreach (var service in updateAppointmentDto.Services)
                 {
-                    // Fetch the appointment with all related services and staff mappings
-                    var appointment = await _context.Appointments
-                        .Include(a => a.AppointmentServices)
-                        .ThenInclude(asm => asm.Service)
-                        .FirstOrDefaultAsync(a => a.AppointmentId == appointmentId);
+                    insertServiceCmd.Parameters["AppointmentId"].Value = appointmentId;
+                    insertServiceCmd.Parameters["ServiceId"].Value = service.ServiceId;
+                    insertServiceCmd.Parameters["StaffId"].Value = service.StaffId;
+                    await insertServiceCmd.ExecuteNonQueryAsync();
 
-                    if (appointment == null)
-                    {
-                        throw new KeyNotFoundException("Appointment not found");
-                    }
+                    // Fetch service duration
+                    var getServiceDurationSql = "SELECT duration FROM services WHERE service_id = @ServiceId";
+                    using var getServiceDurationCmd = new NpgsqlCommand(getServiceDurationSql, connection, transaction);
+                    getServiceDurationCmd.Parameters.AddWithValue("ServiceId", service.ServiceId);
+                    var serviceDuration = (TimeSpan)(await getServiceDurationCmd.ExecuteScalarAsync() ?? TimeSpan.Zero);
 
-                    // Update appointment basic details
-                    appointment.AppointmentTime = updateAppointmentDto.AppointmentTime;
-                    appointment.Comment = updateAppointmentDto.Comment;
-                    appointment.UpdatedAt = DateTime.UtcNow;
-
-                    // Remove old mappings not present in the update DTO
-                    var mappingsToRemove = appointment.AppointmentServices
-                        .Where(cm => !updateAppointmentDto.Services.Any(ns =>
-                            ns.ServiceId == cm.ServiceId && ns.StaffId == cm.StaffId))
-                        .ToList();
-
-                    foreach (var mappingToRemove in mappingsToRemove)
-                    {
-                        _context.AppointmentServiceStaffs.Remove(mappingToRemove);
-                    }
-
-                    // Add new mappings
-                    foreach (var serviceDto in updateAppointmentDto.Services)
-                    {
-                        if (!appointment.AppointmentServices.Any(cm =>
-                                cm.ServiceId == serviceDto.ServiceId && cm.StaffId == serviceDto.StaffId))
-                        {
-                            appointment.AppointmentServices.Add(new AppointmentServiceStaffMapping
-                            {
-                                AppointmentId = appointmentId,
-                                ServiceId = serviceDto.ServiceId,
-                                StaffId = serviceDto.StaffId
-                            });
-                        }
-                    }
-
-                    // Recalculate the total duration
-                    TimeSpan totalDuration = TimeSpan.Zero;
-
-                    foreach (var serviceDto in updateAppointmentDto.Services)
-                    {
-                        var service = await _context.Services.FindAsync(serviceDto.ServiceId);
-                        if (service != null)
-                        {
-                            totalDuration += serviceDto.UpdatedDuration ?? service.Duration;
-                        }
-                    }
-
-                    // Update the appointment's total duration
-                    appointment.Duration = totalDuration;
-
-                    // Save changes and commit the transaction
-                    await _context.SaveChangesAsync();
-                    await transaction.CommitAsync();
-
-                    // Update cache after successful transaction
-                    await UpdateAppointmentCacheAsync(appointment);
+                    totalDuration += service.UpdatedDuration ?? serviceDuration;
                 }
-                catch (Exception)
+
+                // Update appointment duration
+                var updateDurationSql =
+                    "UPDATE appointments SET duration = @Duration WHERE appointment_id = @AppointmentId";
+                using var updateDurationCmd = new NpgsqlCommand(updateDurationSql, connection, transaction);
+                updateDurationCmd.Parameters.AddWithValue("Duration", totalDuration);
+                updateDurationCmd.Parameters.AddWithValue("AppointmentId", appointmentId);
+                await updateDurationCmd.ExecuteNonQueryAsync();
+
+                await transaction.CommitAsync();
+
+                // Fetch updated appointment for cache update
+                var getAppointmentSql = @"
+            SELECT * FROM appointments 
+            WHERE appointment_id = @AppointmentId";
+                using var getAppointmentCmd = new NpgsqlCommand(getAppointmentSql, connection);
+                getAppointmentCmd.Parameters.AddWithValue("AppointmentId", appointmentId);
+
+                using var reader = await getAppointmentCmd.ExecuteReaderAsync();
+                if (await reader.ReadAsync())
                 {
-                    await transaction.RollbackAsync();
-                    throw;
+                    var updatedAppointment = new Appointment
+                    {
+                        AppointmentId = reader.GetInt32(reader.GetOrdinal("appointment_id")),
+                        CustomerId = reader.GetInt32(reader.GetOrdinal("customer_id")),
+                        BusinessId = reader.GetInt32(reader.GetOrdinal("business_id")),
+                        AppointmentTime = reader.GetDateTime(reader.GetOrdinal("appointment_time")),
+                        Duration = reader.GetTimeSpan(reader.GetOrdinal("duration")),
+                        Status = reader.GetString(reader.GetOrdinal("status")),
+                        CreatedAt = reader.GetDateTime(reader.GetOrdinal("created_at")),
+                        UpdatedAt = reader.GetDateTime(reader.GetOrdinal("updated_at")),
+                        Comment = reader.IsDBNull(reader.GetOrdinal("comment"))
+                            ? null
+                            : reader.GetString(reader.GetOrdinal("comment"))
+                    };
+
+                    await UpdateAppointmentCacheAsync(updatedAppointment);
                 }
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                throw;
             }
         }
 

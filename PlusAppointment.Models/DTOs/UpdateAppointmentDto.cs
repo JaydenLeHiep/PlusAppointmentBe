@@ -2,7 +2,7 @@ namespace PlusAppointment.Models.DTOs
 {
     public class UpdateAppointmentDto
     {
-        public int BusinessId { get; set; }
+        
         public List<ServiceStaffDurationDto> Services { get; set; } = new(); // List of services with potential updated durations and associated staff
         public DateTime AppointmentTime { get; set; }
         public string Comment { get; set; } = string.Empty;

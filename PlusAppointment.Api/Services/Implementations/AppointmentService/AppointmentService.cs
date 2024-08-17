@@ -181,7 +181,11 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             var appointments = await _appointmentRepository.GetAppointmentsByStaffIdAsync(staffId);
             return appointments.Select(a => MapToDto(a));
         }
-
+        
+        public async Task<IEnumerable<DateTime>> GetAvailableTimeSlotsAsync(int staffId, DateTime date)
+        {
+            return await _appointmentRepository.GetAvailableTimeSlotsAsync(staffId, date);
+        }
 
         private AppointmentRetrieveDto MapToDto(Appointment appointment)
         {
@@ -213,7 +217,5 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 Services = services
             };
         }
-
-
     }
 }

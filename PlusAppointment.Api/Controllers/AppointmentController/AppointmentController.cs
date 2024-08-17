@@ -14,7 +14,7 @@ public class AppointmentsController : ControllerBase
 {
     private readonly IAppointmentService _appointmentService;
 
-    public AppointmentsController(IAppointmentService appointmentService )
+    public AppointmentsController(IAppointmentService appointmentService)
     {
         _appointmentService = appointmentService;
     }
@@ -74,11 +74,13 @@ public class AppointmentsController : ControllerBase
         var appointments = await _appointmentService.GetAppointmentsByCustomerIdAsync(customerId);
         return Ok(appointments);
     }
+
     [HttpGet("customer/history/customer_id={customerId}")]
     public async Task<IActionResult> GetCustomerAppointmentHistory(int customerId)
     {
         var userRole = HttpContext.Items["UserRole"]?.ToString();
-        if (userRole != Role.Admin.ToString() && userRole != Role.Customer.ToString() && userRole != Role.Owner.ToString())
+        if (userRole != Role.Admin.ToString() && userRole != Role.Customer.ToString() &&
+            userRole != Role.Owner.ToString())
         {
             return NotFound(new { message = "You are not authorized to view this business." });
         }
@@ -92,7 +94,6 @@ public class AppointmentsController : ControllerBase
 
         return Ok(appointments);
     }
-
 
 
     [HttpGet("business/business_id={businessId}")]
@@ -205,5 +206,31 @@ public class AppointmentsController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
+    }
+
+    [AllowAnonymous]
+    [HttpGet("available-timeslots")]
+    public async Task<IActionResult> GetAvailableTimeSlots(int staffId, DateTime date)
+    {
+        if (staffId <= 0)
+        {
+            return BadRequest("Invalid staff ID.");
+        }
+
+        var availableTimeSlots = await _appointmentService.GetAvailableTimeSlotsAsync(staffId, date);
+
+        if (availableTimeSlots == null || !availableTimeSlots.Any())
+        {
+            return NotFound("No available time slots found for the selected staff on the given date.");
+        }
+
+        // Prepare the response DTO
+        var response = new AvailableTimeSlotsDto
+        {
+            StaffId = staffId,
+            AvailableTimeSlots = availableTimeSlots.ToList()
+        };
+
+        return Ok(response);
     }
 }

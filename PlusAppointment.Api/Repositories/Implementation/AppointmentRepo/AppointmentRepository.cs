@@ -569,5 +569,57 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
             var localTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Vienna");
             return TimeZoneInfo.ConvertTimeFromUtc(utcTime, localTimeZone);
         }
+
+        public async Task<IEnumerable<DateTime>> GetAvailableTimeSlotsAsync(int staffId, DateTime date)
+        {
+            // Convert the date to UTC explicitly to avoid timezone issues
+            var utcDate = DateTime.SpecifyKind(date.Date, DateTimeKind.Utc);
+
+            // Fetch all appointments for the given staff on the selected date
+            var appointments = await _context.AppointmentServiceStaffs
+                .Where(ass => ass.StaffId == staffId && ass.Appointment.AppointmentTime.Date == utcDate)
+                .Select(ass => new
+                {
+                    ass.Appointment.AppointmentTime,
+                    ass.Appointment.Duration
+                })
+                .OrderBy(a => a.AppointmentTime)
+                .ToListAsync();
+
+            var availableTimeSlots = new List<DateTime>();
+
+            // Define the start and end of the workday in UTC
+            var workdayStart = utcDate.AddHours(8); // Workday starts at 8:00 AM UTC
+            var workdayEnd = utcDate.AddHours(20); // Workday ends at 8:00 PM UTC
+            var currentTimeSlot = workdayStart;
+
+            foreach (var appointment in appointments)
+            {
+                // Calculate the end time of the appointment
+                var appointmentEndTime = appointment.AppointmentTime.Add(appointment.Duration);
+
+                // While the current time slot is before the next appointment, add time slots
+                while (currentTimeSlot < appointment.AppointmentTime)
+                {
+                    availableTimeSlots.Add(currentTimeSlot);
+                    currentTimeSlot = currentTimeSlot.AddMinutes(15);
+                }
+
+                // Skip the time slots that overlap with the current appointment
+                if (currentTimeSlot < appointmentEndTime)
+                {
+                    currentTimeSlot = appointmentEndTime;
+                }
+            }
+
+            // Add remaining time slots after the last appointment of the day
+            while (currentTimeSlot < workdayEnd)
+            {
+                availableTimeSlots.Add(currentTimeSlot);
+                currentTimeSlot = currentTimeSlot.AddMinutes(15);
+            }
+
+            return availableTimeSlots;
+        }
     }
 }

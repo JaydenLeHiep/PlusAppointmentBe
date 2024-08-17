@@ -10,7 +10,7 @@ namespace PlusAppointment.Repositories.Interfaces.AppointmentRepo
         Task AddAppointmentAsync(Appointment appointment);
         Task UpdateAppointmentAsync(Appointment appointment);
         Task UpdateAppointmentStatusAsync(Appointment appointment);
-        
+
 
         Task UpdateAppointmentWithServicesAsync(int appointmentId, UpdateAppointmentDto updateAppointmentDto);
         Task DeleteAppointmentAsync(int appointmentId);
@@ -19,9 +19,10 @@ namespace PlusAppointment.Repositories.Interfaces.AppointmentRepo
         Task<IEnumerable<Appointment>> GetAppointmentsByStaffIdAsync(int staffId);
 
         Task<bool> IsStaffAvailable(int staffId, DateTime appointmentTime, TimeSpan duration);
-        
+
         Task<Customer?> GetByCustomerIdAsync(int customerId);
-        
+
         Task<IEnumerable<Appointment>> GetCustomerAppointmentHistoryAsync(int customerId);
+        Task<IEnumerable<DateTime>> GetAvailableTimeSlotsAsync(int staffId, DateTime date);
     }
 }

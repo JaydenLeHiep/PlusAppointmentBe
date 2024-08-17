@@ -14,5 +14,6 @@ namespace PlusAppointment.Services.Interfaces.AppointmentService
         Task<IEnumerable<AppointmentRetrieveDto>> GetAppointmentsByBusinessIdAsync(int businessId);
         Task<IEnumerable<AppointmentRetrieveDto>> GetAppointmentsByStaffIdAsync(int staffId);
         Task<IEnumerable<AppointmentRetrieveDto>> GetCustomerAppointmentHistoryAsync(int customerId);
+        Task<IEnumerable<DateTime>> GetAvailableTimeSlotsAsync(int staffId, DateTime date);
     }
 }

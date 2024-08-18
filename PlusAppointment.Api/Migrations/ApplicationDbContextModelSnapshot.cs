@@ -145,6 +145,10 @@ namespace PlusAppointment.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("CustomerId"));
 
+                    b.Property<int>("BusinessId")
+                        .HasColumnType("integer")
+                        .HasColumnName("business_id");
+
                     b.Property<string>("Email")
                         .HasColumnType("text")
                         .HasColumnName("email");
@@ -158,6 +162,8 @@ namespace PlusAppointment.Migrations
                         .HasColumnName("phone");
 
                     b.HasKey("CustomerId");
+
+                    b.HasIndex("BusinessId");
 
                     b.ToTable("customers", (string)null);
                 });
@@ -375,6 +381,17 @@ namespace PlusAppointment.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Customer", b =>
+                {
+                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
+                        .WithMany("Customers")
+                        .HasForeignKey("BusinessId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Business");
+                });
+
             modelBuilder.Entity("PlusAppointment.Models.Classes.Service", b =>
                 {
                     b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
@@ -416,6 +433,8 @@ namespace PlusAppointment.Migrations
             modelBuilder.Entity("PlusAppointment.Models.Classes.Business", b =>
                 {
                     b.Navigation("Appointments");
+
+                    b.Navigation("Customers");
 
                     b.Navigation("Services");
 

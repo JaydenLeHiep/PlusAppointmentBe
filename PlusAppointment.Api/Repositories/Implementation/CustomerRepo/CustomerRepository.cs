@@ -117,7 +117,7 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 throw new ArgumentNullException(nameof(email), "Email cannot be null or empty.");
             }
 
-            return !await _context.Customers.AnyAsync(c => c.Email == email);
+            return !await _context.Customers.AnyAsync(c => c.Email.ToLower() == email.ToLower());
         }
 
         public async Task<bool> IsPhoneUniqueAsync(string phone)
@@ -127,8 +127,9 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 throw new ArgumentNullException(nameof(phone), "Phone number cannot be null or empty.");
             }
 
-            return !await _context.Customers.AnyAsync(c => c.Phone == phone);
+            return !await _context.Customers.AnyAsync(c => c.Phone.ToLower() == phone.ToLower());
         }
+
 
         private async Task UpdateCustomerCacheAsync(Customer customer)
         {

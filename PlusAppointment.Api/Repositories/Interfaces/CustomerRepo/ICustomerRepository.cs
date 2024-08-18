@@ -15,4 +15,5 @@ public interface ICustomerRepository
     Task<bool> IsEmailUniqueAsync(string email);
     Task<bool> IsPhoneUniqueAsync(string phone);
     Task<IEnumerable<Customer?>> SearchCustomersByNameOrPhoneAsync(string searchTerm);
+    Task<IEnumerable<AppointmentHistoryDto>> GetAppointmentsByCustomerIdAsync(int customerId);
 }

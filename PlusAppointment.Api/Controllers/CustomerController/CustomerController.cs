@@ -49,6 +49,18 @@ namespace PlusAppointment.Controllers.CustomerController
 
             return Ok(new { customer.CustomerId });
         }
+        [HttpGet("customer_id={customerId}/find-appointments")]
+        [Authorize]
+        public async Task<IActionResult> GetCustomerAppointments(int customerId)
+        {
+            var appointments = await _customerService.GetCustomerAppointmentsAsync(customerId);
+            if (!appointments.Any())
+            {
+                return NotFound(new { message = "No appointments found for this customer" });
+            }
+
+            return Ok(appointments);
+        }
         
         [HttpPost("business_id={businessId}/add")]
         public async Task<IActionResult> AddCustomer(int businessId, [FromBody] CustomerDto customerDto)

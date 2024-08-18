@@ -50,12 +50,12 @@ namespace PlusAppointment.Controllers.CustomerController
             return Ok(new { customer.CustomerId });
         }
         
-        [HttpPost("add")]
-        
-        public async Task<IActionResult> AddCustomer([FromBody] CustomerDto customerDto)
+        [HttpPost("business_id={businessId}/add")]
+        public async Task<IActionResult> AddCustomer(int businessId, [FromBody] CustomerDto customerDto)
         {
             try
             {
+                customerDto.BusinessId = businessId;  // Assign the business_id from the URL to the DTO
                 await _customerService.AddCustomerAsync(customerDto);
                 return Ok(new { message = "Customer added successfully" });
             }

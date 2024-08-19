@@ -39,6 +39,10 @@ namespace PlusAppointment.Utils.Redis
                 WriteIndented = true
             };
         }
+        public IDatabase GetDatabase()
+        {
+            return _connectionMultiplexer.GetDatabase();
+        }
 
         public async Task<T?> GetCacheAsync<T>(string key) where T : class
         {

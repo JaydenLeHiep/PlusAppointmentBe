@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PlusAppointment.Data;
 using PlusAppointment.Models.Classes;
+using PlusAppointment.Models.DTOs;
 using PlusAppointment.Repositories.Interfaces.CustomerRepo;
 using PlusAppointment.Utils.Redis;
 
@@ -117,7 +118,7 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 throw new ArgumentNullException(nameof(email), "Email cannot be null or empty.");
             }
 
-            return !await _context.Customers.AnyAsync(c => c.Email == email);
+            return !await _context.Customers.AnyAsync(c => c.Email.ToLower() == email.ToLower());
         }
 
         public async Task<bool> IsPhoneUniqueAsync(string phone)
@@ -127,8 +128,37 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 throw new ArgumentNullException(nameof(phone), "Phone number cannot be null or empty.");
             }
 
-            return !await _context.Customers.AnyAsync(c => c.Phone == phone);
+            return !await _context.Customers.AnyAsync(c => c.Phone.ToLower() == phone.ToLower());
         }
+        
+        public async Task<IEnumerable<AppointmentHistoryDto>> GetAppointmentsByCustomerIdAsync(int customerId)
+        {
+            string cacheKey = $"customer_{customerId}_appointments";
+            var cachedAppointments = await _redisHelper.GetCacheAsync<List<AppointmentHistoryDto>>(cacheKey);
+
+            if (cachedAppointments != null && cachedAppointments.Any())
+            {
+                return cachedAppointments;
+            }
+
+            var appointments = await _context.Appointments
+                .Where(a => a.CustomerId == customerId)
+                .Select(a => new AppointmentHistoryDto
+                {
+                    AppointmentTime = a.AppointmentTime,
+                    StaffServices = a.AppointmentServices!.Select(ass => new StaffServiceDto
+                    {
+                        StaffName = ass.Staff!.Name,
+                        ServiceName = ass.Service!.Name
+                    }).ToList()
+                })
+                .ToListAsync();
+
+            await _redisHelper.SetCacheAsync(cacheKey, appointments, TimeSpan.FromMinutes(10));
+
+            return appointments;
+        }
+
 
         private async Task UpdateCustomerCacheAsync(Customer customer)
         {

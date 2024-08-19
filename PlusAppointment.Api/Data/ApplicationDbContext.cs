@@ -77,6 +77,13 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<Customer>().Property(c => c.Name).HasColumnName("name");
             modelBuilder.Entity<Customer>().Property(c => c.Email).HasColumnName("email");
             modelBuilder.Entity<Customer>().Property(c => c.Phone).HasColumnName("phone");
+            
+            // Configure the relationship between Customer and Business
+            modelBuilder.Entity<Customer>().Property(c => c.BusinessId).HasColumnName("business_id");
+            modelBuilder.Entity<Customer>()
+                .HasOne(c => c.Business)
+                .WithMany(b => b.Customers)
+                .HasForeignKey(c => c.BusinessId);
 
             modelBuilder.Entity<AppointmentServiceStaffMapping>().Property(assm => assm.AppointmentId).HasColumnName("appointment_id");
             modelBuilder.Entity<AppointmentServiceStaffMapping>().Property(assm => assm.ServiceId).HasColumnName("service_id");
@@ -148,7 +155,10 @@ namespace PlusAppointment.Data
 
             modelBuilder.Entity<Service>()
                 .HasIndex(s => s.BusinessId);
-            
+
+            modelBuilder.Entity<Customer>()
+                .HasIndex(c => c.BusinessId);
+
             // Indexes
             modelBuilder.Entity<UserRefreshToken>()
                 .HasIndex(urt => urt.Token)

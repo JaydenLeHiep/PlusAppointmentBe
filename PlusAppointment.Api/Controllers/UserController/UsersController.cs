@@ -67,45 +67,50 @@ namespace PlusAppointment.Controllers.UserController
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
-            var (token, refreshToken, user) = await _userService.LoginAsync(loginDto);
-
-            if (token == null || user == null)
+            try
             {
-                return Unauthorized(new { message = "Invalid credentials." });
+                var (token, refreshToken, user, errorMessage) = await _userService.LoginAsync(loginDto);
+
+                if (token == null || user == null)
+                {
+                    return Unauthorized(new { message = errorMessage ?? "Invalid credentials." });
+                }
+
+                var response = new LoginResponseDto
+                {
+                    Token = token,
+                    Username = user.Username,
+                    Role = user.Role.ToString()
+                };
+
+                var cookieOptions = new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = false, // Change to true in production (HTTPS)
+                    SameSite = SameSiteMode.Strict,
+                    Expires = DateTime.UtcNow.AddDays(30)
+                };
+                if (refreshToken != null)
+                {
+                    Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
+                    Console.WriteLine(
+                        $"Set-Cookie: refreshToken={refreshToken}; Expires={cookieOptions.Expires}; Path={cookieOptions.Path}; HttpOnly={cookieOptions.HttpOnly}; Secure={cookieOptions.Secure}; SameSite={cookieOptions.SameSite}");
+                }
+
+                return Ok(response);
             }
-
-            var response = new LoginResponseDto
+            catch (KeyNotFoundException)
             {
-                Token = token,
-                Username = user.Username,
-                Role = user.Role.ToString()
-            };
-
-            // Setting the refresh token as HTTP-only cookie
-            // for PRODUCTION!!
-            // var cookieOptions = new CookieOptions
-            // {
-            //     HttpOnly = true,
-            //     Secure = true, // Change to true in production (HTTPS)
-            //     SameSite = SameSiteMode.None, // Required for cross-site cookies
-            //     Expires = DateTime.UtcNow.AddDays(30)
-            // };
-            var cookieOptions = new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = false, // Change to true in production (HTTPS)
-                SameSite = SameSiteMode.Strict, // Required for cross-site cookies
-                Expires = DateTime.UtcNow.AddDays(30)
-            };
-            if (refreshToken != null)
-            {
-                Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
-                Console.WriteLine(
-                    $"Set-Cookie: refreshToken={refreshToken}; Expires={cookieOptions.Expires}; Path={cookieOptions.Path}; HttpOnly={cookieOptions.HttpOnly}; Secure={cookieOptions.Secure}; SameSite={cookieOptions.SameSite}");
+                return Unauthorized(new { message = "User not found." });
             }
-
-            return Ok(response);
+            catch (Exception ex)
+            {
+                // Log the exception (ex) here if necessary
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An unexpected error occurred. Please try again later." });
+            }
         }
+
+
 
         [HttpPost("refresh")]
         [EnableCors("AllowFrontendOnly")]

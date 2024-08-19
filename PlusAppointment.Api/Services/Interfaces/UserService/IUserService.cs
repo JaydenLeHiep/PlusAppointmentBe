@@ -11,7 +11,7 @@ namespace PlusAppointment.Services.Interfaces.UserService
         Task RegisterUserAsync(UserRegisterDto userRegisterDto);
         Task UpdateUserAsync(int userId, UserUpdateDto userUpdateDto);
         Task DeleteUserAsync(int id);
-        Task<(string? token, string? refreshToken, User? user)> LoginAsync(LoginDto loginDto);
+        Task<(string? token, string? refreshToken, User? user, string? errorMessage)> LoginAsync(LoginDto loginDto);
         Task<(string? newAccessToken, string? newRefreshToken)> RefreshTokenAsync(string token, string refreshToken);
     }
 }

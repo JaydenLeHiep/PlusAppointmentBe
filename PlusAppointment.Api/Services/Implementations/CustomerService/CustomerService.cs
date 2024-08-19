@@ -63,21 +63,22 @@ public class CustomerService: ICustomerService
         //     throw new ArgumentException("Phone cannot be null or empty.", nameof(customerDto.Phone));
         // }
         //
-        // if (!await _customerRepository.IsEmailUniqueAsync(customerDto.Email))
-        // {
-        //     throw new ArgumentException("Email is already in use.");
-        // }
-        //
-        // if (!await _customerRepository.IsPhoneUniqueAsync(customerDto.Phone))
-        // {
-        //     throw new ArgumentException("Phone is already in use.");
-        // }
+        if (!await _customerRepository.IsEmailUniqueAsync(customerDto.Email))
+        {
+            throw new ArgumentException("Email is already in use.");
+        }
+        
+        if (!await _customerRepository.IsPhoneUniqueAsync(customerDto.Phone))
+        {
+            throw new ArgumentException("Phone is already in use.");
+        }
 
         var customer = new Customer
         {
             Name = customerDto.Name,
             Email = customerDto.Email,
-            Phone = customerDto.Phone
+            Phone = customerDto.Phone,
+            BusinessId = customerDto.BusinessId
             // Assign other properties as necessary
         };
 
@@ -135,6 +136,11 @@ public class CustomerService: ICustomerService
     {
         var customers = await _customerRepository.SearchCustomersByNameOrPhoneAsync(searchTerm);
         return customers.Where(c => c != null)!; // Filter out null values
+    }
+    
+    public async Task<IEnumerable<AppointmentHistoryDto>> GetCustomerAppointmentsAsync(int customerId)
+    {
+        return await _customerRepository.GetAppointmentsByCustomerIdAsync(customerId);
     }
     
     public async Task<Customer?> GetCustomerByNameOrPhoneAsync(string nameOrPhone)

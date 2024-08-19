@@ -45,17 +45,17 @@ namespace PlusAppointment.Services.Implementations.UserService
                 throw new Exception("Username already exists");
             }
 
-            var existingUserByEmail = await _userRepository.GetUserByEmailAsync(userRegisterDto.Email);
-            if (existingUserByEmail != null)
-            {
-                throw new Exception("Email already exists");
-            }
-
-            var existingUserByPhone = await _userRepository.GetUserByPhoneAsync(userRegisterDto.Phone);
-            if (existingUserByPhone != null)
-            {
-                throw new Exception("Phone number already exists");
-            }
+            // var existingUserByEmail = await _userRepository.GetUserByEmailAsync(userRegisterDto.Email);
+            // if (existingUserByEmail != null)
+            // {
+            //     throw new Exception("Email already exists");
+            // }
+            //
+            // var existingUserByPhone = await _userRepository.GetUserByPhoneAsync(userRegisterDto.Phone);
+            // if (existingUserByPhone != null)
+            // {
+            //     throw new Exception("Phone number already exists");
+            // }
 
             var user = new User 
             (
@@ -109,29 +109,43 @@ namespace PlusAppointment.Services.Implementations.UserService
 
 
 
-        public async Task<(string? token, string? refreshToken, User? user)> LoginAsync(LoginDto loginDto)
+        public async Task<(string? token, string? refreshToken, User? user, string? errorMessage)> LoginAsync(LoginDto loginDto)
         {
-            var user = await _userRepository.GetUserByUsernameOrEmailAsync(loginDto.UsernameOrEmail);
-
-            if (user == null || string.IsNullOrEmpty(user.Password) || !HashUtility.VerifyPassword(user.Password, loginDto.Password))
+            try
             {
-                return (null, null, null);
+                var user = await _userRepository.GetUserByUsernameOrEmailAsync(loginDto.UsernameOrEmail);
+
+                if (string.IsNullOrEmpty(user.Password) || !HashUtility.VerifyPassword(user.Password, loginDto.Password))
+                {
+                    return (null, null, null, "Invalid password.");
+                }
+
+                var token = JwtUtility.GenerateJwtToken(user, _configuration);
+                var refreshToken = JwtUtility.GenerateRefreshToken();
+
+                var userRefreshToken = new UserRefreshToken
+                {
+                    UserId = user.UserId,
+                    Token = refreshToken,
+                    ExpiryTime = DateTime.UtcNow.AddDays(7)
+                };
+
+                await _userRepository.AddRefreshTokenAsync(userRefreshToken);
+
+                return (token, refreshToken, user, null);
             }
-
-            var token = JwtUtility.GenerateJwtToken(user, _configuration);
-            var refreshToken = JwtUtility.GenerateRefreshToken();
-
-            var userRefreshToken = new UserRefreshToken
+            catch (KeyNotFoundException)
             {
-                UserId = user.UserId,
-                Token = refreshToken,
-                ExpiryTime = DateTime.UtcNow.AddDays(7)
-            };
-
-            await _userRepository.AddRefreshTokenAsync(userRefreshToken);
-
-            return (token, refreshToken, user);
+                return (null, null, null, "User not found.");
+            }
+            catch (Exception ex)
+            {
+                // Log the exception (ex) here if necessary
+                return (null, null, null, "An error occurred during login.");
+            }
         }
+
+
 
         public async Task<(string? newAccessToken, string? newRefreshToken)> RefreshTokenAsync(string token, string refreshToken)
         {

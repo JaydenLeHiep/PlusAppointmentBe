@@ -13,4 +13,5 @@ using PlusAppointment.Models.Classes;
      Task UpdateCustomerAsync(int id, CustomerDto customerDto);
      Task DeleteCustomerAsync(int id);
      Task<IEnumerable<Customer>> SearchCustomersByNameOrPhoneAsync(string searchTerm);
+     Task<Customer?> GetCustomerByNameOrPhoneAsync(string nameOrPhone);
  }

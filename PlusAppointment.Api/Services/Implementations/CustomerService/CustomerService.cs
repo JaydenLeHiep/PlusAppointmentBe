@@ -136,4 +136,9 @@ public class CustomerService: ICustomerService
         var customers = await _customerRepository.SearchCustomersByNameOrPhoneAsync(searchTerm);
         return customers.Where(c => c != null)!; // Filter out null values
     }
+    
+    public async Task<Customer?> GetCustomerByNameOrPhoneAsync(string nameOrPhone)
+    {
+        return await _customerRepository.GetCustomerByNameOrPhoneAsync(nameOrPhone);
+    }
 }

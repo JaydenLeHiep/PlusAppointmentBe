@@ -41,11 +41,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             return appointment == null ? null : MapToDto(appointment);
         }
 
-        private DateTime ConvertToLocalTime(DateTime utcTime)
-        {
-            var localTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Vienna");
-            return TimeZoneInfo.ConvertTimeFromUtc(utcTime, localTimeZone);
-        }
+
 
         public async Task<bool> AddAppointmentAsync(AppointmentDto appointmentDto)
         {
@@ -61,7 +57,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             {
                 CustomerId = appointmentDto.CustomerId,
                 BusinessId = appointmentDto.BusinessId,
-                AppointmentTime = DateTime.SpecifyKind(appointmentDto.AppointmentTime, DateTimeKind.Utc),
+                AppointmentTime = appointmentDto.AppointmentTime,
                 Duration = TimeSpan.Zero, // We'll calculate the correct duration in the repository
                 Status = "Pending",
                 CreatedAt = DateTime.UtcNow,

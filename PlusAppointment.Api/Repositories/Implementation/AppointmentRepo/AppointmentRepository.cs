@@ -44,10 +44,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 .ThenInclude(apptService => apptService.Staff)
                 .ToListAsync();
 
-            foreach (var appointment in appointments)
-            {
-                appointment.AppointmentTime = ConvertToLocalTime(appointment.AppointmentTime);
-            }
+          
 
             var appointmentCacheDtos = appointments.Select(MapToCacheDto).ToList();
             await _redisHelper.SetCacheAsync(cacheKey, appointmentCacheDtos, TimeSpan.FromMinutes(10));
@@ -78,7 +75,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 throw new KeyNotFoundException($"Appointment with ID {appointmentId} not found");
             }
 
-            appointment.AppointmentTime = ConvertToLocalTime(appointment.AppointmentTime);
+            
 
             appointmentCacheDto = MapToCacheDto(appointment);
             await _redisHelper.SetCacheAsync(cacheKey, appointmentCacheDto, TimeSpan.FromMinutes(10));
@@ -352,10 +349,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 .Where(a => a.CustomerId == customerId && a.AppointmentTime >= startOfTodayUtc)
                 .ToListAsync();
 
-            foreach (var appointment in appointments)
-            {
-                appointment.AppointmentTime = ConvertToLocalTime(appointment.AppointmentTime);
-            }
+
 
             return appointments;
         }
@@ -372,10 +366,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 .Where(a => a.CustomerId == customerId)
                 .ToListAsync();
 
-            foreach (var appointment in appointments)
-            {
-                appointment.AppointmentTime = ConvertToLocalTime(appointment.AppointmentTime);
-            }
+
 
             return appointments;
         }
@@ -393,10 +384,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 .Where(a => a.BusinessId == businessId && a.AppointmentTime >= startOfTodayUtc)
                 .ToListAsync();
 
-            foreach (var appointment in appointments)
-            {
-                appointment.AppointmentTime = ConvertToLocalTime(appointment.AppointmentTime);
-            }
+
 
             return appointments;
         }
@@ -418,10 +406,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
 
             var appointments = await appointmentsQuery.ToListAsync();
 
-            foreach (var appointment in appointments)
-            {
-                appointment.AppointmentTime = ConvertToLocalTime(appointment.AppointmentTime);
-            }
+
 
             return appointments;
         }
@@ -564,11 +549,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
             };
         }
 
-        private DateTime ConvertToLocalTime(DateTime utcTime)
-        {
-            var localTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Vienna");
-            return TimeZoneInfo.ConvertTimeFromUtc(utcTime, localTimeZone);
-        }
+
 
         public async Task<IEnumerable<DateTime>> GetAvailableTimeSlotsAsync(int staffId, DateTime date)
         {

@@ -129,7 +129,7 @@ public class AppointmentsController : ControllerBase
     {
         try
         {
-            appointmentDto.AppointmentTime = DateTime.SpecifyKind(appointmentDto.AppointmentTime, DateTimeKind.Utc);
+            //appointmentDto.AppointmentTime = DateTime.SpecifyKind(appointmentDto.AppointmentTime, DateTimeKind.Utc);
 
             // Add the appointment and send the email
             var appointmentAdded = await _appointmentService.AddAppointmentAsync(appointmentDto);
@@ -154,8 +154,7 @@ public class AppointmentsController : ControllerBase
         try
         {
             // Ensure the provided AppointmentTime is treated as UTC
-            updateAppointmentDto.AppointmentTime =
-                DateTime.SpecifyKind(updateAppointmentDto.AppointmentTime, DateTimeKind.Utc);
+            //updateAppointmentDto.AppointmentTime = DateTime.SpecifyKind(updateAppointmentDto.AppointmentTime, DateTimeKind.Utc);
             await _appointmentService.UpdateAppointmentAsync(appointmentId, updateAppointmentDto);
             return Ok(new { message = "Appointment updated successfully" });
         }

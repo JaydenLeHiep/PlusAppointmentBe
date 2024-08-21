@@ -45,6 +45,19 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
         public async Task<bool> AddAppointmentAsync(AppointmentDto appointmentDto)
         {
+            // Validate the BusinessId
+            var business = await _businessRepository.GetByIdAsync(appointmentDto.BusinessId);
+            if (business == null)
+            {
+                throw new ArgumentException("Invalid BusinessId");
+            }
+
+            var customer = await _appointmentRepository.GetByCustomerIdAsync(appointmentDto.CustomerId);
+            if (customer == null)
+            {
+                throw new ArgumentException("Invalid CustomerId");
+            }
+            
             // Create mappings for services and staff
             var mappings = appointmentDto.Services.Select(serviceStaff => new AppointmentServiceStaffMapping
             {
@@ -67,27 +80,32 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             };
 
             // TURN ON FOR PRODUCTION****
-            //var errors = new List<string>();
+            var errors = new List<string>();
 
             // // Try to send the email first
-            // var localTimeAppointment = ConvertToLocalTime(appointmentDto.AppointmentTime);
-            // var subject = "Appointment Confirmation";
-            // var bodySms =
-            //     $"Plus Appointment. Your appointment at {business.Name} for {localTimeAppointment} has been confirmed.";
-            //
-            // try
-            // {
-            //     var emailSent = await _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodySms);
-            //     if (!emailSent)
-            //     {
-            //         errors.Add("Failed to send confirmation email.");
-            //     }
-            // }
-            // catch (Exception ex)
-            // {
-            //     errors.Add($"Error sending confirmation email: {ex.Message}");
-            // }
-            //
+            
+            var subject = "Appointment Confirmation";
+            var appointmentTimeFormatted = appointment.AppointmentTime.ToString("HH:mm 'on' dd.MM.yyyy");
+
+            var bodySms = 
+                $"Plus Appointment. Your appointment at {business.Name} for {appointmentTimeFormatted} has been confirmed.";
+
+            try
+            {
+                var emailSent = await _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodySms);
+                if (!emailSent)
+                {
+                    Console.WriteLine("Failed to send confirmation email.");
+                    errors.Add("Failed to send confirmation email.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed to send confirmation email.");
+                errors.Add($"Error sending confirmation email: {ex.Message}");
+            }
+
+            
             // // Attempt to send an SMS notification
             // try
             // {
@@ -106,20 +124,20 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             await _appointmentRepository.AddAppointmentAsync(appointment);
             //
             // // Schedule SMS reminder
-            // var bodyEmail = $"Plus Appointment. Your appointment at {business.Name} tomorrow.";
-            // var sendTime = localTimeAppointment.AddDays(-1);
-            // BackgroundJob.Schedule(
-            //     () => _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodyEmail),
-            //     sendTime);
+            var bodyEmail = $"Plus Appointment. Do not forget your appointment at {business.Name} for {appointmentTimeFormatted}.";
+            var sendTime = appointmentDto.AppointmentTime.AddDays(-1);
+            BackgroundJob.Schedule(
+                () => _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodyEmail),
+                sendTime);
 
-            // if (errors.Any())
-            // {
-            //     // Log the errors or handle them as needed
-            //     foreach (var error in errors)
-            //     {
-            //         //_logger.LogError(error);
-            //     }
-            // }
+            if (errors.Any())
+            {
+                // Log the errors or handle them as needed
+                foreach (var error in errors)
+                {
+                    //_logger.LogError(error);
+                }
+            }
 
             return true;
         }

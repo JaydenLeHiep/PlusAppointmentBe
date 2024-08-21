@@ -9,7 +9,7 @@ namespace PlusAppointment.Controllers.AppointmentController;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+
 public class AppointmentsController : ControllerBase
 {
     private readonly IAppointmentService _appointmentService;
@@ -20,6 +20,7 @@ public class AppointmentsController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize]
     public async Task<IActionResult> GetAll()
     {
         var tokenType = HttpContext.Request.Headers["Token-Type"].FirstOrDefault();
@@ -42,6 +43,7 @@ public class AppointmentsController : ControllerBase
     }
 
     [HttpGet("appointment_id={appointmentId}")]
+    [Authorize]
     public async Task<IActionResult> GetById(int appointmentId)
     {
         var userRole = HttpContext.Items["UserRole"]?.ToString();
@@ -97,6 +99,7 @@ public class AppointmentsController : ControllerBase
 
 
     [HttpGet("business/business_id={businessId}")]
+    [Authorize]
     public async Task<IActionResult> GetByBusinessId(int businessId)
     {
         var userRole = HttpContext.Items["UserRole"]?.ToString();
@@ -111,6 +114,7 @@ public class AppointmentsController : ControllerBase
     }
 
     [HttpGet("staff/staff_id={staffId}")]
+    
     public async Task<IActionResult> GetByStaffId(int staffId)
     {
         var userRole = HttpContext.Items["UserRole"]?.ToString();
@@ -174,6 +178,7 @@ public class AppointmentsController : ControllerBase
 
 
     [HttpPut("appointment_id={appointmentId}/status")]
+    [Authorize]
     public async Task<IActionResult> UpdateAppointmentStatus(int appointmentId,
         [FromBody] UpdateStatusDto updateStatusDto)
     {
@@ -194,6 +199,7 @@ public class AppointmentsController : ControllerBase
 
 
     [HttpDelete("appointment_id={appointmentId}")]
+    [Authorize]
     public async Task<IActionResult> DeleteAppointment(int appointmentId)
     {
         try

@@ -63,15 +63,15 @@ public class CustomerService: ICustomerService
         //     throw new ArgumentException("Phone cannot be null or empty.", nameof(customerDto.Phone));
         // }
         //
-        if (!await _customerRepository.IsEmailUniqueAsync(customerDto.Email))
-        {
-            throw new ArgumentException("Email is already in use.");
-        }
-        
-        if (!await _customerRepository.IsPhoneUniqueAsync(customerDto.Phone))
-        {
-            throw new ArgumentException("Phone is already in use.");
-        }
+        // if (!await _customerRepository.IsEmailUniqueAsync(customerDto.Email))
+        // {
+        //     throw new ArgumentException("Email is already in use.");
+        // }
+        //
+        // if (!await _customerRepository.IsPhoneUniqueAsync(customerDto.Phone))
+        // {
+        //     throw new ArgumentException("Phone is already in use.");
+        // }
 
         var customer = new Customer
         {
@@ -85,14 +85,14 @@ public class CustomerService: ICustomerService
         await _customerRepository.AddCustomerAsync(customer);
     }
 
-    public async Task UpdateCustomerAsync(int id, CustomerDto customerDto)
+    public async Task UpdateCustomerAsync(int businessId, int customerId, CustomerDto customerDto)
     {
         if (customerDto == null)
         {
             throw new ArgumentNullException(nameof(customerDto), "CustomerDto cannot be null.");
         }
 
-        var existingCustomer = await _customerRepository.GetCustomerByIdAsync(id);
+        var existingCustomer = await _customerRepository.GetCustomerByIdAsync(customerId);
         if (existingCustomer == null)
         {
             throw new KeyNotFoundException("Customer not found.");
@@ -127,9 +127,9 @@ public class CustomerService: ICustomerService
         await _customerRepository.UpdateCustomerAsync(existingCustomer);
     }
     
-    public async Task DeleteCustomerAsync(int id)
+    public async Task DeleteCustomerAsync(int businessId,int customerId)
     {
-        await _customerRepository.DeleteCustomerAsync(id);
+        await _customerRepository.DeleteCustomerAsync(customerId);
     }
     
     public async Task<IEnumerable<Customer>> SearchCustomersByNameOrPhoneAsync(string searchTerm)
@@ -142,4 +142,9 @@ public class CustomerService: ICustomerService
     {
         return await _customerRepository.GetAppointmentsByCustomerIdAsync(customerId);
     }
+    public async Task<IEnumerable<Customer?>> GetCustomersByBusinessIdAsync(int businessId)
+    {
+        return await _customerRepository.GetCustomersByBusinessIdAsync(businessId);
+    }
+
 }

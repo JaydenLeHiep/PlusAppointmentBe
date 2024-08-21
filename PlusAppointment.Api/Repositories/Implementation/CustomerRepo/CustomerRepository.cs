@@ -113,20 +113,20 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
 
         public async Task<bool> IsEmailUniqueAsync(string email)
         {
-            if (string.IsNullOrEmpty(email))
-            {
-                throw new ArgumentNullException(nameof(email), "Email cannot be null or empty.");
-            }
+            // if (string.IsNullOrEmpty(email))
+            // {
+            //     throw new ArgumentNullException(nameof(email), "Email cannot be null or empty.");
+            // }
 
             return !await _context.Customers.AnyAsync(c => c.Email.ToLower() == email.ToLower());
         }
 
         public async Task<bool> IsPhoneUniqueAsync(string phone)
         {
-            if (string.IsNullOrEmpty(phone))
-            {
-                throw new ArgumentNullException(nameof(phone), "Phone number cannot be null or empty.");
-            }
+            // if (string.IsNullOrEmpty(phone))
+            // {
+            //     throw new ArgumentNullException(nameof(phone), "Phone number cannot be null or empty.");
+            // }
 
             return !await _context.Customers.AnyAsync(c => c.Phone.ToLower() == phone.ToLower());
         }
@@ -166,7 +166,7 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
             await _redisHelper.SetCacheAsync(customerCacheKey, customer, TimeSpan.FromMinutes(10));
 
             await _redisHelper.UpdateListCacheAsync<Customer>(
-                "all_customers",
+                $"customers_business_{customer.BusinessId}",
                 list =>
                 {
                     list.RemoveAll(c => c.CustomerId == customer.CustomerId);
@@ -182,7 +182,7 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
             await _redisHelper.DeleteCacheAsync(customerCacheKey);
 
             await _redisHelper.RemoveFromListCacheAsync<Customer>(
-                "all_customers",
+                $"customers_business_{customer.BusinessId}",
                 list =>
                 {
                     list.RemoveAll(c => c.CustomerId == customer.CustomerId);
@@ -211,5 +211,28 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
 
             return customers;
         }
+        
+        public async Task<IEnumerable<Customer?>> GetCustomersByBusinessIdAsync(int businessId)
+        {
+            string cacheKey = $"customers_business_{businessId}";
+            var cachedCustomers = await _redisHelper.GetCacheAsync<List<Customer?>>(cacheKey);
+
+            if (cachedCustomers != null && cachedCustomers.Any())
+            {
+                return cachedCustomers;
+            }
+
+            var customers = await _context.Customers
+                .Where(c => c.BusinessId == businessId)
+                .ToListAsync();
+
+            if (customers.Any())
+            {
+                await _redisHelper.SetCacheAsync(cacheKey, customers, TimeSpan.FromMinutes(10));
+            }
+
+            return customers;
+        }
+
     }
 }

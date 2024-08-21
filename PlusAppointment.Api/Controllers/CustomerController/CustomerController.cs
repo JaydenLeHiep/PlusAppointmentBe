@@ -37,6 +37,19 @@ namespace PlusAppointment.Controllers.CustomerController
 
             return Ok(customer);
         }
+        [HttpGet("business_id={businessId}/customers")]
+        [Authorize]
+        public async Task<IActionResult> GetCustomersByBusinessId(int businessId)
+        {
+            var customers = await _customerService.GetCustomersByBusinessIdAsync(businessId);
+            if (!customers.Any())
+            {
+                return NotFound(new { message = "No customers found for this business" });
+            }
+
+            return Ok(customers);
+        }
+
         
         [HttpPost("find-customer")]
         public async Task<IActionResult> FindByEmailOrPhone([FromBody] FindCustomerDto findCustomerDto)
@@ -77,9 +90,9 @@ namespace PlusAppointment.Controllers.CustomerController
             }
         }
 
-        [HttpPut("customer_id={customerId}")]
+        [HttpPut("business_id={businessId}/customer_id={customerId}")]
         
-        public async Task<IActionResult> UpdateCustomer(int customerId, [FromBody] CustomerDto? customerDto)
+        public async Task<IActionResult> UpdateCustomer(int businessId,int customerId, [FromBody] CustomerDto? customerDto)
         {
             if (customerDto == null)
             {
@@ -88,7 +101,7 @@ namespace PlusAppointment.Controllers.CustomerController
 
             try
             {
-                await _customerService.UpdateCustomerAsync(customerId, customerDto);
+                await _customerService.UpdateCustomerAsync(businessId,customerId, customerDto);
                 return Ok(new { message = "Customer updated successfully" });
             }
             catch (KeyNotFoundException ex)
@@ -105,13 +118,13 @@ namespace PlusAppointment.Controllers.CustomerController
             }
         }
 
-        [HttpDelete("customer_id={customerId}")]
-        [Authorize]
-        public async Task<IActionResult> DeleteCustomer(int customerId)
+        [HttpDelete("business_id={businessId}/customer_id={customerId}")]
+        
+        public async Task<IActionResult> DeleteCustomer(int businessId, int customerId)
         {
             try
             {
-                await _customerService.DeleteCustomerAsync(customerId);
+                await _customerService.DeleteCustomerAsync(businessId, customerId);
                 return Ok(new { message = "Customer deleted successfully" });
             }
             catch (KeyNotFoundException ex)

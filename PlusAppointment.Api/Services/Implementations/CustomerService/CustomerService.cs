@@ -142,9 +142,17 @@ public class CustomerService: ICustomerService
     {
         return await _customerRepository.GetAppointmentsByCustomerIdAsync(customerId);
     }
+
     public async Task<IEnumerable<Customer?>> GetCustomersByBusinessIdAsync(int businessId)
     {
         return await _customerRepository.GetCustomersByBusinessIdAsync(businessId);
+    }
+
+
+    
+    public async Task<Customer?> GetCustomerByNameOrPhoneAsync(string nameOrPhone)
+    {
+        return await _customerRepository.GetCustomerByNameOrPhoneAsync(nameOrPhone);
     }
 
 }

@@ -212,6 +212,7 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
             return customers;
         }
         
+
         public async Task<IEnumerable<Customer?>> GetCustomersByBusinessIdAsync(int businessId)
         {
             string cacheKey = $"customers_business_{businessId}";
@@ -232,6 +233,13 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
             }
 
             return customers;
+        }
+
+
+        public async Task<Customer?> GetCustomerByNameOrPhoneAsync(string nameOrPhone)
+        {
+            return await _context.Customers
+                .FirstOrDefaultAsync(c => c.Name == nameOrPhone || c.Phone == nameOrPhone);
         }
 
     }

@@ -140,5 +140,18 @@ namespace PlusAppointment.Controllers.CustomerController
                 customers = customers
             });
         }
+        
+        [AllowAnonymous]
+        [HttpGet("find-customer-by-name-or-phone")]
+        public async Task<IActionResult> FindByNameOrPhone([FromQuery] string nameOrPhone)
+        {
+            var customer = await _customerService.GetCustomerByNameOrPhoneAsync(nameOrPhone);
+            if (customer == null)
+            {
+                return NotFound(new { message = "Customer not found. Name or Phone is not correct" });
+            }
+
+            return Ok(new { customer.CustomerId });
+        }
     }
 }

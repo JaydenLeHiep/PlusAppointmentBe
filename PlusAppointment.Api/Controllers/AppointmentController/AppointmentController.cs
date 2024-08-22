@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using PlusAppointment.Models.DTOs;
 using PlusAppointment.Models.Enums;
 using PlusAppointment.Services.Interfaces.AppointmentService;
+using PlusAppointment.Utils.Hub;
 
 
 namespace PlusAppointment.Controllers.AppointmentController;
@@ -13,10 +15,12 @@ namespace PlusAppointment.Controllers.AppointmentController;
 public class AppointmentsController : ControllerBase
 {
     private readonly IAppointmentService _appointmentService;
+    private readonly IHubContext<AppointmentHub> _hubContext;
 
-    public AppointmentsController(IAppointmentService appointmentService)
+    public AppointmentsController(IAppointmentService appointmentService, IHubContext<AppointmentHub> hubContext)
     {
         _appointmentService = appointmentService;
+        _hubContext = hubContext;
     }
 
     [HttpGet]
@@ -99,7 +103,7 @@ public class AppointmentsController : ControllerBase
 
 
     [HttpGet("business/business_id={businessId}")]
-    [Authorize]
+    
     public async Task<IActionResult> GetByBusinessId(int businessId)
     {
         var userRole = HttpContext.Items["UserRole"]?.ToString();
@@ -142,6 +146,8 @@ public class AppointmentsController : ControllerBase
             {
                 return BadRequest(new { message = "Appointment could not be added because some errors." });
             }
+            await _hubContext.Clients.All.SendAsync("ReceiveAppointmentUpdate", "A new appointment has been booked.");
+
 
             return Ok(new { message = "Appointment added successfully" });
         }

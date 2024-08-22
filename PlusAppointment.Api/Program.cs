@@ -40,6 +40,7 @@ using PlusAppointment.Repositories.Implementation.CalculateMoneyRepo;
 using PlusAppointment.Repositories.Interfaces.CalculateMoneyRepo;
 using PlusAppointment.Services.Implementations.CalculateMoneyService;
 using PlusAppointment.Services.Interfaces.CalculateMoneyService;
+using PlusAppointment.Utils.Hub;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,6 +63,9 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve;
         options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
     });
+builder.Services.AddSignalR(); // Add SignalR services
+
+
 
 // Configure the DbContext with the connection string from appsettings.json
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -217,6 +221,11 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
 {
     Authorization = new[] { new Hangfire.Dashboard.LocalRequestsOnlyAuthorizationFilter() }
 });
+
+
+// Map the SignalR hub
+app.MapHub<AppointmentHub>("/appointmentHub");
+
 
 app.MapControllers();
 app.MapGet("/", () => "Hello World!");

@@ -49,19 +49,20 @@ namespace PlusAppointment.Controllers.CustomerController
 
             return Ok(customers);
         }
-
         
         [HttpPost("find-customer")]
         public async Task<IActionResult> FindByEmailOrPhone([FromBody] FindCustomerDto findCustomerDto)
         {
             var customer = await _customerService.GetCustomerByEmailOrPhoneAsync(findCustomerDto.EmailOrPhone);
+    
             if (customer == null)
             {
-                return NotFound(new { message = "Customer not found. Phone or Email is not correct" });
+                return Ok(new { message = "Customer not found.", customerExists = false });
             }
 
-            return Ok(new { customer.CustomerId });
+            return Ok(new { customer.CustomerId, customerExists = true });
         }
+        
         [HttpGet("customer_id={customerId}/find-appointments")]
         [Authorize]
         public async Task<IActionResult> GetCustomerAppointments(int customerId)

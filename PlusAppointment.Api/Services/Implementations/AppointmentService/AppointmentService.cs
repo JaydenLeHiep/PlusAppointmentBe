@@ -42,7 +42,6 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
         }
 
 
-
         public async Task<bool> AddAppointmentAsync(AppointmentDto appointmentDto)
         {
             // Validate the BusinessId
@@ -57,7 +56,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             {
                 throw new ArgumentException("Invalid CustomerId");
             }
-            
+
             // Create mappings for services and staff
             var mappings = appointmentDto.Services.Select(serviceStaff => new AppointmentServiceStaffMapping
             {
@@ -83,12 +82,19 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             var errors = new List<string>();
 
             // // Try to send the email first
-            
-            var subject = "Appointment Confirmation";
-            var appointmentTimeFormatted = appointment.AppointmentTime.ToString("HH:mm 'on' dd.MM.yyyy");
 
+            // Convert the appointment time from UTC to Vienna local time
+            TimeZoneInfo viennaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
+            DateTime viennaTime = TimeZoneInfo.ConvertTimeFromUtc(appointment.AppointmentTime, viennaTimeZone);
+
+            // Format the time in the required format
+            var appointmentTimeFormatted = viennaTime.ToString("HH:mm 'on' dd.MM.yyyy");
+
+            // Try to send the email first
+            var subject = "Appointment Confirmation";
             var bodySms = 
-                $"Plus Appointment. Your appointment at {business.Name} for {appointmentTimeFormatted} has been confirmed.";
+                $"Dear Customer, \n\nThank you for choosing {business.Name}. We are pleased to confirm your appointment at {appointmentTimeFormatted}. We look forward to serving you! \n\nBest regards,\n{business.Name}";
+
 
             try
             {
@@ -105,7 +111,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 errors.Add($"Error sending confirmation email: {ex.Message}");
             }
 
-            
+
             // // Attempt to send an SMS notification
             // try
             // {
@@ -124,7 +130,9 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             await _appointmentRepository.AddAppointmentAsync(appointment);
             //
             // // Schedule SMS reminder
-            var bodyEmail = $"Plus Appointment. Do not forget your appointment at {business.Name} for {appointmentTimeFormatted}.";
+            var bodyEmail = 
+                $"Dear Customer, \n\nThis is a friendly reminder of your upcoming appointment at {business.Name} scheduled for {appointmentTimeFormatted}. Please ensure you arrive on time. We look forward to seeing you! \n\nBest regards,\n{business.Name}";
+
             var sendTime = appointmentDto.AppointmentTime.AddDays(-1);
             BackgroundJob.Schedule(
                 () => _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodyEmail),
@@ -195,8 +203,8 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             var appointments = await _appointmentRepository.GetAppointmentsByStaffIdAsync(staffId);
             return appointments.Select(a => MapToDto(a));
         }
-        
-        public async Task<IEnumerable<DateTime>>GetNotAvailableTimeSlotsAsync(int staffId, DateTime date)
+
+        public async Task<IEnumerable<DateTime>> GetNotAvailableTimeSlotsAsync(int staffId, DateTime date)
         {
             return await _appointmentRepository.GetNotAvailableTimeSlotsAsync(staffId, date);
         }

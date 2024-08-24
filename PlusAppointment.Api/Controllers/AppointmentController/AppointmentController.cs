@@ -220,26 +220,31 @@ public class AppointmentsController : ControllerBase
     }
 
     [AllowAnonymous]
-    [HttpGet("available-timeslots")]
-    public async Task<IActionResult> GetAvailableTimeSlots(int staffId, DateTime date)
+    [HttpGet("not-available-timeslots")]
+    public async Task<IActionResult> GetNotAvailableTimeSlots(int staffId, DateTime date)
     {
         if (staffId <= 0)
         {
             return BadRequest("Invalid staff ID.");
         }
 
-        var availableTimeSlots = await _appointmentService.GetAvailableTimeSlotsAsync(staffId, date);
+        var notAvailableTimeSlots = await _appointmentService.GetNotAvailableTimeSlotsAsync(staffId, date);
 
-        if (availableTimeSlots == null || !availableTimeSlots.Any())
+        // Return an empty array if no time slots are found, but still return 200 OK
+        if (notAvailableTimeSlots == null || !notAvailableTimeSlots.Any())
         {
-            return NotFound("No available time slots found for the selected staff on the given date.");
+            return Ok(new AvailableTimeSlotsDto
+            {
+                StaffId = staffId,
+                AvailableTimeSlots = new List<DateTime>() // Returning an empty list
+            });
         }
 
         // Prepare the response DTO
         var response = new AvailableTimeSlotsDto
         {
             StaffId = staffId,
-            AvailableTimeSlots = availableTimeSlots.ToList()
+            AvailableTimeSlots = notAvailableTimeSlots.ToList() // Renamed to "NotAvailableTimeSlots" in the DTO
         };
 
         return Ok(response);

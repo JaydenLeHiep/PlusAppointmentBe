@@ -23,6 +23,6 @@ namespace PlusAppointment.Repositories.Interfaces.AppointmentRepo
         Task<Customer?> GetByCustomerIdAsync(int customerId);
 
         Task<IEnumerable<Appointment>> GetCustomerAppointmentHistoryAsync(int customerId);
-        Task<IEnumerable<DateTime>> GetAvailableTimeSlotsAsync(int staffId, DateTime date);
+        Task<IEnumerable<DateTime>> GetNotAvailableTimeSlotsAsync(int staffId, DateTime date);
     }
 }

@@ -196,9 +196,9 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             return appointments.Select(a => MapToDto(a));
         }
         
-        public async Task<IEnumerable<DateTime>> GetAvailableTimeSlotsAsync(int staffId, DateTime date)
+        public async Task<IEnumerable<DateTime>>GetNotAvailableTimeSlotsAsync(int staffId, DateTime date)
         {
-            return await _appointmentRepository.GetAvailableTimeSlotsAsync(staffId, date);
+            return await _appointmentRepository.GetNotAvailableTimeSlotsAsync(staffId, date);
         }
 
         private AppointmentRetrieveDto MapToDto(Appointment appointment)

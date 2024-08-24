@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using PlusAppointment.Models.DTOs;
 using PlusAppointment.Services.Interfaces.CustomerService;
 using PlusAppointment.Models.Classes;
+using PlusAppointment.Utils.Hub;
 
 namespace PlusAppointment.Controllers.CustomerController
 {
@@ -11,10 +13,12 @@ namespace PlusAppointment.Controllers.CustomerController
     public class CustomerController : ControllerBase
     {
         private readonly ICustomerService _customerService;
+        private readonly IHubContext<AppointmentHub> _hubContext;
 
-        public CustomerController(ICustomerService customerService)
+        public CustomerController(ICustomerService customerService, IHubContext<AppointmentHub> hubContext)
         {
             _customerService = customerService;
+            _hubContext = hubContext;
         }
 
         [HttpGet]
@@ -83,6 +87,8 @@ namespace PlusAppointment.Controllers.CustomerController
             {
                 // Assign the business_id from the URL to the DTO
                 await _customerService.AddCustomerAsync(customerDto);
+                // Notify the frontend
+                await _hubContext.Clients.All.SendAsync("ReceiveCustomerUpdate", "A new customer has been added.");
                 return Ok(new { message = "Customer added successfully" });
             }
             catch (ArgumentException ex)

@@ -1,22 +1,47 @@
+using System.Globalization;
 using StackExchange.Redis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace WebApplication1.Utils.Redis
+
+namespace PlusAppointment.Utils.Redis
 {
     public class RedisHelper
     {
         private readonly IConnectionMultiplexer _connectionMultiplexer;
         private readonly JsonSerializerOptions _serializerOptions;
 
-        public RedisHelper(IConnectionMultiplexer connectionMultiplexer)
+        public RedisHelper(IConfiguration configuration)
         {
-            _connectionMultiplexer = connectionMultiplexer;
+            var redisConnectionString = configuration.GetConnectionString("RedisConnection");
+            if (string.IsNullOrEmpty(redisConnectionString))
+            {
+                Console.WriteLine("Redis connection string is missing in the configuration.");
+                throw new ArgumentException("Redis connection string is missing in the configuration.");
+            }
+
+            try
+            {
+                var configurationOptions = ConfigurationOptions.Parse(redisConnectionString);
+                configurationOptions.AbortOnConnectFail = false;
+                _connectionMultiplexer = ConnectionMultiplexer.Connect(configurationOptions);
+                Console.WriteLine("Successfully connected to Redis.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to connect to Redis: {ex.Message}");
+                throw;
+            }
+
             _serializerOptions = new JsonSerializerOptions
             {
                 ReferenceHandler = ReferenceHandler.IgnoreCycles,
                 WriteIndented = true
             };
+        }
+        public IDatabase GetDatabase()
+        {
+            return _connectionMultiplexer.GetDatabase();
         }
 
         public async Task<T?> GetCacheAsync<T>(string key) where T : class
@@ -26,10 +51,7 @@ namespace WebApplication1.Utils.Redis
 
             if (!cachedData.IsNullOrEmpty)
             {
-                // Convert RedisValue to string before deserialization
                 var jsonData = cachedData.ToString();
-
-                // Additional null check to satisfy the compiler
                 if (!string.IsNullOrEmpty(jsonData))
                 {
                     return JsonSerializer.Deserialize<T>(jsonData, _serializerOptions);
@@ -54,13 +76,83 @@ namespace WebApplication1.Utils.Redis
 
         public async Task DeleteKeysByPatternAsync(string pattern)
         {
-            var server = _connectionMultiplexer.GetServer(_connectionMultiplexer.Configuration);
+            var server = _connectionMultiplexer.GetServer(_connectionMultiplexer.GetEndPoints()[0]);
             var keys = server.Keys(pattern: pattern);
 
             foreach (var key in keys)
             {
-                await DeleteCacheAsync(key);
+                var keyString = key.ToString();
+                if (!string.IsNullOrEmpty(keyString))
+                {
+                    await DeleteCacheAsync(keyString);
+                }
             }
+        }
+
+        public async Task UpdateListCacheAsync<T>(string key, Func<List<T>, List<T>> updateFunc,
+            TimeSpan? expiry = null) where T : class
+        {
+            var db = _connectionMultiplexer.GetDatabase();
+            var cachedData = await db.StringGetAsync(key);
+
+            List<T> list;
+            if (!cachedData.IsNullOrEmpty)
+            {
+                var jsonData = cachedData.ToString();
+                list = JsonSerializer.Deserialize<List<T>>(jsonData, _serializerOptions) ?? new List<T>();
+            }
+            else
+            {
+                list = new List<T>();
+            }
+
+            list = updateFunc(list);
+
+            var serializedData = JsonSerializer.Serialize(list, _serializerOptions);
+            await db.StringSetAsync(key, serializedData, expiry);
+        }
+
+        public async Task RemoveFromListCacheAsync<T>(string key, Func<List<T>, List<T>> removeFunc,
+            TimeSpan? expiry = null) where T : class
+        {
+            var db = _connectionMultiplexer.GetDatabase();
+            var cachedData = await db.StringGetAsync(key);
+
+            List<T> list;
+            if (!cachedData.IsNullOrEmpty)
+            {
+                var jsonData = cachedData.ToString();
+                list = JsonSerializer.Deserialize<List<T>>(jsonData, _serializerOptions) ?? new List<T>();
+            }
+            else
+            {
+                return;
+            }
+
+            list = removeFunc(list);
+
+            var serializedData = JsonSerializer.Serialize(list, _serializerOptions);
+            await db.StringSetAsync(key, serializedData, expiry);
+        }
+
+        public async Task<decimal?> GetDecimalCacheAsync(string key)
+        {
+            var db = _connectionMultiplexer.GetDatabase();
+            var cachedData = await db.StringGetAsync(key);
+
+            if (!cachedData.IsNullOrEmpty)
+            {
+                return decimal.TryParse(cachedData.ToString(), out var result) ? result : (decimal?)null;
+            }
+
+            return null;
+        }
+
+        public async Task SetDecimalCacheAsync(string key, decimal value, TimeSpan? expiry = null)
+        {
+            var db = _connectionMultiplexer.GetDatabase();
+            var serializedData = value.ToString(CultureInfo.InvariantCulture);
+            await db.StringSetAsync(key, serializedData, expiry);
         }
     }
 }

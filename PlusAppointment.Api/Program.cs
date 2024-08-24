@@ -4,39 +4,52 @@ using log4net.Config;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using WebApplication1.Data;
-using WebApplication1.Middleware;
-using WebApplication1.Repositories.Implementation.AppointmentRepo;
-using WebApplication1.Repositories.Implementation.UserRepo;
-using WebApplication1.Repositories.Interfaces.UserRepo;
-using WebApplication1.Services.Interfaces.UserService;
-using WebApplication1.Repositories.Implementation.BusinessRepo;
-using WebApplication1.Repositories.Implementation.CustomerRepo;
-using WebApplication1.Repositories.Implementation.ServicesRepo;
-using WebApplication1.Repositories.Implementation.StaffRepo;
-using WebApplication1.Repositories.Interfaces.AppointmentRepo;
-using WebApplication1.Repositories.Interfaces.BusinessRepo;
-using WebApplication1.Repositories.Interfaces.CustomerRepo;
-using WebApplication1.Repositories.Interfaces.ServicesRepo;
-using WebApplication1.Repositories.Interfaces.StaffRepo;
-using WebApplication1.Services.Interfaces.AppointmentService;
-using WebApplication1.Services.Interfaces.BusinessService;
-using WebApplication1.Services.Interfaces.CustomerService;
-using WebApplication1.Services.Interfaces.ServicesService;
-using WebApplication1.Services.Interfaces.StaffService;
-
+using PlusAppointment.Data;
+using PlusAppointment.Middleware;
+using PlusAppointment.Repositories.Implementation.UserRepo;
+using PlusAppointment.Repositories.Interfaces.UserRepo;
+using PlusAppointment.Services.Interfaces.UserService;
+using PlusAppointment.Repositories.Implementation.BusinessRepo;
+using PlusAppointment.Repositories.Implementation.CustomerRepo;
+using PlusAppointment.Repositories.Implementation.ServicesRepo;
+using PlusAppointment.Repositories.Implementation.StaffRepo;
+using PlusAppointment.Repositories.Interfaces.AppointmentRepo;
+using PlusAppointment.Repositories.Interfaces.BusinessRepo;
+using PlusAppointment.Repositories.Interfaces.CustomerRepo;
+using PlusAppointment.Repositories.Interfaces.ServicesRepo;
+using PlusAppointment.Repositories.Interfaces.StaffRepo;
+using PlusAppointment.Services.Interfaces.AppointmentService;
+using PlusAppointment.Services.Interfaces.BusinessService;
+using PlusAppointment.Services.Interfaces.CustomerService;
+using PlusAppointment.Services.Interfaces.ServicesService;
+using PlusAppointment.Services.Interfaces.StaffService;
 using StackExchange.Redis;
-using WebApplication1.Services.Implementations.AppointmentService;
-using WebApplication1.Services.Implementations.BusinessService;
-using WebApplication1.Services.Implementations.CustomerService;
-using WebApplication1.Services.Implementations.ServicesService;
-using WebApplication1.Services.Implementations.StaffService;
-using WebApplication1.Services.Implementations.UserService;
-using WebApplication1.Utils.Redis;
-
-// Other using directives
+using PlusAppointment.Repositories.Implementation.AppointmentRepo;
+using PlusAppointment.Services.Implementations.AppointmentService;
+using PlusAppointment.Services.Implementations.BusinessService;
+using PlusAppointment.Services.Implementations.CustomerService;
+using PlusAppointment.Services.Implementations.ServicesService;
+using PlusAppointment.Services.Implementations.StaffService;
+using PlusAppointment.Services.Implementations.UserService;
+using PlusAppointment.Utils.Redis;
+using PlusAppointment.Utils.SendingEmail;
+using PlusAppointment.Utils.SendingSms;
+using Hangfire;
+using Hangfire.MemoryStorage;
+using PlusAppointment.Repositories.Implementation.CalculateMoneyRepo;
+using PlusAppointment.Repositories.Interfaces.CalculateMoneyRepo;
+using PlusAppointment.Services.Implementations.CalculateMoneyService;
+using PlusAppointment.Services.Interfaces.CalculateMoneyService;
+using PlusAppointment.Utils.Hub;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Load environment-specific configuration
+builder.Configuration
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
+    .AddEnvironmentVariables();
 
 // Ensure the Logs directory exists
 EnsureLogsDirectory();
@@ -50,6 +63,9 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve;
         options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
     });
+builder.Services.AddSignalR(); // Add SignalR services
+
+
 
 // Configure the DbContext with the connection string from appsettings.json
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -68,35 +84,95 @@ builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddScoped<ICalculateMoneyRepo, CalculateMoneyRepo>();
+builder.Services.AddScoped<ICalculateMoneyService, CalculateMoneyService>();
 
+builder.Services.AddSingleton<EmailService>();
+builder.Services.AddSingleton<SmsService>();
 builder.Services.AddSingleton<RedisHelper>();
+builder.Services.AddTransient<SmsTextMagicService>();
 
 // Configure Redis
 var redisConnectionString = builder.Configuration.GetConnectionString("RedisConnection");
 
 if (string.IsNullOrEmpty(redisConnectionString))
 {
+    Console.WriteLine("Redis connection string is not configured.");
     throw new InvalidOperationException("Redis connection string is not configured.");
 }
 
-builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(redisConnectionString));
+ConfigurationOptions configurationOptions;
+try
+{
+    configurationOptions = ConfigurationOptions.Parse(redisConnectionString);
+    configurationOptions.AbortOnConnectFail = false;
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Failed to parse Redis connection string: {ex.Message}");
+    throw;
+}
+
+IConnectionMultiplexer redis;
+try
+{
+    redis = ConnectionMultiplexer.Connect(configurationOptions);
+    Console.WriteLine("Successfully connected to Redis.");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Failed to connect to Redis: {ex.Message}");
+    throw;
+}
+
+builder.Services.AddSingleton(redis);
+
+// Configure Hangfire to use In-Memory storage
+builder.Services.AddHangfire(config =>
+{
+    config.UseMemoryStorage();
+});
+builder.Services.AddHangfireServer();
 
 // Add JWT Authentication
 var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"] ?? string.Empty);
-builder.Services.AddAuthentication(x =>
+builder.Services.AddAuthentication(options =>
 {
-    x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(x =>
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
 {
-    x.RequireHttpsMetadata = false;
-    x.SaveToken = true;
-    x.TokenValidationParameters = new TokenValidationParameters
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(key),
         ValidateIssuer = false,
         ValidateAudience = false
+    };
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
+
+            // If the Authorization header is missing or empty, use the refresh token
+            if (string.IsNullOrEmpty(token) && context.Request.Cookies.ContainsKey("refreshToken"))
+            {
+                token = context.Request.Cookies["refreshToken"];
+                context.Request.Headers.Append("Token-Type", "Refresh");
+            }
+            else
+            {
+                context.Request.Headers.Append("Token-Type", "Access");
+            }
+
+            context.Token = token;
+
+            return Task.CompletedTask;
+        }
     };
 });
 
@@ -105,11 +181,16 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontendOnly", builder =>
     {
-        builder.WithOrigins("http://localhost:3000")
-               .AllowAnyMethod()
-               .AllowAnyHeader();
+        builder.WithOrigins("http://localhost:3000", 
+                "http://18.159.214.207", 
+                "http://plus-appointments-alb-1330428496.eu-central-1.elb.amazonaws.com",
+                "https://plus-appointment.com")
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
     });
 });
+
 
 var app = builder.Build();
 
@@ -132,8 +213,20 @@ app.UseRouting();
 app.UseCors("AllowFrontendOnly");
 
 app.UseAuthentication();
-app.UseAuthorization();
 app.UseRoleMiddleware();
+app.UseAuthorization();
+
+// Use Hangfire dashboard
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = new[] { new Hangfire.Dashboard.LocalRequestsOnlyAuthorizationFilter() }
+});
+
+
+// Map the SignalR hub
+app.MapHub<AppointmentHub>("/appointmentHub");
+
+
 app.MapControllers();
 app.MapGet("/", () => "Hello World!");
 

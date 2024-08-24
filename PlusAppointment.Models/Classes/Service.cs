@@ -9,5 +9,7 @@ namespace PlusAppointment.Models.Classes
         public decimal Price { get; set; }
         public int BusinessId { get; set; } // Foreign key
         public Business? Business { get; set; } // Navigation property
+
+        public ICollection<AppointmentServiceStaffMapping>? AppointmentServicesStaffs { get; set; }
     }
 }

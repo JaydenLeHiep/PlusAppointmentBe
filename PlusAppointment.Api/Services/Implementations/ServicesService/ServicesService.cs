@@ -1,10 +1,10 @@
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
 using PlusAppointment.Models.Enums;
-using WebApplication1.Repositories.Interfaces.ServicesRepo;
-using WebApplication1.Services.Interfaces.ServicesService;
+using PlusAppointment.Repositories.Interfaces.ServicesRepo;
+using PlusAppointment.Services.Interfaces.ServicesService;
 
-namespace WebApplication1.Services.Implementations.ServicesService
+namespace PlusAppointment.Services.Implementations.ServicesService
 {
     public class ServicesService : IServicesService
     {
@@ -23,6 +23,11 @@ namespace WebApplication1.Services.Implementations.ServicesService
         public async Task<Service?> GetServiceByIdAsync(int id)
         {
             return await _servicesRepository.GetByIdAsync(id);
+        }
+
+        public async Task<IEnumerable<Service?>> GetAllServiceByBusinessIdAsync(int businessId)
+        {
+            return await _servicesRepository.GetAllByBusinessIdAsync(businessId);
         }
 
         public async Task AddServiceAsync(ServiceDto? serviceDto, int businessId, string userId, string userRole)
@@ -52,49 +57,8 @@ namespace WebApplication1.Services.Implementations.ServicesService
                 throw new ArgumentException("Service price is required.");
             }
 
-            var service = new Service
+            if (serviceDto.Description != null)
             {
-                Name = serviceDto.Name,
-                Description = serviceDto.Description,
-                Duration = serviceDto.Duration.Value,
-                Price = serviceDto.Price.Value,
-                BusinessId = businessId
-            };
-
-            await _servicesRepository.AddServiceAsync(service, businessId);
-        }
-
-        public async Task AddListServicesAsync(ServicesDto? servicesDto, int businessId, string userId, string userRole)
-        {
-            if (string.IsNullOrEmpty(userId) || userRole != Role.Owner.ToString())
-            {
-                throw new UnauthorizedAccessException("User not authorized");
-            }
-
-            if (servicesDto == null || !servicesDto.Services.Any())
-            {
-                throw new ArgumentException("No data provided.");
-            }
-
-            var services = new List<Service>();
-
-            foreach (var serviceDto in servicesDto.Services)
-            {
-                if (string.IsNullOrEmpty(serviceDto.Name))
-                {
-                    throw new ArgumentException("Service name is required.");
-                }
-
-                if (!serviceDto.Duration.HasValue)
-                {
-                    throw new ArgumentException("Service duration is required.");
-                }
-
-                if (!serviceDto.Price.HasValue)
-                {
-                    throw new ArgumentException("Service price is required.");
-                }
-
                 var service = new Service
                 {
                     Name = serviceDto.Name,
@@ -104,13 +68,61 @@ namespace WebApplication1.Services.Implementations.ServicesService
                     BusinessId = businessId
                 };
 
-                services.Add(service);
+                await _servicesRepository.AddServiceAsync(service, businessId);
             }
+        }
+
+        public async Task AddListServicesAsync(ServicesDto? servicesDto, int businessId, string userId, string userRole)
+        {
+            if (string.IsNullOrEmpty(userId) || userRole != Role.Owner.ToString())
+            {
+                throw new UnauthorizedAccessException("User not authorized");
+            }
+
+            if (servicesDto?.Services != null && (servicesDto == null || !servicesDto.Services.Any()))
+            {
+                throw new ArgumentException("No data provided.");
+            }
+
+            var services = new List<Service>();
+
+            if (servicesDto != null && servicesDto.Services != null)
+                foreach (var serviceDto in servicesDto.Services)
+                {
+                    if (string.IsNullOrEmpty(serviceDto.Name))
+                    {
+                        throw new ArgumentException("Service name is required.");
+                    }
+
+                    if (!serviceDto.Duration.HasValue)
+                    {
+                        throw new ArgumentException("Service duration is required.");
+                    }
+
+                    if (!serviceDto.Price.HasValue)
+                    {
+                        throw new ArgumentException("Service price is required.");
+                    }
+
+                    if (serviceDto.Description != null)
+                    {
+                        var service = new Service
+                        {
+                            Name = serviceDto.Name,
+                            Description = serviceDto.Description,
+                            Duration = serviceDto.Duration.Value,
+                            Price = serviceDto.Price.Value,
+                            BusinessId = businessId
+                        };
+
+                        services.Add(service);
+                    }
+                }
 
             await _servicesRepository.AddListServicesAsync(services, businessId);
         }
 
-        public async Task UpdateServiceAsync(int id, ServiceDto? serviceDto, string userId)
+        public async Task UpdateServiceAsync(int businessId, int serviceId, ServiceDto? serviceDto, string userId)
         {
             if (serviceDto == null)
             {
@@ -122,7 +134,7 @@ namespace WebApplication1.Services.Implementations.ServicesService
                 throw new UnauthorizedAccessException("User not authorized");
             }
 
-            var service = await _servicesRepository.GetByIdAsync(id);
+            var service = await _servicesRepository.GetByBusinessIdServiceIdAsync(businessId, serviceId);
             if (service == null)
             {
                 throw new Exception("Service not found");
@@ -151,20 +163,11 @@ namespace WebApplication1.Services.Implementations.ServicesService
             await _servicesRepository.UpdateAsync(service);
         }
 
-        public async Task DeleteServiceAsync(int id, string userId)
+        public async Task DeleteServiceAsync(int businessId, int serviceId)
         {
-            if (string.IsNullOrEmpty(userId))
-            {
-                throw new UnauthorizedAccessException("User not authorized");
-            }
-
-            var service = await _servicesRepository.GetByIdAsync(id);
-            if (service == null)
-            {
-                throw new Exception("Service not found");
-            }
-
-            await _servicesRepository.DeleteAsync(id);
+            await _servicesRepository.DeleteAsync(businessId, serviceId);
         }
+
+
     }
 }

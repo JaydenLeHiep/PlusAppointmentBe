@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
+using PlusAppointment.Data;
 using PlusAppointment.Models.Classes;
-using WebApplication1.Data;
-using WebApplication1.Repositories.Interfaces.UserRepo;
-using WebApplication1.Utils.Redis;
+using PlusAppointment.Repositories.Interfaces.UserRepo;
+using PlusAppointment.Utils.Redis;
 
-namespace WebApplication1.Repositories.Implementation.UserRepo
+
+namespace PlusAppointment.Repositories.Implementation.UserRepo
 {
     public class UserRepository : IUserRepository
     {
@@ -57,7 +58,7 @@ namespace WebApplication1.Repositories.Implementation.UserRepo
             await _context.Users.AddAsync(user);
             await _context.SaveChangesAsync();
 
-            await InvalidateCache();
+            await UpdateUserCacheAsync(user);
         }
 
         public async Task UpdateAsync(User user)
@@ -65,7 +66,7 @@ namespace WebApplication1.Repositories.Implementation.UserRepo
             _context.Users.Update(user);
             await _context.SaveChangesAsync();
 
-            await InvalidateCache();
+            await UpdateUserCacheAsync(user);
         }
 
         public async Task DeleteAsync(int id)
@@ -76,7 +77,7 @@ namespace WebApplication1.Repositories.Implementation.UserRepo
                 _context.Users.Remove(user);
                 await _context.SaveChangesAsync();
 
-                await InvalidateCache();
+                await InvalidateUserCacheAsync(user);
             }
         }
 
@@ -156,12 +157,64 @@ namespace WebApplication1.Repositories.Implementation.UserRepo
             await _redisHelper.SetCacheAsync(cacheKey, user, TimeSpan.FromMinutes(10));
             return user;
         }
-
-
-        private async Task InvalidateCache()
+        
+        // New method to get a refresh token
+        public async Task<UserRefreshToken?> GetRefreshTokenAsync(string refreshToken)
         {
-            await _redisHelper.DeleteKeysByPatternAsync("user_*");
-            await _redisHelper.DeleteCacheAsync("all_users");
+            return await _context.UserRefreshTokens.FirstOrDefaultAsync(rt => rt.Token == refreshToken);
+        }
+
+        // New method to add a refresh token
+        public async Task AddRefreshTokenAsync(UserRefreshToken refreshToken)
+        {
+            await _context.UserRefreshTokens.AddAsync(refreshToken);
+            await _context.SaveChangesAsync();
+        }
+
+        // New method to delete a specific refresh token
+        public async Task DeleteRefreshTokenAsync(UserRefreshToken refreshToken)
+        {
+            _context.UserRefreshTokens.Remove(refreshToken);
+            await _context.SaveChangesAsync();
+        }
+
+        // New method to delete all refresh tokens for a user (e.g., on logout from all devices)
+        public async Task DeleteAllRefreshTokensForUserAsync(int userId)
+        {
+            var refreshTokens = _context.UserRefreshTokens.Where(rt => rt.UserId == userId);
+            _context.UserRefreshTokens.RemoveRange(refreshTokens);
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task UpdateUserCacheAsync(User user)
+        {
+            var userCacheKey = $"user_{user.UserId}";
+            await _redisHelper.SetCacheAsync(userCacheKey, user, TimeSpan.FromMinutes(10));
+
+            await _redisHelper.UpdateListCacheAsync<User>(
+                "all_users",
+                list =>
+                {
+                    list.RemoveAll(u => u.UserId == user.UserId);
+                    list.Add(user);
+                    return list;
+                },
+                TimeSpan.FromMinutes(10));
+        }
+
+        private async Task InvalidateUserCacheAsync(User user)
+        {
+            var userCacheKey = $"user_{user.UserId}";
+            await _redisHelper.DeleteCacheAsync(userCacheKey);
+
+            await _redisHelper.RemoveFromListCacheAsync<User>(
+                "all_users",
+                list =>
+                {
+                    list.RemoveAll(u => u.UserId == user.UserId);
+                    return list;
+                },
+                TimeSpan.FromMinutes(10));
         }
     }
 }

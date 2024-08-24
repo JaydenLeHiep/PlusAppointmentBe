@@ -1,11 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using PlusAppointment.Data;
 using PlusAppointment.Models.Classes;
-using WebApplication1.Data;
-using WebApplication1.Repositories.Interfaces.ServicesRepo;
-using WebApplication1.Utils.Redis;
+using PlusAppointment.Repositories.Interfaces.ServicesRepo;
+using PlusAppointment.Utils.Redis;
 
-
-namespace WebApplication1.Repositories.Implementation.ServicesRepo
+namespace PlusAppointment.Repositories.Implementation.ServicesRepo
 {
     public class ServicesRepository : IServicesRepository
     {
@@ -53,6 +52,22 @@ namespace WebApplication1.Repositories.Implementation.ServicesRepo
             return service;
         }
 
+        public async Task<IEnumerable<Service?>> GetAllByBusinessIdAsync(int businessId)
+        {
+            string cacheKey = $"service_business_{businessId}";
+            var cachedServices = await _redisHelper.GetCacheAsync<List<Service>>(cacheKey);
+
+            if (cachedServices != null && cachedServices.Any())
+            {
+                return cachedServices;
+            }
+
+            var services = await _context.Services.Where(s => s.BusinessId == businessId).ToListAsync();
+            await _redisHelper.SetCacheAsync(cacheKey, services, TimeSpan.FromMinutes(10));
+
+            return services;
+        }
+
         public async Task AddServiceAsync(Service? service, int businessId)
         {
             var business = await _context.Businesses.FindAsync(businessId);
@@ -68,7 +83,7 @@ namespace WebApplication1.Repositories.Implementation.ServicesRepo
             await _context.Services.AddAsync(service);
             await _context.SaveChangesAsync();
 
-            await InvalidateCache();
+            await UpdateServiceCacheAsync(service);
         }
 
         public async Task AddListServicesAsync(IEnumerable<Service?> services, int businessId)
@@ -82,7 +97,20 @@ namespace WebApplication1.Repositories.Implementation.ServicesRepo
             await _context.Services.AddRangeAsync(services!);
             await _context.SaveChangesAsync();
 
-            await InvalidateCache();
+            foreach (var service in services)
+            {
+                if (service != null)
+                {
+                    await UpdateServiceCacheAsync(service);
+                }
+            }
+        }
+
+        public async Task<Service?> GetByBusinessIdServiceIdAsync(int businessId, int serviceId)
+        {
+            return await _context.Services
+                .Where(s => s.BusinessId == businessId && s.ServiceId == serviceId)
+                .FirstOrDefaultAsync();
         }
 
         public async Task UpdateAsync(Service service)
@@ -90,25 +118,52 @@ namespace WebApplication1.Repositories.Implementation.ServicesRepo
             _context.Services.Update(service);
             await _context.SaveChangesAsync();
 
-            await InvalidateCache();
+            await UpdateServiceCacheAsync(service);
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task DeleteAsync(int businessId, int serviceId)
         {
-            var service = await _context.Services.FindAsync(id);
+            var service = await _context.Services
+                .Where(s => s.BusinessId == businessId && s.ServiceId == serviceId)
+                .FirstOrDefaultAsync();
+
             if (service != null)
             {
                 _context.Services.Remove(service);
                 await _context.SaveChangesAsync();
+                await InvalidateServiceCacheAsync(service);
             }
-
-            await InvalidateCache();
         }
 
-        private async Task InvalidateCache()
+        private async Task UpdateServiceCacheAsync(Service service)
         {
-            await _redisHelper.DeleteKeysByPatternAsync("service_*");
-            await _redisHelper.DeleteCacheAsync("all_services");
+            var serviceCacheKey = $"service_{service.ServiceId}";
+            await _redisHelper.SetCacheAsync(serviceCacheKey, service, TimeSpan.FromMinutes(10));
+
+            await _redisHelper.UpdateListCacheAsync<Service>(
+                $"service_business_{service.BusinessId}",
+                list =>
+                {
+                    list.RemoveAll(s => s.ServiceId == service.ServiceId);
+                    list.Add(service);
+                    return list;
+                },
+                TimeSpan.FromMinutes(10));
+        }
+
+        private async Task InvalidateServiceCacheAsync(Service service)
+        {
+            var serviceCacheKey = $"service_{service.ServiceId}";
+            await _redisHelper.DeleteCacheAsync(serviceCacheKey);
+
+            await _redisHelper.RemoveFromListCacheAsync<Service>(
+                $"service_business_{service.BusinessId}",
+                list =>
+                {
+                    list.RemoveAll(s => s.ServiceId == service.ServiceId);
+                    return list;
+                },
+                TimeSpan.FromMinutes(10));
         }
     }
 }

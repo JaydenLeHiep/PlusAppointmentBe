@@ -3,13 +3,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlusAppointment.Models.DTOs;
 using PlusAppointment.Models.Enums;
-using WebApplication1.Services.Interfaces.StaffService;
+using PlusAppointment.Services.Interfaces.StaffService;
 
-namespace WebApplication1.Controllers.StaffController
+namespace PlusAppointment.Controllers.StaffController
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]  // Ensure all actions require authentication
+     // Ensure all actions require authentication
     public class StaffController : ControllerBase
     {
         private readonly IStaffService _staffService;
@@ -18,7 +18,7 @@ namespace WebApplication1.Controllers.StaffController
         {
             _staffService = staffService;
         }
-
+        [Authorize] 
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -31,8 +31,9 @@ namespace WebApplication1.Controllers.StaffController
             var staffs = await _staffService.GetAllStaffsAsync();
             return Ok(staffs);
         }
-        [HttpGet("staff_id={id}")]
-        public async Task<IActionResult> GetById(int id)
+        [Authorize] 
+        [HttpGet("staff_id={staffId}")]
+        public async Task<IActionResult> GetById(int staffId)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -40,30 +41,30 @@ namespace WebApplication1.Controllers.StaffController
                 return NotFound(new { message = "You are not authorized to view this staff." });
             }
 
-            var staff = await _staffService.GetStaffIdAsync(id);
+            var staff = await _staffService.GetStaffIdAsync(staffId);
             return Ok(staff);
         }
 
         // Get all staff by business ID
-        [HttpGet("business_id={id}")]
-        public async Task<IActionResult> GetAllStaffByBusinessId(int id)
+        [HttpGet("business_id={businessId}")]
+        public async Task<IActionResult> GetAllStaffByBusinessId(int businessId)
         {
-            var userRole = HttpContext.Items["UserRole"]?.ToString();
-            if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
-            {
-                return NotFound(new { message = "You are not authorized to view this staff." });
-            }
+            // var userRole = HttpContext.Items["UserRole"]?.ToString();
+            // if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
+            // {
+            //     return NotFound(new { message = "You are not authorized to view this staff." });
+            // }
 
-            var staff = await _staffService.GetAllStaffByBusinessIdAsync(id);
+            var staff = await _staffService.GetAllStaffByBusinessIdAsync(businessId);
             if (!staff.Any())
             {
                 return NotFound(new { message = "No staff found for this business." });
             }
             return Ok(staff);
         }
-
-        [HttpPost("business_id={id}/add")]
-        public async Task<IActionResult> AddStaff(int id, [FromBody] StaffDto staffDto)
+        [Authorize] 
+        [HttpPost("business_id={businessId}/add")]
+        public async Task<IActionResult> AddStaff(int businessId, [FromBody] StaffDto staffDto)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -77,7 +78,7 @@ namespace WebApplication1.Controllers.StaffController
                 return Unauthorized(new { message = "User not authorized" });
             }
 
-            staffDto.BusinessId = id;
+            staffDto.BusinessId = businessId;
             try
             {
                 await _staffService.AddStaffAsync(staffDto);
@@ -88,9 +89,9 @@ namespace WebApplication1.Controllers.StaffController
                 return BadRequest(new { message = ex.Message });
             }
         }
-
-        [HttpPost("business_id={id}/addList")]
-        public async Task<IActionResult> AddStaffs(int id, [FromBody] IEnumerable<StaffDto> staffDtos)
+        [Authorize] 
+        [HttpPost("business_id={businessId}/addList")]
+        public async Task<IActionResult> AddStaffs(int businessId, [FromBody] IEnumerable<StaffDto> staffDtos)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -106,7 +107,7 @@ namespace WebApplication1.Controllers.StaffController
 
             try
             {
-                await _staffService.AddListStaffsAsync(staffDtos, id);
+                await _staffService.AddListStaffsAsync(staffDtos, businessId);
                 return Ok(new { message = "Staffs added successfully" });
             }
             catch (Exception ex)
@@ -114,9 +115,9 @@ namespace WebApplication1.Controllers.StaffController
                 return BadRequest(new { message = ex.Message });
             }
         }
-
-        [HttpPut("business_id={id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] StaffDto staffDto)
+        [Authorize] 
+        [HttpPut("business_id={businessId}/staff_id={staffId}")]
+        public async Task<IActionResult> Update(int businessId, int staffId, [FromBody] StaffDto staffDto)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -132,7 +133,7 @@ namespace WebApplication1.Controllers.StaffController
 
             try
             {
-                await _staffService.UpdateStaffAsync(id, staffDto);
+                await _staffService.UpdateStaffAsync(businessId, staffId, staffDto);
                 return Ok(new { message = "Staff updated successfully" });
             }
             catch (KeyNotFoundException ex)
@@ -144,9 +145,9 @@ namespace WebApplication1.Controllers.StaffController
                 return BadRequest(new { message = ex.Message });
             }
         }
-
-        [HttpDelete("business_id={id}")]
-        public async Task<IActionResult> Delete(int id)
+        [Authorize] 
+        [HttpDelete("business_id={businessId}/staff_id={staffId}")]
+        public async Task<IActionResult> Delete(int businessId, int staffId)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -162,7 +163,7 @@ namespace WebApplication1.Controllers.StaffController
 
             try
             {
-                await _staffService.DeleteStaffAsync(id);
+                await _staffService.DeleteStaffAsync(businessId, staffId);
                 return Ok(new { message = "Staff deleted successfully" });
             }
             catch (Exception ex)
@@ -170,7 +171,7 @@ namespace WebApplication1.Controllers.StaffController
                 return BadRequest(new { message = ex.Message });
             }
         }
-
+        [Authorize] 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] StaffLoginDto loginDto)
         {

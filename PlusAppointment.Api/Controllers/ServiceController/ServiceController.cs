@@ -3,13 +3,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlusAppointment.Models.DTOs;
 using PlusAppointment.Models.Enums;
-using WebApplication1.Services.Interfaces.ServicesService;
+using PlusAppointment.Services.Interfaces.ServicesService;
 
-namespace WebApplication1.Controllers.ServiceController
+namespace PlusAppointment.Controllers.ServiceController
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]  // Ensure all actions require authentication
+     // Ensure all actions require authentication
     public class ServiceController : ControllerBase
     {
         private readonly IServicesService _servicesService;
@@ -18,7 +18,7 @@ namespace WebApplication1.Controllers.ServiceController
         {
             _servicesService = servicesService;
         }
-
+        [Authorize] 
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -31,9 +31,9 @@ namespace WebApplication1.Controllers.ServiceController
             var services = await _servicesService.GetAllServicesAsync();
             return Ok(services);
         }
-
-        [HttpGet("service_id={id}")]
-        public async Task<IActionResult> GetById(int id)
+        [Authorize] 
+        [HttpGet("service_id={serviceId}")]
+        public async Task<IActionResult> GetById(int serviceId)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -41,7 +41,7 @@ namespace WebApplication1.Controllers.ServiceController
                 return NotFound(new { message = "You are not authorized to view this service." });
             }
 
-            var service = await _servicesService.GetServiceByIdAsync(id);
+            var service = await _servicesService.GetServiceByIdAsync(serviceId);
             if (service == null)
             {
                 return NotFound(new { message = "Service not found" });
@@ -49,9 +49,27 @@ namespace WebApplication1.Controllers.ServiceController
 
             return Ok(service);
         }
+        
+        // Get all service by business ID
+        [HttpGet("business_id={businessId}")]
+        public async Task<IActionResult> GetAllServiceByBusinessId(int businessId)
+        {
+            // var userRole = HttpContext.Items["UserRole"]?.ToString();
+            // if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
+            // {
+            //     return NotFound(new { message = "You are not authorized to view this service." });
+            // }
 
-        [HttpPost("business_id={id}/add")]
-        public async Task<IActionResult> AddService([FromRoute] int businessId, [FromBody] ServiceDto? serviceDto)
+            var services = await _servicesService.GetAllServiceByBusinessIdAsync(businessId);
+            if (!services.Any())
+            {
+                return NotFound(new { message = "No service found for this business." });
+            }
+            return Ok(services);
+        }
+        [Authorize] 
+        [HttpPost("business_id={businessId}/add")]
+        public async Task<IActionResult> AddService(int businessId, [FromBody] ServiceDto? serviceDto)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -75,9 +93,9 @@ namespace WebApplication1.Controllers.ServiceController
                 return BadRequest(new { message = ex.Message });
             }
         }
-
-        [HttpPost("business_id={id}/addList")]
-        public async Task<IActionResult> AddServices([FromRoute] int businessId, [FromBody] ServicesDto? servicesDto)
+        [Authorize] 
+        [HttpPost("business_id={businessId}/addList")]
+        public async Task<IActionResult> AddServices(int businessId, [FromBody] ServicesDto? servicesDto)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -101,9 +119,9 @@ namespace WebApplication1.Controllers.ServiceController
                 return BadRequest(new { message = ex.Message });
             }
         }
-
-        [HttpPut("business_id={id}")]
-        public async Task<IActionResult> Update(int businessId, [FromBody] ServiceDto? serviceDto)
+        [Authorize]
+        [HttpPut("business_id={businessId}/service_id={serviceId}")]
+        public async Task<IActionResult> UpdateService(int businessId, int serviceId, [FromBody] ServiceDto? serviceDto)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -119,7 +137,7 @@ namespace WebApplication1.Controllers.ServiceController
 
             try
             {
-                await _servicesService.UpdateServiceAsync(businessId, serviceDto, userId);
+                await _servicesService.UpdateServiceAsync(businessId, serviceId, serviceDto, userId);
                 return Ok(new { message = "Service updated successfully." });
             }
             catch (Exception ex)
@@ -128,8 +146,9 @@ namespace WebApplication1.Controllers.ServiceController
             }
         }
 
-        [HttpDelete("business_id={id}")]
-        public async Task<IActionResult> Delete(int businessId)
+        [Authorize] 
+        [HttpDelete("business_id={businessId}/service_id={serviceId}")]
+        public async Task<IActionResult> DeleteService(int businessId, int serviceId)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -145,7 +164,7 @@ namespace WebApplication1.Controllers.ServiceController
 
             try
             {
-                await _servicesService.DeleteServiceAsync(businessId, userId);
+                await _servicesService.DeleteServiceAsync(businessId, serviceId);
                 return Ok(new { message = "Service deleted successfully" });
             }
             catch (Exception ex)

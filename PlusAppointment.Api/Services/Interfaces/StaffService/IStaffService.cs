@@ -1,7 +1,7 @@
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
 
-namespace WebApplication1.Services.Interfaces.StaffService;
+namespace PlusAppointment.Services.Interfaces.StaffService;
 
 public interface IStaffService
 {
@@ -10,8 +10,8 @@ public interface IStaffService
     Task<IEnumerable<Staff?>> GetAllStaffByBusinessIdAsync(int businessId);
     Task AddStaffAsync(StaffDto staffDto);
     public  Task AddListStaffsAsync(IEnumerable<StaffDto> staffDtos, int businessId);
-    Task UpdateStaffAsync(int id, StaffDto staffDto);
-    Task DeleteStaffAsync(int id);
+    Task UpdateStaffAsync(int businessId, int staffId, StaffDto staffDto);
+    Task DeleteStaffAsync(int businessId, int staffId);
     
     Task<string> LoginAsync(string email, string password);
 }

@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using WebApplication1.Data;
+using PlusAppointment.Data;
 
 #nullable disable
 
-namespace WebApplication1.Migrations
+namespace PlusAppointment.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
     partial class ApplicationDbContextModelSnapshot : ModelSnapshot
@@ -26,37 +26,43 @@ namespace WebApplication1.Migrations
                 {
                     b.Property<int>("AppointmentId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("appointment_id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AppointmentId"));
 
                     b.Property<DateTime>("AppointmentTime")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("appointment_time");
 
                     b.Property<int>("BusinessId")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("business_id");
+
+                    b.Property<string>("Comment")
+                        .HasColumnType("text")
+                        .HasColumnName("comment");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<int>("CustomerId")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("customer_id");
 
                     b.Property<TimeSpan>("Duration")
-                        .HasColumnType("interval");
-
-                    b.Property<int>("ServiceId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("StaffId")
-                        .HasColumnType("integer");
+                        .HasColumnType("interval")
+                        .HasColumnName("duration");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("status");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
                     b.HasKey("AppointmentId");
 
@@ -64,210 +70,309 @@ namespace WebApplication1.Migrations
 
                     b.HasIndex("CustomerId");
 
+                    b.ToTable("appointments", (string)null);
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.AppointmentServiceStaffMapping", b =>
+                {
+                    b.Property<int>("AppointmentId")
+                        .HasColumnType("integer")
+                        .HasColumnName("appointment_id");
+
+                    b.Property<int>("ServiceId")
+                        .HasColumnType("integer")
+                        .HasColumnName("service_id");
+
+                    b.Property<int>("StaffId")
+                        .HasColumnType("integer")
+                        .HasColumnName("staff_id");
+
+                    b.HasKey("AppointmentId", "ServiceId", "StaffId");
+
                     b.HasIndex("ServiceId");
 
                     b.HasIndex("StaffId");
 
-                    b.ToTable("Appointments");
+                    b.ToTable("appointment_services_staffs", (string)null);
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Business", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Business", b =>
                 {
                     b.Property<int>("BusinessId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("business_id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("BusinessId"));
 
                     b.Property<string>("Address")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("address");
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("email");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("name");
 
                     b.Property<string>("Phone")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("phone");
 
                     b.Property<int>("UserID")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
 
                     b.HasKey("BusinessId");
 
                     b.HasIndex("UserID");
 
-                    b.ToTable("Businesses");
+                    b.ToTable("businesses", (string)null);
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Customer", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Customer", b =>
                 {
                     b.Property<int>("CustomerId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("customer_id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("CustomerId"));
 
+                    b.Property<int>("BusinessId")
+                        .HasColumnType("integer")
+                        .HasColumnName("business_id");
+
                     b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("email");
 
                     b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("name");
 
                     b.Property<string>("Phone")
-                        .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("phone");
 
                     b.HasKey("CustomerId");
 
-                    b.ToTable("Customers");
+                    b.HasIndex("BusinessId");
+
+                    b.ToTable("customers", (string)null);
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Service", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Service", b =>
                 {
                     b.Property<int>("ServiceId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("service_id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ServiceId"));
 
                     b.Property<int>("BusinessId")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("business_id");
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("description");
 
                     b.Property<TimeSpan>("Duration")
-                        .HasColumnType("interval");
+                        .HasColumnType("interval")
+                        .HasColumnName("duration");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("name");
 
                     b.Property<decimal>("Price")
-                        .HasColumnType("numeric");
+                        .HasColumnType("numeric")
+                        .HasColumnName("price");
 
                     b.HasKey("ServiceId");
 
                     b.HasIndex("BusinessId");
 
-                    b.ToTable("Services");
+                    b.ToTable("services", (string)null);
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Staff", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Staff", b =>
                 {
                     b.Property<int>("StaffId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("staff_id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("StaffId"));
 
                     b.Property<int>("BusinessId")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("business_id");
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("email");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("name");
 
                     b.Property<string>("Password")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("password");
 
                     b.Property<string>("Phone")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text")
+                        .HasColumnName("phone");
 
                     b.HasKey("StaffId");
 
                     b.HasIndex("BusinessId");
 
-                    b.ToTable("Staffs");
+                    b.ToTable("staffs", (string)null);
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.User", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.User", b =>
                 {
                     b.Property<int>("UserId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("UserId"));
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("Email")
-                        .HasColumnType("text");
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("email");
 
                     b.Property<string>("Password")
-                        .HasColumnType("text");
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("password");
 
                     b.Property<string>("Phone")
-                        .HasColumnType("text");
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("phone");
 
                     b.Property<int>("Role")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("role");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
                     b.Property<string>("Username")
-                        .HasColumnType("text");
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("username");
 
                     b.HasKey("UserId");
 
-                    b.ToTable("Users");
+                    b.ToTable("users", (string)null);
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.UserRefreshToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("ExpiryTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expiry_time");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("token");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("user_refresh_tokens", (string)null);
                 });
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.Appointment", b =>
                 {
-                    b.HasOne("WebApplication1.Models.Business", "Business")
+                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
                         .WithMany("Appointments")
                         .HasForeignKey("BusinessId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("WebApplication1.Models.Customer", "Customer")
+                    b.HasOne("PlusAppointment.Models.Classes.Customer", "Customer")
                         .WithMany("Appointments")
                         .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("WebApplication1.Models.Service", "Service")
-                        .WithMany()
-                        .HasForeignKey("ServiceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("WebApplication1.Models.Staff", "Staff")
-                        .WithMany("Appointments")
-                        .HasForeignKey("StaffId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Business");
 
                     b.Navigation("Customer");
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.AppointmentServiceStaffMapping", b =>
+                {
+                    b.HasOne("PlusAppointment.Models.Classes.Appointment", "Appointment")
+                        .WithMany("AppointmentServices")
+                        .HasForeignKey("AppointmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PlusAppointment.Models.Classes.Service", "Service")
+                        .WithMany("AppointmentServicesStaffs")
+                        .HasForeignKey("ServiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PlusAppointment.Models.Classes.Staff", "Staff")
+                        .WithMany("AppointmentServicesStaffs")
+                        .HasForeignKey("StaffId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Appointment");
 
                     b.Navigation("Service");
 
                     b.Navigation("Staff");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Business", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Business", b =>
                 {
-                    b.HasOne("WebApplication1.Models.User", "User")
+                    b.HasOne("PlusAppointment.Models.Classes.User", "User")
                         .WithMany("Businesses")
                         .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -276,9 +381,20 @@ namespace WebApplication1.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Service", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Customer", b =>
                 {
-                    b.HasOne("WebApplication1.Models.Business", "Business")
+                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
+                        .WithMany("Customers")
+                        .HasForeignKey("BusinessId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Business");
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Service", b =>
+                {
+                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
                         .WithMany("Services")
                         .HasForeignKey("BusinessId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -287,9 +403,9 @@ namespace WebApplication1.Migrations
                     b.Navigation("Business");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Staff", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Staff", b =>
                 {
-                    b.HasOne("WebApplication1.Models.Business", "Business")
+                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
                         .WithMany("Staffs")
                         .HasForeignKey("BusinessId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -298,28 +414,53 @@ namespace WebApplication1.Migrations
                     b.Navigation("Business");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Business", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.UserRefreshToken", b =>
+                {
+                    b.HasOne("PlusAppointment.Models.Classes.User", "User")
+                        .WithMany("RefreshTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Appointment", b =>
+                {
+                    b.Navigation("AppointmentServices");
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Business", b =>
                 {
                     b.Navigation("Appointments");
+
+                    b.Navigation("Customers");
 
                     b.Navigation("Services");
 
                     b.Navigation("Staffs");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Customer", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Customer", b =>
                 {
                     b.Navigation("Appointments");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.Staff", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Service", b =>
                 {
-                    b.Navigation("Appointments");
+                    b.Navigation("AppointmentServicesStaffs");
                 });
 
-            modelBuilder.Entity("WebApplication1.Models.User", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Staff", b =>
+                {
+                    b.Navigation("AppointmentServicesStaffs");
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.User", b =>
                 {
                     b.Navigation("Businesses");
+
+                    b.Navigation("RefreshTokens");
                 });
 #pragma warning restore 612, 618
         }

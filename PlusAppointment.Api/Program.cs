@@ -36,10 +36,15 @@ using PlusAppointment.Utils.SendingEmail;
 using PlusAppointment.Utils.SendingSms;
 using Hangfire;
 using Hangfire.MemoryStorage;
+
 using PlusAppointment.Repositories.Implementation.CalculateMoneyRepo;
+using PlusAppointment.Repositories.Implementation.ServiceCategoryRepo;
 using PlusAppointment.Repositories.Interfaces.CalculateMoneyRepo;
+using PlusAppointment.Repositories.Interfaces.ServiceCategoryRepo;
 using PlusAppointment.Services.Implementations.CalculateMoneyService;
+using PlusAppointment.Services.Implementations.ServiceCategoryService;
 using PlusAppointment.Services.Interfaces.CalculateMoneyService;
+using PlusAppointment.Services.Interfaces.ServiceCategoryService;
 using PlusAppointment.Utils.Hub;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -86,6 +91,8 @@ builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<ICalculateMoneyRepo, CalculateMoneyRepo>();
 builder.Services.AddScoped<ICalculateMoneyService, CalculateMoneyService>();
+builder.Services.AddScoped<IServiceCategoryService, ServiceCategoryService>();
+builder.Services.AddScoped<IServiceCategoryRepo, ServiceCategoryRepo>();
 
 builder.Services.AddSingleton<EmailService>();
 builder.Services.AddSingleton<SmsService>();

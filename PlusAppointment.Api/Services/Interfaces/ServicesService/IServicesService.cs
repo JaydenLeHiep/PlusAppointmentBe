@@ -5,9 +5,9 @@ namespace PlusAppointment.Services.Interfaces.ServicesService
 {
     public interface IServicesService
     {
-        Task<IEnumerable<Service?>> GetAllServicesAsync();
-        Task<Service?> GetServiceByIdAsync(int id);
-        Task<IEnumerable<Service?>> GetAllServiceByBusinessIdAsync(int businessId);
+        Task<IEnumerable<ServiceDto?>> GetAllServicesAsync(); // Change return type to include category name in ServiceDto
+        Task<ServiceDto?> GetServiceByIdAsync(int id); // Change return type to include category name in ServiceDto
+        Task<IEnumerable<ServiceDto?>> GetAllServiceByBusinessIdAsync(int businessId); // Change return type to include category name in ServiceDto
         Task AddServiceAsync(ServiceDto? serviceDto, int businessId, string userId, string userRole);
         Task AddListServicesAsync(ServicesDto? servicesDto, int businessId, string userId, string userRole);
         Task UpdateServiceAsync(int businessId, int serviceId, ServiceDto? serviceDto, string userId);

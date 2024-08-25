@@ -27,7 +27,7 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
                 return cachedServices;
             }
 
-            var services = await _context.Services.ToListAsync();
+            var services = await _context.Services.Include(s => s.Category).ToListAsync();
             await _redisHelper.SetCacheAsync(cacheKey, services, TimeSpan.FromMinutes(10));
 
             return services;
@@ -42,7 +42,7 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
                 return service;
             }
 
-            service = await _context.Services.FindAsync(id);
+            service = await _context.Services.Include(s => s.Category).FirstOrDefaultAsync(s => s.ServiceId == id);
             if (service == null)
             {
                 throw new KeyNotFoundException($"Service with ID {id} not found");
@@ -62,7 +62,10 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
                 return cachedServices;
             }
 
-            var services = await _context.Services.Where(s => s.BusinessId == businessId).ToListAsync();
+            var services = await _context.Services
+                .Include(s => s.Category)
+                .Where(s => s.BusinessId == businessId)
+                .ToListAsync();
             await _redisHelper.SetCacheAsync(cacheKey, services, TimeSpan.FromMinutes(10));
 
             return services;
@@ -109,6 +112,7 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
         public async Task<Service?> GetByBusinessIdServiceIdAsync(int businessId, int serviceId)
         {
             return await _context.Services
+                .Include(s => s.Category) // Include the category when fetching the service
                 .Where(s => s.BusinessId == businessId && s.ServiceId == serviceId)
                 .FirstOrDefaultAsync();
         }

@@ -14,6 +14,7 @@ namespace PlusAppointment.Data
         public DbSet<Business> Businesses { get; set; }
         public DbSet<Appointment> Appointments { get; set; }
         public DbSet<Service> Services { get; set; }
+        public DbSet<ServiceCategory> ServiceCategories { get; set; } 
         public DbSet<Staff> Staffs { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<AppointmentServiceStaffMapping> AppointmentServiceStaffs { get; set; }
@@ -28,6 +29,7 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<Business>().ToTable("businesses");
             modelBuilder.Entity<Appointment>().ToTable("appointments");
             modelBuilder.Entity<Service>().ToTable("services");
+            modelBuilder.Entity<ServiceCategory>().ToTable("service_categories");
             modelBuilder.Entity<Staff>().ToTable("staffs");
             modelBuilder.Entity<Customer>().ToTable("customers");
             modelBuilder.Entity<AppointmentServiceStaffMapping>().ToTable("appointment_services_staffs");
@@ -59,12 +61,24 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<Appointment>().Property(a => a.UpdatedAt).HasColumnName("updated_at");
             modelBuilder.Entity<Appointment>().Property(a => a.Comment).HasColumnName("comment");
 
+            modelBuilder.Entity<ServiceCategory>().ToTable("service_categories");
+            modelBuilder.Entity<ServiceCategory>().HasKey(sc => sc.CategoryId); // Explicitly define the primary key
+            modelBuilder.Entity<ServiceCategory>().Property(sc => sc.CategoryId).HasColumnName("category_id");
+            modelBuilder.Entity<ServiceCategory>().Property(sc => sc.Name).HasColumnName("name");
+
             modelBuilder.Entity<Service>().Property(s => s.ServiceId).HasColumnName("service_id");
             modelBuilder.Entity<Service>().Property(s => s.Name).HasColumnName("name");
             modelBuilder.Entity<Service>().Property(s => s.Description).HasColumnName("description");
             modelBuilder.Entity<Service>().Property(s => s.Duration).HasColumnName("duration");
             modelBuilder.Entity<Service>().Property(s => s.Price).HasColumnName("price");
             modelBuilder.Entity<Service>().Property(s => s.BusinessId).HasColumnName("business_id");
+            modelBuilder.Entity<Service>().Property(s => s.CategoryId).HasColumnName("category_id");
+
+            modelBuilder.Entity<Service>()
+                .HasOne(s => s.Category)
+                .WithMany(sc => sc.Services)
+                .HasForeignKey(s => s.CategoryId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             modelBuilder.Entity<Staff>().Property(s => s.StaffId).HasColumnName("staff_id");
             modelBuilder.Entity<Staff>().Property(s => s.BusinessId).HasColumnName("business_id");

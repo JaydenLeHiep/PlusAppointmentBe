@@ -102,23 +102,34 @@ namespace PlusAppointment.Repositories.Implementation.UserRepo
 
         public async Task<User?> GetUserByUsernameOrEmailAsync(string usernameOrEmail)
         {
-            string cacheKey = $"user_usernameOrEmail_{usernameOrEmail}";
+            // Normalize the input to lower case for case-insensitive matching
+            string normalizedUsernameOrEmail = usernameOrEmail.ToLowerInvariant();
+    
+            // Use a cache key that reflects the case-insensitive nature
+            string cacheKey = $"user_usernameOrEmail_{normalizedUsernameOrEmail}";
+    
+            // Check cache first
             var user = await _redisHelper.GetCacheAsync<User>(cacheKey);
             if (user != null)
             {
                 return user;
             }
 
+            // Query the database for a case-insensitive match
             user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Username == usernameOrEmail || u.Email == usernameOrEmail);
+                .FirstOrDefaultAsync(u => u.Username.ToLower() == normalizedUsernameOrEmail || u.Email.ToLower() == normalizedUsernameOrEmail);
+    
             if (user == null)
             {
                 throw new KeyNotFoundException($"User with username or email {usernameOrEmail} not found");
             }
 
+            // Store the result in the cache
             await _redisHelper.SetCacheAsync(cacheKey, user, TimeSpan.FromMinutes(10));
+    
             return user;
         }
+
 
         public async Task<User?> GetUserByEmailAsync(string email)
         {

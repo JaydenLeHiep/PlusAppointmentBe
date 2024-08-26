@@ -24,6 +24,7 @@ namespace PlusAppointment.Services.Implementations.ServicesService
             var services = await _servicesRepository.GetAllAsync();
             return services.Select(s => new ServiceDto
             {
+                ServiceId = s.ServiceId,
                 Name = s.Name,
                 Description = s.Description,
                 Duration = s.Duration,
@@ -43,6 +44,7 @@ namespace PlusAppointment.Services.Implementations.ServicesService
 
             return new ServiceDto
             {
+                ServiceId = service.ServiceId,
                 Name = service.Name,
                 Description = service.Description,
                 Duration = service.Duration,
@@ -57,6 +59,7 @@ namespace PlusAppointment.Services.Implementations.ServicesService
             var services = await _servicesRepository.GetAllByBusinessIdAsync(businessId);
             return services.Select(s => new ServiceDto
             {
+                ServiceId = s.ServiceId,
                 Name = s.Name,
                 Description = s.Description,
                 Duration = s.Duration,

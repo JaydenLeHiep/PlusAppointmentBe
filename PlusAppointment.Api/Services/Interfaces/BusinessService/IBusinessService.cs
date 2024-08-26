@@ -15,5 +15,6 @@ namespace PlusAppointment.Services.Interfaces.BusinessService
         Task<IEnumerable<Service?>> GetServicesByBusinessIdAsync(int businessId);
         Task<IEnumerable<Staff?>> GetStaffByBusinessIdAsync(int businessId);
         Task<IEnumerable<Business?>> GetAllBusinessesByUserIdAsync(int userId);
+        Task<Business?> GetBusinessByNameAsync(string businessName);
     }
 }

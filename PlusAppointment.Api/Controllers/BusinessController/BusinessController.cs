@@ -65,6 +65,16 @@ namespace PlusAppointment.Controllers.BusinessController
             }
             return Ok(business);
         }
+        [HttpGet("business_name={businessName}/booking")]
+        public async Task<IActionResult> GetBusinessByName(string businessName)
+        {
+            var business = await _businessService.GetBusinessByNameAsync(businessName);
+            if (business == null)
+            {
+                return NotFound(new { message = "Business not found." });
+            }
+            return Ok(business);
+        }
 
         [Authorize]
         [HttpPost]

@@ -51,6 +51,24 @@ namespace PlusAppointment.Repositories.Implementation.BusinessRepo
             await _redisHelper.SetCacheAsync(cacheKey, business, TimeSpan.FromMinutes(10));
             return business;
         }
+        public async Task<Business?> GetByNameAsync(string businessName)
+        {
+            string cacheKey = $"business_name_{businessName.ToLower()}";
+            var business = await _redisHelper.GetCacheAsync<Business>(cacheKey);
+            if (business != null)
+            {
+                return business;
+            }
+
+            business = await _context.Businesses.FirstOrDefaultAsync(b => b.Name.ToLower() == businessName.ToLower());
+            if (business == null)
+            {
+                throw new KeyNotFoundException($"Business with name {businessName} not found");
+            }
+
+            await _redisHelper.SetCacheAsync(cacheKey, business, TimeSpan.FromMinutes(10));
+            return business;
+        }
 
         public async Task AddAsync(Business business)
         {

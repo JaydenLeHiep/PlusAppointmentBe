@@ -25,6 +25,10 @@ namespace PlusAppointment.Services.Implementations.BusinessService
         {
             return await _businessRepository.GetByIdAsync(id);
         }
+        public async Task<Business?> GetBusinessByNameAsync(string businessName)
+        {
+            return await _businessRepository.GetByNameAsync(businessName);
+        }
 
         public async Task AddBusinessAsync(BusinessDto businessDto, int userId)
         {

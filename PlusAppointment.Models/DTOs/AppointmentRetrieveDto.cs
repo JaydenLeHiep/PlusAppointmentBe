@@ -28,4 +28,6 @@ public class ServiceStaffListsRetrieveDto
     public decimal? Price { get; set; }
     public int StaffId { get; set; }
     public string StaffName { get; set; } = string.Empty;
+    public int? CategoryId { get; set; }
+    public string? CategoryName { get; set; }
 }

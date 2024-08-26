@@ -684,5 +684,11 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
 
             return notAvailableTimeSlots;
         }
+        public async Task<ServiceCategory?> GetServiceCategoryByIdAsync(int categoryId)
+        {
+            return await _context.ServiceCategories
+                .FirstOrDefaultAsync(sc => sc.CategoryId == categoryId);
+        }
+
     }
 }

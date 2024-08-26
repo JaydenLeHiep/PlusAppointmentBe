@@ -24,5 +24,6 @@ namespace PlusAppointment.Repositories.Interfaces.AppointmentRepo
 
         Task<IEnumerable<Appointment>> GetCustomerAppointmentHistoryAsync(int customerId);
         Task<IEnumerable<DateTime>> GetNotAvailableTimeSlotsAsync(int staffId, DateTime date);
+        Task<ServiceCategory?> GetServiceCategoryByIdAsync(int categoryId);
     }
 }

@@ -8,7 +8,7 @@ namespace PlusAppointment.Repositories.Interfaces.AppointmentRepo
         Task<IEnumerable<Appointment>> GetAllAppointmentsAsync();
         Task<Appointment?> GetAppointmentByIdAsync(int appointmentId);
         Task AddAppointmentAsync(Appointment appointment);
-        Task UpdateAppointmentAsync(Appointment appointment);
+        //Task UpdateAppointmentAsync(Appointment appointment);
         Task UpdateAppointmentStatusAsync(Appointment appointment);
 
 
@@ -18,7 +18,7 @@ namespace PlusAppointment.Repositories.Interfaces.AppointmentRepo
         Task<IEnumerable<Appointment>> GetAppointmentsByBusinessIdAsync(int businessId);
         Task<IEnumerable<Appointment>> GetAppointmentsByStaffIdAsync(int staffId);
 
-        Task<bool> IsStaffAvailable(int staffId, DateTime appointmentTime, TimeSpan duration);
+        //Task<bool> IsStaffAvailable(int staffId, DateTime appointmentTime, TimeSpan duration);
 
         Task<Customer?> GetByCustomerIdAsync(int customerId);
 

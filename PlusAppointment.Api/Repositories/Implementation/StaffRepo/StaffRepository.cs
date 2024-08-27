@@ -36,13 +36,13 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
         public async Task<Staff> GetByIdAsync(int id)
         {
             string cacheKey = $"staff_{id}";
-            var staff = await _redisHelper.GetCacheAsync<Staff>(cacheKey);
-            if (staff != null)
+            var cachedStaff = await _redisHelper.GetCacheAsync<Staff>(cacheKey);
+            if (cachedStaff != null)
             {
-                return staff;
+                return cachedStaff;
             }
 
-            staff = await _context.Staffs.FindAsync(id);
+            var staff = await _context.Staffs.FindAsync(id);
             if (staff == null)
             {
                 throw new KeyNotFoundException($"Staff with ID {id} not found");
@@ -55,17 +55,17 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
         public async Task<IEnumerable<Staff?>> GetAllByBusinessIdAsync(int businessId)
         {
             string cacheKey = $"staff_business_{businessId}";
-            var cachedStaff = await _redisHelper.GetCacheAsync<List<Staff>>(cacheKey);
+            var cachedStaffs = await _redisHelper.GetCacheAsync<List<Staff>>(cacheKey);
 
-            if (cachedStaff != null && cachedStaff.Any())
+            if (cachedStaffs != null && cachedStaffs.Any())
             {
-                return cachedStaff;
+                return cachedStaffs;
             }
 
-            var staff = await _context.Staffs.Where(s => s.BusinessId == businessId).ToListAsync();
-            await _redisHelper.SetCacheAsync(cacheKey, staff, TimeSpan.FromMinutes(10));
+            var staffs = await _context.Staffs.Where(s => s.BusinessId == businessId).ToListAsync();
+            await _redisHelper.SetCacheAsync(cacheKey, staffs, TimeSpan.FromMinutes(10));
 
-            return staff;
+            return staffs;
         }
 
         public async Task AddStaffAsync(Staff staff, int businessId)
@@ -112,9 +112,24 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
 
         public async Task<Staff?> GetByBusinessIdServiceIdAsync(int businessId, int staffId)
         {
-            return await _context.Staffs
+            string cacheKey = $"staff_{staffId}";
+            var cachedStaff = await _redisHelper.GetCacheAsync<Staff>(cacheKey);
+            if (cachedStaff != null)
+            {
+                return cachedStaff;
+            }
+
+            var staff = await _context.Staffs
                 .Where(s => s.BusinessId == businessId && s.StaffId == staffId)
                 .FirstOrDefaultAsync();
+
+            if (staff == null)
+            {
+                throw new KeyNotFoundException($"Staff with ID {staffId} not found for Business ID {businessId}");
+            }
+
+            await _redisHelper.SetCacheAsync(cacheKey, staff, TimeSpan.FromMinutes(10));
+            return staff;
         }
 
         public async Task UpdateAsync(Staff staff)

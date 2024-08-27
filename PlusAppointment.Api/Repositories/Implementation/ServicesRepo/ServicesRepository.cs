@@ -20,7 +20,7 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
         public async Task<IEnumerable<Service?>> GetAllAsync()
         {
             const string cacheKey = "all_services";
-            var cachedServices = await _redisHelper.GetCacheAsync<List<Service?>>(cacheKey);
+            var cachedServices = await _redisHelper.GetCacheAsync<List<Service>>(cacheKey);
 
             if (cachedServices != null && cachedServices.Any())
             {
@@ -36,13 +36,13 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
         public async Task<Service?> GetByIdAsync(int id)
         {
             string cacheKey = $"service_{id}";
-            var service = await _redisHelper.GetCacheAsync<Service>(cacheKey);
-            if (service != null)
+            var cachedService = await _redisHelper.GetCacheAsync<Service>(cacheKey);
+            if (cachedService != null)
             {
-                return service;
+                return cachedService;
             }
 
-            service = await _context.Services.Include(s => s.Category).FirstOrDefaultAsync(s => s.ServiceId == id);
+            var service = await _context.Services.Include(s => s.Category).FirstOrDefaultAsync(s => s.ServiceId == id);
             if (service == null)
             {
                 throw new KeyNotFoundException($"Service with ID {id} not found");
@@ -66,6 +66,7 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
                 .Include(s => s.Category)
                 .Where(s => s.BusinessId == businessId)
                 .ToListAsync();
+
             await _redisHelper.SetCacheAsync(cacheKey, services, TimeSpan.FromMinutes(10));
 
             return services;
@@ -111,10 +112,25 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
 
         public async Task<Service?> GetByBusinessIdServiceIdAsync(int businessId, int serviceId)
         {
-            return await _context.Services
+            string cacheKey = $"service_{serviceId}";
+            var cachedService = await _redisHelper.GetCacheAsync<Service>(cacheKey);
+            if (cachedService != null)
+            {
+                return cachedService;
+            }
+
+            var service = await _context.Services
                 .Include(s => s.Category) // Include the category when fetching the service
                 .Where(s => s.BusinessId == businessId && s.ServiceId == serviceId)
                 .FirstOrDefaultAsync();
+
+            if (service == null)
+            {
+                throw new KeyNotFoundException($"Service with ID {serviceId} not found for Business ID {businessId}");
+            }
+
+            await _redisHelper.SetCacheAsync(cacheKey, service, TimeSpan.FromMinutes(10));
+            return service;
         }
 
         public async Task UpdateAsync(Service service)

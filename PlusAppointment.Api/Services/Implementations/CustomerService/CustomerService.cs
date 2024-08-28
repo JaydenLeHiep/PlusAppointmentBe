@@ -40,6 +40,12 @@ public class CustomerService: ICustomerService
 
         return customer;
     }
+    
+    public async Task<Customer?> GetCustomerByEmailOrPhoneAndBusinessIdAsync(string emailOrPhone, int businessId)
+    {
+        return await _customerRepository.GetCustomerByEmailOrPhoneAndBusinessIdAsync(emailOrPhone, businessId);
+    }
+
 
     public async Task AddCustomerAsync(CustomerDto customerDto)
     {
@@ -63,15 +69,15 @@ public class CustomerService: ICustomerService
         //     throw new ArgumentException("Phone cannot be null or empty.", nameof(customerDto.Phone));
         // }
         //
-        if (!await _customerRepository.IsEmailUniqueAsync(customerDto.Email))
-        {
-            throw new ArgumentException("Email is already in use.");
-        }
-        
-        if (!await _customerRepository.IsPhoneUniqueAsync(customerDto.Phone))
-        {
-             throw new ArgumentException("Phone is already in use.");
-        }
+        // if (!await _customerRepository.IsEmailUniqueAsync(customerDto.Email))
+        // {
+        //     throw new ArgumentException("Email is already in use.");
+        // }
+        //
+        // if (!await _customerRepository.IsPhoneUniqueAsync(customerDto.Phone))
+        // {
+        //      throw new ArgumentException("Phone is already in use.");
+        // }
 
         var customer = new Customer
         {

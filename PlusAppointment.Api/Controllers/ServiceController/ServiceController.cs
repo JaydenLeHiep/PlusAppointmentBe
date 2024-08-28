@@ -1,9 +1,11 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using PlusAppointment.Models.DTOs;
 using PlusAppointment.Models.Enums;
 using PlusAppointment.Services.Interfaces.ServicesService;
+using PlusAppointment.Utils.Hub;
 
 namespace PlusAppointment.Controllers.ServiceController
 {
@@ -13,10 +15,12 @@ namespace PlusAppointment.Controllers.ServiceController
     public class ServiceController : ControllerBase
     {
         private readonly IServicesService _servicesService;
+        private readonly IHubContext<AppointmentHub> _hubContext;
 
-        public ServiceController(IServicesService servicesService)
+        public ServiceController(IServicesService servicesService, IHubContext<AppointmentHub> hubContext)
         {
             _servicesService = servicesService;
+            _hubContext = hubContext;
         }
         [Authorize] 
         [HttpGet]
@@ -86,6 +90,7 @@ namespace PlusAppointment.Controllers.ServiceController
             try
             {
                 await _servicesService.AddServiceAsync(serviceDto, businessId, userId, userRole);
+                await _hubContext.Clients.All.SendAsync("ReceiveServiceUpdate", "A new service has been added.");
                 return Ok(new { message = "Service created successfully" });
             }
             catch (Exception ex)

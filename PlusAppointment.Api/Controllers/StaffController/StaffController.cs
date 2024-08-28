@@ -1,9 +1,11 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using PlusAppointment.Models.DTOs;
 using PlusAppointment.Models.Enums;
 using PlusAppointment.Services.Interfaces.StaffService;
+using PlusAppointment.Utils.Hub;
 
 namespace PlusAppointment.Controllers.StaffController
 {
@@ -13,10 +15,12 @@ namespace PlusAppointment.Controllers.StaffController
     public class StaffController : ControllerBase
     {
         private readonly IStaffService _staffService;
+        private readonly IHubContext<AppointmentHub> _hubContext;
 
-        public StaffController(IStaffService staffService)
+        public StaffController(IStaffService staffService, IHubContext<AppointmentHub> hubContext)
         {
             _staffService = staffService;
+            _hubContext = hubContext;
         }
         [Authorize] 
         [HttpGet]
@@ -82,6 +86,7 @@ namespace PlusAppointment.Controllers.StaffController
             try
             {
                 await _staffService.AddStaffAsync(staffDto);
+                await _hubContext.Clients.All.SendAsync("ReceiveStaffUpdate", "A new staff has been added.");
                 return Ok(new { message = "Staff added successfully" });
             }
             catch (Exception ex)
@@ -108,6 +113,7 @@ namespace PlusAppointment.Controllers.StaffController
             try
             {
                 await _staffService.AddListStaffsAsync(staffDtos, businessId);
+                await _hubContext.Clients.All.SendAsync("ReceiveStaffUpdate", "A new staff has been added.");
                 return Ok(new { message = "Staffs added successfully" });
             }
             catch (Exception ex)

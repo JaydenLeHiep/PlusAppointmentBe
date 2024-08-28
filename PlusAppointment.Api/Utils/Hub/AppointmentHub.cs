@@ -13,5 +13,13 @@ public class AppointmentHub: Microsoft.AspNetCore.SignalR.Hub
     {
         await Clients.All.SendAsync("ReceiveCustomerUpdate", message);
     }
+    public async Task SendServiceUpdate(string message)
+    {
+        await Clients.All.SendAsync("ReceiveServiceUpdate", message);
+    }
+    public async Task SendStaffUpdate(string message)
+    {
+        await Clients.All.SendAsync("ReceiveStaffUpdate", message);
+    }
 
 }

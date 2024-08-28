@@ -18,7 +18,7 @@ namespace PlusAppointment.Controllers.ServiceCategoryController
             _serviceCategoryService = serviceCategoryService;
         }
 
-        [Authorize]
+        [AllowAnonymous]
         [HttpGet("category_id={categoryId}")]
         public async Task<IActionResult> GetById(int categoryId)
         {
@@ -31,7 +31,7 @@ namespace PlusAppointment.Controllers.ServiceCategoryController
             return Ok(serviceCategory);
         }
 
-        [Authorize]
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {

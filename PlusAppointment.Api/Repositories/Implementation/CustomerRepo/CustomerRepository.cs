@@ -72,6 +72,27 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
             await _redisHelper.SetCacheAsync(cacheKey, customer, TimeSpan.FromMinutes(10));
             return customer;
         }
+        
+        public async Task<Customer?> GetCustomerByEmailOrPhoneAndBusinessIdAsync(string emailOrPhone, int businessId)
+        {
+            string cacheKey = $"customer_emailOrPhone_{emailOrPhone}_business_{businessId}";
+            var cachedCustomer = await _redisHelper.GetCacheAsync<Customer>(cacheKey);
+            if (cachedCustomer != null)
+            {
+                return cachedCustomer;
+            }
+
+            var customer = await _context.Customers
+                .FirstOrDefaultAsync(c => (c.Email == emailOrPhone || c.Phone == emailOrPhone) && c.BusinessId == businessId);
+
+            if (customer != null)
+            {
+                await _redisHelper.SetCacheAsync(cacheKey, customer, TimeSpan.FromMinutes(10));
+            }
+
+            return customer;
+        }
+
 
         public async Task AddCustomerAsync(Customer? customer)
         {

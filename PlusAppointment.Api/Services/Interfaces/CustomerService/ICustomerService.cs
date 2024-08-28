@@ -18,5 +18,7 @@ using PlusAppointment.Models.Classes;
      Task<IEnumerable<Customer?>> GetCustomersByBusinessIdAsync(int businessId);
 
      Task<Customer?> GetCustomerByNameOrPhoneAsync(string nameOrPhone);
+     
+     Task<Customer?> GetCustomerByEmailOrPhoneAndBusinessIdAsync(string emailOrPhone, int businessId);
 
  }

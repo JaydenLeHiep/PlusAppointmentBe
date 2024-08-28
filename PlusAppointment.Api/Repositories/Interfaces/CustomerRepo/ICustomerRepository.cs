@@ -18,4 +18,5 @@ public interface ICustomerRepository
     Task<Customer?> GetCustomerByNameOrPhoneAsync(string nameOrPhone);
     Task<IEnumerable<AppointmentHistoryDto>> GetAppointmentsByCustomerIdAsync(int customerId);
     Task<IEnumerable<Customer?>> GetCustomersByBusinessIdAsync(int businessId);
+    Task<Customer?> GetCustomerByEmailOrPhoneAndBusinessIdAsync(string emailOrPhone, int businessId);
 }

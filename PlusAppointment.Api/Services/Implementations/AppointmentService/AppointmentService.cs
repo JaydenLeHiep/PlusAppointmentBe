@@ -3,6 +3,8 @@ using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
 using PlusAppointment.Repositories.Interfaces.AppointmentRepo;
 using PlusAppointment.Repositories.Interfaces.BusinessRepo;
+using PlusAppointment.Repositories.Interfaces.ServicesRepo;
+using PlusAppointment.Repositories.Interfaces.StaffRepo;
 using PlusAppointment.Services.Interfaces.AppointmentService;
 using PlusAppointment.Utils.SendingEmail;
 using PlusAppointment.Utils.SendingSms;
@@ -16,14 +18,19 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
         private readonly EmailService _emailService;
         private readonly SmsTextMagicService _smsTextMagicService;
+        private readonly IServicesRepository _servicesRepository;
+        private readonly IStaffRepository _staffRepository;
 
         public AppointmentService(IAppointmentRepository appointmentRepository, IBusinessRepository businessRepository,
-            EmailService emailService, SmsTextMagicService smsTextMagicService)
+            EmailService emailService, SmsTextMagicService smsTextMagicService, IServicesRepository servicesRepository,
+            IStaffRepository staffRepository)
         {
             _appointmentRepository = appointmentRepository;
             _businessRepository = businessRepository;
             _emailService = emailService;
             _smsTextMagicService = smsTextMagicService;
+            _servicesRepository = servicesRepository;
+            _staffRepository = staffRepository;
         }
 
         public async Task<IEnumerable<AppointmentRetrieveDto?>> GetAllAppointmentsAsync()
@@ -59,18 +66,35 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 throw new ArgumentException("Invalid CustomerId");
             }
 
-            var mappings = appointmentDto.Services.Select(serviceStaff => new AppointmentServiceStaffMapping
+            var mappings = new List<AppointmentServiceStaffMapping>();
+
+            foreach (var serviceStaff in appointmentDto.Services)
             {
-                ServiceId = serviceStaff.ServiceId,
-                StaffId = serviceStaff.StaffId
-            }).ToList();
+                var staff = await _staffRepository.GetByIdAsync(serviceStaff.StaffId);
+                var service = await _servicesRepository.GetByIdAsync(serviceStaff.ServiceId);
+
+                if (staff == null || service == null)
+                {
+                    throw new ArgumentException("Invalid ServiceId or StaffId");
+                }
+
+                mappings.Add(new AppointmentServiceStaffMapping
+                {
+                    ServiceId = service.ServiceId,
+                    StaffId = staff.StaffId,
+                    Service = service, // Attach full Service entity
+                    Staff = staff // Attach full Staff entity
+                });
+            }
 
             var appointment = new Appointment
             {
                 CustomerId = appointmentDto.CustomerId,
+                Customer = customer, // Attach full Customer entity
                 BusinessId = appointmentDto.BusinessId,
+                Business = business, // Attach full Business entity
                 AppointmentTime = appointmentDto.AppointmentTime,
-                Duration = TimeSpan.Zero,
+                Duration = TimeSpan.Zero, // Duration will be calculated later
                 Status = "Pending",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
@@ -85,7 +109,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             var appointmentTimeFormatted = viennaTime.ToString("HH:mm 'on' dd.MM.yyyy");
 
             var subject = "Appointment Confirmation";
-            var bodySms = 
+            var bodySms =
                 $"Dear Customer, \n\nThank you for choosing {business.Name}. We are pleased to confirm your appointment at {appointmentTimeFormatted}. We look forward to serving you! \n\nBest regards,\n{business.Name}";
 
             try
@@ -105,7 +129,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
             await _appointmentRepository.AddAppointmentAsync(appointment);
 
-            var bodyEmail = 
+            var bodyEmail =
                 $"Dear Customer, \n\nThis is a friendly reminder of your upcoming appointment at {business.Name} scheduled for {appointmentTimeFormatted}. Please ensure you arrive on time. We look forward to seeing you! \n\nBest regards,\n{business.Name}";
 
             var sendTime = appointmentDto.AppointmentTime.AddDays(-1);
@@ -123,6 +147,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
             return true;
         }
+
 
         public async Task UpdateAppointmentAsync(int id, UpdateAppointmentDto updateAppointmentDto)
         {
@@ -209,9 +234,10 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
         {
             var services = new List<ServiceStaffListsRetrieveDto>();
 
-            foreach (var apptService in appointment.AppointmentServices ?? Enumerable.Empty<AppointmentServiceStaffMapping>())
+            foreach (var apptService in appointment.AppointmentServices ??
+                                        Enumerable.Empty<AppointmentServiceStaffMapping>())
             {
-                var category = apptService.Service?.CategoryId != null 
+                var category = apptService.Service?.CategoryId != null
                     ? await _appointmentRepository.GetServiceCategoryByIdAsync(apptService.Service.CategoryId.Value)
                     : null;
 

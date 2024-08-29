@@ -82,14 +82,21 @@ namespace PlusAppointment.Controllers.UserController
                     Username = user.Username,
                     Role = user.Role.ToString()
                 };
-
+                
                 var cookieOptions = new CookieOptions
                 {
                     HttpOnly = true,
-                    Secure = false, // Change to true in production (HTTPS)
-                    SameSite = SameSiteMode.Strict,
+                    Secure = true, // Change to true in production (HTTPS)
+                    SameSite = SameSiteMode.None, // Required for cross-site cookies
                     Expires = DateTime.UtcNow.AddDays(30)
                 };
+                // var cookieOptions = new CookieOptions
+                // {
+                //     HttpOnly = true,
+                //     Secure = false, // Change to true in production (HTTPS)
+                //     SameSite = SameSiteMode.Strict,
+                //     Expires = DateTime.UtcNow.AddDays(30)
+                // };
                 if (refreshToken != null)
                 {
                     Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
@@ -131,20 +138,20 @@ namespace PlusAppointment.Controllers.UserController
 
             // Update the refresh token cookie
             // for PRODUCTION!!
-            // var cookieOptions = new CookieOptions
-            // {
-            //     HttpOnly = true,
-            //     Secure = true, // Change to true in production (HTTPS)
-            //     SameSite = SameSiteMode.None, // Required for cross-site cookies
-            //     Expires = DateTime.UtcNow.AddDays(30)
-            // };
             var cookieOptions = new CookieOptions
             {
                 HttpOnly = true,
-                Secure = false, // Change to true in production (HTTPS)
-                SameSite = SameSiteMode.Strict, // Required for cross-site cookies
+                Secure = true, // Change to true in production (HTTPS)
+                SameSite = SameSiteMode.None, // Required for cross-site cookies
                 Expires = DateTime.UtcNow.AddDays(30)
             };
+            // var cookieOptions = new CookieOptions
+            // {
+            //     HttpOnly = true,
+            //     Secure = false, // Change to true in production (HTTPS)
+            //     SameSite = SameSiteMode.Strict, // Required for cross-site cookies
+            //     Expires = DateTime.UtcNow.AddDays(30)
+            // };
             Response.Cookies.Append("refreshToken", newRefreshToken, cookieOptions);
 
             return Ok(new { Token = newAccessToken });

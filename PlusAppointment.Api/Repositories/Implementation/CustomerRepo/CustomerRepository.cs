@@ -105,6 +105,8 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
             await _context.SaveChangesAsync();
 
             await UpdateCustomerCacheAsync(customer);
+            
+            await RefreshRelatedCachesAsync(customer);
         }
 
         public async Task UpdateCustomerAsync(Customer? customer)
@@ -118,6 +120,7 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
             await _context.SaveChangesAsync();
 
             await UpdateCustomerCacheAsync(customer);
+            await RefreshRelatedCachesAsync(customer);
         }
 
         public async Task DeleteCustomerAsync(int customerId)
@@ -129,6 +132,7 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 await _context.SaveChangesAsync();
 
                 await InvalidateCustomerCacheAsync(customer);
+                await RefreshRelatedCachesAsync(customer);
             }
         }
 
@@ -256,5 +260,26 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 },
                 TimeSpan.FromMinutes(10));
         }
+        
+        private async Task RefreshRelatedCachesAsync(Customer customer)
+        {
+            // Refresh individual Customer cache
+            var customerCacheKey = $"customer_{customer.CustomerId}";
+            await _redisHelper.SetCacheAsync(customerCacheKey, customer, TimeSpan.FromMinutes(10));
+
+            // Refresh list of all Customers for the Business
+            string businessCacheKey = $"customers_business_{customer.BusinessId}";
+            var businessCustomers = await _context.Customers
+                .Where(c => c.BusinessId == customer.BusinessId)
+                .ToListAsync();
+
+            await _redisHelper.SetCacheAsync(businessCacheKey, businessCustomers, TimeSpan.FromMinutes(10));
+
+            // Optionally refresh the cache for all customers if required
+            const string allCustomersCacheKey = "all_customers";
+            var allCustomers = await _context.Customers.ToListAsync();
+            await _redisHelper.SetCacheAsync(allCustomersCacheKey, allCustomers, TimeSpan.FromMinutes(10));
+        }
+
     }
 }

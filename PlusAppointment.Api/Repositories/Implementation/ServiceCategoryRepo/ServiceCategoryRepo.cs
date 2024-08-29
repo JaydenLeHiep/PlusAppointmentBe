@@ -58,8 +58,10 @@ namespace PlusAppointment.Repositories.Implementation.ServiceCategoryRepo
         {
             _context.ServiceCategories.Add(serviceCategory);
             await _context.SaveChangesAsync();
-
+        
             await UpdateServiceCategoryCacheAsync(serviceCategory);
+            // Refresh related caches
+            await RefreshRelatedCachesAsync(serviceCategory);
         }
 
         public async Task UpdateServiceCategoryAsync(ServiceCategory serviceCategory)
@@ -68,6 +70,8 @@ namespace PlusAppointment.Repositories.Implementation.ServiceCategoryRepo
             await _context.SaveChangesAsync();
 
             await UpdateServiceCategoryCacheAsync(serviceCategory);
+            await RefreshRelatedCachesAsync(serviceCategory);
+            
         }
 
         public async Task DeleteServiceCategoryAsync(int id)
@@ -78,6 +82,7 @@ namespace PlusAppointment.Repositories.Implementation.ServiceCategoryRepo
                 _context.ServiceCategories.Remove(serviceCategory);
                 await _context.SaveChangesAsync();
                 await InvalidateServiceCategoryCacheAsync(serviceCategory);
+                await RefreshRelatedCachesAsync(serviceCategory);
             }
         }
 
@@ -111,5 +116,17 @@ namespace PlusAppointment.Repositories.Implementation.ServiceCategoryRepo
                 },
                 TimeSpan.FromMinutes(10));
         }
+        private async Task RefreshRelatedCachesAsync(ServiceCategory serviceCategory)
+        {
+            // Refresh individual ServiceCategory cache
+            var serviceCategoryCacheKey = $"service_category_{serviceCategory.CategoryId}";
+            await _redisHelper.SetCacheAsync(serviceCategoryCacheKey, serviceCategory, TimeSpan.FromMinutes(10));
+
+            // Refresh list of all ServiceCategories
+            const string allServiceCategoriesCacheKey = "all_service_categories";
+            var allServiceCategories = await _context.ServiceCategories.ToListAsync();
+            await _redisHelper.SetCacheAsync(allServiceCategoriesCacheKey, allServiceCategories, TimeSpan.FromMinutes(10));
+        }
+
     }
 }

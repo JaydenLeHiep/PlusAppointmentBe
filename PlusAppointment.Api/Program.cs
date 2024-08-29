@@ -224,7 +224,7 @@ app.UseRoleMiddleware();
 app.UseAuthorization();
 
 // Use Hangfire dashboard
-app.UseHangfireDashboard("/hangfire", new DashboardOptions
+app.UseHangfireDashboard("/api/hangfire", new DashboardOptions
 {
     Authorization = new[] { new Hangfire.Dashboard.LocalRequestsOnlyAuthorizationFilter() }
 });

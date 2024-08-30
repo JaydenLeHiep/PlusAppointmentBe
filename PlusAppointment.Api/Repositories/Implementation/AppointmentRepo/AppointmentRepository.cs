@@ -120,6 +120,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
         {
             // Refresh Business Cache
             string businessCacheKey = $"appointments_business_{appointment.BusinessId}";
+            var startOfTodayUtc = GetStartOfTodayUtc();
             var businessAppointments = await _context.Appointments
                 .Include(a => a.Customer)
                 .Include(a => a.Business)
@@ -127,7 +128,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 .ThenInclude(apptService => apptService.Service)
                 .Include(a => a.AppointmentServices)!
                 .ThenInclude(apptService => apptService.Staff)
-                .Where(a => a.BusinessId == appointment.BusinessId)
+                .Where(a => a.BusinessId == appointment.BusinessId && a.AppointmentTime >= startOfTodayUtc)
                 .ToListAsync();
 
             var businessCacheDtos = businessAppointments.Select(MapToCacheDto).ToList();
@@ -142,7 +143,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                 .ThenInclude(apptService => apptService.Service)
                 .Include(a => a.AppointmentServices)!
                 .ThenInclude(apptService => apptService.Staff)
-                .Where(a => a.CustomerId == appointment.CustomerId)
+                .Where(a => a.CustomerId == appointment.CustomerId && a.AppointmentTime >= startOfTodayUtc)
                 .ToListAsync();
 
             var customerCacheDtos = customerAppointments.Select(MapToCacheDto).ToList();
@@ -161,7 +162,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
                         .ThenInclude(apptService => apptService.Service)
                         .Include(a => a.AppointmentServices)!
                         .ThenInclude(apptService => apptService.Staff)
-                        .Where(a => a.AppointmentServices.Any(apptService => apptService.StaffId == service.StaffId))
+                        .Where(a => a.AppointmentServices.Any(apptService => apptService.StaffId == service.StaffId) && a.AppointmentTime >= startOfTodayUtc)
                         .ToListAsync();
 
                     var staffCacheDtos = staffAppointments.Select(MapToCacheDto).ToList();

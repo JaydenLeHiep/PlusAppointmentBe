@@ -29,8 +29,8 @@ namespace PlusAppointment.Controllers.CustomerController
             return Ok(customers);
         }
 
+        [AllowAnonymous]
         [HttpGet("customer_id={customerId}")]
-        [Authorize]
         public async Task<IActionResult> GetById(int customerId)
         {
             var customer = await _customerService.GetCustomerByIdAsync(customerId);
@@ -41,6 +41,7 @@ namespace PlusAppointment.Controllers.CustomerController
 
             return Ok(customer);
         }
+        
         [HttpGet("business_id={businessId}/customers")]
         [Authorize]
         public async Task<IActionResult> GetCustomersByBusinessId(int businessId)

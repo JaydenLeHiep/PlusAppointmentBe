@@ -28,7 +28,8 @@ namespace PlusAppointment.Controllers.CustomerController
             var customers = await _customerService.GetAllCustomersAsync();
             return Ok(customers);
         }
-
+        
+        [AllowAnonymous]
         [HttpGet("customer_id={customerId}")]
         [Authorize]
         public async Task<IActionResult> GetById(int customerId)

@@ -20,10 +20,7 @@ namespace PlusAppointment.Controllers.NotAvailableDateController
         public async Task<IActionResult> GetAllByBusiness(int businessId)
         {
             var notAvailableDates = await _notAvailableDateService.GetAllByBusinessIdAsync(businessId);
-            if (!notAvailableDates.Any())
-            {
-                return NotFound(new { message = "No dates found for this business." });
-            }
+            // Always return Ok, even if the list is empty
             return Ok(notAvailableDates);
         }
         
@@ -31,10 +28,7 @@ namespace PlusAppointment.Controllers.NotAvailableDateController
         public async Task<IActionResult> GetAllByStaff(int businessId, int staffId)
         {
             var notAvailableDates = await _notAvailableDateService.GetAllByStaffIdAsync(businessId, staffId);
-            if (!notAvailableDates.Any())
-            {
-                return NotFound(new { message = "No dates found for this staff." });
-            }
+            // Always return Ok, even if the list is empty
             return Ok(notAvailableDates);
         }
         
@@ -44,7 +38,8 @@ namespace PlusAppointment.Controllers.NotAvailableDateController
             var notAvailableDate = await _notAvailableDateService.GetByIdAsync(businessId, staffId, notAvailableId);
             if (notAvailableDate == null)
             {
-                return NotFound(new { message = "Not available date not found." });
+                // If not found, return Ok with null or an empty object
+                return Ok(null);
             }
             return Ok(notAvailableDate);
         }

@@ -88,6 +88,8 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
             await _context.SaveChangesAsync();
 
             await UpdateServiceCacheAsync(service);
+            // Refresh related caches
+            await RefreshRelatedCachesAsync(service);
         }
 
         public async Task AddListServicesAsync(IEnumerable<Service?> services, int businessId)
@@ -105,7 +107,7 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
             {
                 if (service != null)
                 {
-                    await UpdateServiceCacheAsync(service);
+                    await RefreshRelatedCachesAsync(service);
                 }
             }
         }
@@ -139,6 +141,8 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
             await _context.SaveChangesAsync();
 
             await UpdateServiceCacheAsync(service);
+            // Refresh related caches
+            await RefreshRelatedCachesAsync(service);
         }
 
         public async Task DeleteAsync(int businessId, int serviceId)
@@ -152,6 +156,8 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
                 _context.Services.Remove(service);
                 await _context.SaveChangesAsync();
                 await InvalidateServiceCacheAsync(service);
+                // Refresh related caches
+                await RefreshRelatedCachesAsync(service);
             }
         }
 
@@ -185,5 +191,27 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
                 },
                 TimeSpan.FromMinutes(10));
         }
+        
+        private async Task RefreshRelatedCachesAsync(Service service)
+        {
+            // Refresh individual Service cache
+            var serviceCacheKey = $"service_{service.ServiceId}";
+            await _redisHelper.SetCacheAsync(serviceCacheKey, service, TimeSpan.FromMinutes(10));
+
+            // Refresh list of all Services for the Business
+            string businessCacheKey = $"service_business_{service.BusinessId}";
+            var businessServices = await _context.Services
+                .Include(s => s.Category)
+                .Where(s => s.BusinessId == service.BusinessId)
+                .ToListAsync();
+
+            await _redisHelper.SetCacheAsync(businessCacheKey, businessServices, TimeSpan.FromMinutes(10));
+
+            // Optionally refresh the cache for all services if required
+            const string allServicesCacheKey = "all_services";
+            var allServices = await _context.Services.Include(s => s.Category).ToListAsync();
+            await _redisHelper.SetCacheAsync(allServicesCacheKey, allServices, TimeSpan.FromMinutes(10));
+        }
+
     }
 }

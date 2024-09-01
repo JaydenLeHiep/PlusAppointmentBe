@@ -82,19 +82,19 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 {
                     ServiceId = service.ServiceId,
                     StaffId = staff.StaffId,
-                    Service = service, // Attach full Service entity
-                    Staff = staff // Attach full Staff entity
+                    Service = service,
+                    Staff = staff
                 });
             }
 
             var appointment = new Appointment
             {
                 CustomerId = appointmentDto.CustomerId,
-                Customer = customer, // Attach full Customer entity
+                Customer = customer,
                 BusinessId = appointmentDto.BusinessId,
-                Business = business, // Attach full Business entity
+                Business = business,
                 AppointmentTime = appointmentDto.AppointmentTime,
-                Duration = TimeSpan.Zero, // Duration will be calculated later
+                Duration = TimeSpan.Zero,
                 Status = "Pending",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
@@ -104,13 +104,16 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
             var errors = new List<string>();
 
+            // Convert appointment time to Vienna local time
             TimeZoneInfo viennaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
-            DateTime viennaTime = TimeZoneInfo.ConvertTimeFromUtc(appointment.AppointmentTime, viennaTimeZone);
+            DateTime viennaTime = TimeZoneInfo.ConvertTimeFromUtc(appointmentDto.AppointmentTime, viennaTimeZone);
             var appointmentTimeFormatted = viennaTime.ToString("HH:mm 'on' dd.MM.yyyy");
 
-            var subject = "Appointment Confirmation";
+            var subject = "Appointment Received";
+
             var bodySms =
-                $"Dear Customer, \n\nThank you for choosing {business.Name}. We are pleased to confirm your appointment at {appointmentTimeFormatted}. We look forward to serving you! \n\nBest regards,\n{business.Name}";
+                $"Dear Customer, \n\nThank you for choosing {business.Name}. We have successfully received your appointment request for {appointmentTimeFormatted}. Our team is currently processing it, and we will confirm the details with you shortly. If needed, we will reach out to you via email or phone. \n\nBest regards,\n{business.Name}";
+
 
             try
             {
@@ -132,10 +135,20 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             var bodyEmail =
                 $"Dear Customer, \n\nThis is a friendly reminder of your upcoming appointment at {business.Name} scheduled for {appointmentTimeFormatted}. Please ensure you arrive on time. We look forward to seeing you! \n\nBest regards,\n{business.Name}";
 
-            var sendTime = appointmentDto.AppointmentTime.AddDays(-1);
-            BackgroundJob.Schedule(
-                () => _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodyEmail),
-                sendTime);
+            // Schedule the reminder email 48 hours (2 days) before the appointment
+            var sendTime = viennaTime.AddDays(-2);
+
+            if (sendTime <= DateTime.UtcNow)
+            {
+                // If the send time is in the past (less than 48 hours left), send the email immediately
+                await _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodyEmail);
+            }
+            else
+            {
+                BackgroundJob.Schedule(
+                    () => _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodyEmail),
+                    sendTime);
+            }
 
             if (errors.Any())
             {
@@ -164,8 +177,47 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
             appointment.Status = status;
             appointment.UpdatedAt = DateTime.UtcNow;
+            
+            var customer = await _appointmentRepository.GetByCustomerIdAsync(appointment.CustomerId);
+            if (customer == null)
+            {
+                throw new ArgumentException("Invalid CustomerId");
+            }
+            
+            var business = await _businessRepository.GetByIdAsync(appointment.BusinessId);
+            if (business == null)
+            {
+                throw new ArgumentException("Invalid BusinessId");
+            }
+            
+            TimeZoneInfo viennaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
+            DateTime viennaTime = TimeZoneInfo.ConvertTimeFromUtc(appointment.AppointmentTime, viennaTimeZone);
+            var appointmentTimeFormatted = viennaTime.ToString("HH:mm 'on' dd.MM.yyyy");
+            
+            var errors = new List<string>();
+            // Convert appointment time to Vienna local time
 
+            var subject = "Appointment Confirmation";
+            var bodySms =
+                $"Dear Customer, \n\nThank you for choosing {business.Name}. We are pleased to confirm your appointment at {appointmentTimeFormatted}. We look forward to serving you! \n\nBest regards,\n{business.Name}";
+
+            try
+            {
+                var emailSent = await _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodySms);
+                if (!emailSent)
+                {
+                    Console.WriteLine("Failed to send confirmation email.");
+                    errors.Add("Failed to send confirmation email.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed to send confirmation email.");
+                errors.Add($"Error sending confirmation email: {ex.Message}");
+            }
+            
             await _appointmentRepository.UpdateAppointmentStatusAsync(appointment);
+            
         }
 
         public async Task DeleteAppointmentAsync(int id)

@@ -13,6 +13,13 @@ namespace PlusAppointment.Repositories.Implementation.NotAvailableDateRepository
         {
             _context = context;
         }
+        
+        public async Task<IEnumerable<NotAvailableDate>> GetAllByBusinessIdAsync(int businessId)
+        {
+            return await _context.NotAvailableDates
+                .Where(nad => nad.BusinessId == businessId)
+                .ToListAsync();
+        }
 
         public async Task<IEnumerable<NotAvailableDate>> GetAllByStaffIdAsync(int businessId, int staffId)
         {

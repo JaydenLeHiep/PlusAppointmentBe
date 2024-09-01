@@ -13,6 +13,20 @@ namespace PlusAppointment.Services.Implementations.NotAvailableDate
             _notAvailableDateRepository = notAvailableDateRepository;
         }
 
+        public async Task<IEnumerable<NotAvailableDateDto?>> GetAllByBusinessIdAsync(int businessId)
+        {
+            var dates = await _notAvailableDateRepository.GetAllByBusinessIdAsync(businessId);
+            return dates.Select(d => new NotAvailableDateDto
+            {
+                NotAvailableDateId = d.NotAvailableDateId,
+                StaffId = d.StaffId,
+                BusinessId = d.BusinessId,
+                StartDate = d.StartDate,
+                EndDate = d.EndDate,
+                Reason = d.Reason
+            }).ToList();
+        }
+        
         public async Task<IEnumerable<NotAvailableDateDto?>> GetAllByStaffIdAsync(int businessId, int staffId)
         {
             var dates = await _notAvailableDateRepository.GetAllByStaffIdAsync(businessId, staffId);

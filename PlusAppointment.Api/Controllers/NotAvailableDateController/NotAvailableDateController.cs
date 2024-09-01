@@ -15,8 +15,18 @@ namespace PlusAppointment.Controllers.NotAvailableDateController
         {
             _notAvailableDateService = notAvailableDateService;
         }
-
-        [Authorize]
+        
+        [HttpGet("business_id={businessId}")]
+        public async Task<IActionResult> GetAllByBusiness(int businessId)
+        {
+            var notAvailableDates = await _notAvailableDateService.GetAllByBusinessIdAsync(businessId);
+            if (!notAvailableDates.Any())
+            {
+                return NotFound(new { message = "No dates found for this business." });
+            }
+            return Ok(notAvailableDates);
+        }
+        
         [HttpGet("business_id={businessId}/staff_id={staffId}")]
         public async Task<IActionResult> GetAllByStaff(int businessId, int staffId)
         {
@@ -27,12 +37,11 @@ namespace PlusAppointment.Controllers.NotAvailableDateController
             }
             return Ok(notAvailableDates);
         }
-
-        [Authorize]
-        [HttpGet("business_id={businessId}/staff_id={staffId}/id={id}")]
-        public async Task<IActionResult> GetById(int businessId, int staffId, int id)
+        
+        [HttpGet("business_id={businessId}/staff_id={staffId}/notAvailable_id={notAvailableId}")]
+        public async Task<IActionResult> GetById(int businessId, int staffId, int notAvailableId)
         {
-            var notAvailableDate = await _notAvailableDateService.GetByIdAsync(businessId, staffId, id);
+            var notAvailableDate = await _notAvailableDateService.GetByIdAsync(businessId, staffId, notAvailableId);
             if (notAvailableDate == null)
             {
                 return NotFound(new { message = "Not available date not found." });
@@ -56,12 +65,12 @@ namespace PlusAppointment.Controllers.NotAvailableDateController
         }
 
         [Authorize]
-        [HttpPut("business_id={businessId}/staff_id={staffId}/id={id}")]
-        public async Task<IActionResult> Update(int businessId, int staffId, int id, [FromBody] NotAvailableDateDto notAvailableDateDto)
+        [HttpPut("business_id={businessId}/staff_id={staffId}/notAvailable_id={notAvailableId}")]
+        public async Task<IActionResult> Update(int businessId, int staffId, int notAvailableId, [FromBody] NotAvailableDateDto notAvailableDateDto)
         {
             try
             {
-                await _notAvailableDateService.UpdateNotAvailableDateAsync(businessId, staffId, id, notAvailableDateDto);
+                await _notAvailableDateService.UpdateNotAvailableDateAsync(businessId, staffId, notAvailableId, notAvailableDateDto);
                 return Ok(new { message = "Not available date updated successfully" });
             }
             catch (KeyNotFoundException ex)
@@ -75,12 +84,12 @@ namespace PlusAppointment.Controllers.NotAvailableDateController
         }
 
         [Authorize]
-        [HttpDelete("business_id={businessId}/staff_id={staffId}/id={id}")]
-        public async Task<IActionResult> Delete(int businessId, int staffId, int id)
+        [HttpDelete("business_id={businessId}/staff_id={staffId}/notAvailable_id={notAvailableId}")]
+        public async Task<IActionResult> Delete(int businessId, int staffId, int notAvailableId)
         {
             try
             {
-                await _notAvailableDateService.DeleteNotAvailableDateAsync(businessId, staffId, id);
+                await _notAvailableDateService.DeleteNotAvailableDateAsync(businessId, staffId, notAvailableId);
                 return Ok(new { message = "Not available date deleted successfully" });
             }
             catch (Exception ex)

@@ -9,5 +9,6 @@ namespace PlusAppointment.Services.Interfaces.NotAvailableDateService
         Task AddNotAvailableDateAsync(int businessId, int staffId, NotAvailableDateDto notAvailableDateDto);
         Task UpdateNotAvailableDateAsync(int businessId, int staffId, int id, NotAvailableDateDto notAvailableDateDto);
         Task DeleteNotAvailableDateAsync(int businessId, int staffId, int id);
+        Task<IEnumerable<NotAvailableDateDto?>> GetAllByBusinessIdAsync(int businessId);
     }
 }

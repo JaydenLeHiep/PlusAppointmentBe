@@ -3,9 +3,11 @@ using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
 using PlusAppointment.Repositories.Interfaces.AppointmentRepo;
 using PlusAppointment.Repositories.Interfaces.BusinessRepo;
+
 using PlusAppointment.Repositories.Interfaces.ServicesRepo;
 using PlusAppointment.Repositories.Interfaces.StaffRepo;
 using PlusAppointment.Services.Interfaces.AppointmentService;
+using PlusAppointment.Services.Interfaces.EmailUsageService;
 using PlusAppointment.Utils.SendingEmail;
 using PlusAppointment.Utils.SendingSms;
 
@@ -20,10 +22,11 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
         private readonly SmsTextMagicService _smsTextMagicService;
         private readonly IServicesRepository _servicesRepository;
         private readonly IStaffRepository _staffRepository;
+        private readonly IEmailUsageService _emailUsageService;
 
         public AppointmentService(IAppointmentRepository appointmentRepository, IBusinessRepository businessRepository,
             EmailService emailService, SmsTextMagicService smsTextMagicService, IServicesRepository servicesRepository,
-            IStaffRepository staffRepository)
+            IStaffRepository staffRepository, IEmailUsageService emailUsageService)
         {
             _appointmentRepository = appointmentRepository;
             _businessRepository = businessRepository;
@@ -31,6 +34,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             _smsTextMagicService = smsTextMagicService;
             _servicesRepository = servicesRepository;
             _staffRepository = staffRepository;
+            _emailUsageService = emailUsageService;
         }
 
         public async Task<IEnumerable<AppointmentRetrieveDto?>> GetAllAppointmentsAsync()
@@ -118,7 +122,18 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             try
             {
                 var emailSent = await _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodySms);
-                if (!emailSent)
+                if (emailSent)
+                {
+                    // Update EmailUsage
+                    await _emailUsageService.AddEmailUsageAsync(new EmailUsage
+                    {
+                        BusinessId = appointmentDto.BusinessId,
+                        Year = DateTime.UtcNow.Year,
+                        Month = DateTime.UtcNow.Month,
+                        EmailCount = 1
+                    });
+                }
+                else
                 {
                     Console.WriteLine("Failed to send confirmation email.");
                     errors.Add("Failed to send confirmation email.");
@@ -141,13 +156,24 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             if (sendTime <= DateTime.UtcNow)
             {
                 // If the send time is in the past (less than 48 hours left), send the email immediately
-                await _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodyEmail);
+                var reminderEmailSent = await _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodyEmail);
+                if (reminderEmailSent)
+                {
+                    // Update EmailUsage
+                    await _emailUsageService.AddEmailUsageAsync(new EmailUsage
+                    {
+                        BusinessId = appointmentDto.BusinessId,
+                        Year = DateTime.UtcNow.Year,
+                        Month = DateTime.UtcNow.Month,
+                        EmailCount = 1
+                    });
+                }
             }
             else
             {
                 BackgroundJob.Schedule(
-                    () => _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodyEmail),
-                    sendTime);
+                    () => SendReminderEmail(customer.Email ?? string.Empty, subject, bodyEmail, appointmentDto.BusinessId),
+                    new DateTimeOffset(sendTime));
             }
 
             if (errors.Any())
@@ -161,7 +187,21 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             return true;
         }
 
-
+        // Separate method for sending the reminder email and updating the email usage
+        public async Task SendReminderEmail(string email, string subject, string bodyEmail, int businessId)
+        {
+            var emailSent = await _emailService.SendEmailAsync(email, subject, bodyEmail);
+            if (emailSent)
+            {
+                await _emailUsageService.AddEmailUsageAsync(new EmailUsage
+                {
+                    BusinessId = businessId,
+                    Year = DateTime.UtcNow.Year,
+                    Month = DateTime.UtcNow.Month,
+                    EmailCount = 1
+                });
+            }
+        }
         public async Task UpdateAppointmentAsync(int id, UpdateAppointmentDto updateAppointmentDto)
         {
             await _appointmentRepository.UpdateAppointmentWithServicesAsync(id, updateAppointmentDto);
@@ -204,7 +244,18 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             try
             {
                 var emailSent = await _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodySms);
-                if (!emailSent)
+                if (emailSent)
+                {
+                    // Update EmailUsage
+                    await _emailUsageService.AddEmailUsageAsync(new EmailUsage
+                    {
+                        BusinessId = appointment.BusinessId,
+                        Year = DateTime.UtcNow.Year,
+                        Month = DateTime.UtcNow.Month,
+                        EmailCount = 1
+                    });
+                }
+                else
                 {
                     Console.WriteLine("Failed to send confirmation email.");
                     errors.Add("Failed to send confirmation email.");

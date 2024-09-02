@@ -171,9 +171,35 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo
             }
         }
 
+        private async Task CheckAndIncrementAppointmentLimitAsync(int customerId)
+        {
+            // Define the Redis key for today's date
+            string key = $"appointments_customerId:{customerId}:{DateTime.UtcNow:yyyy-MM-dd}";
+
+            // Get the current count of appointments from Redis
+            var currentCount = await _redisHelper.GetDecimalCacheAsync(key) ?? 0;
+
+            if (currentCount >= 2)
+            {
+                throw new InvalidOperationException("You have reached the maximum number of appointments for a day.");
+            }
+
+            // Increment the appointment count
+            await _redisHelper.SetDecimalCacheAsync(key, currentCount + 1);
+
+            // Set the key to expire at the end of the day if this is the first appointment today
+            if (currentCount == 0)
+            {
+                var expirationTime = DateTime.UtcNow.AddDays(1).Date - DateTime.UtcNow;
+                await _redisHelper.SetDecimalCacheAsync(key, currentCount + 1, expirationTime);
+            }
+        }
 
         public async Task AddAppointmentAsync(Appointment appointment)
         {
+            // Check and increment the appointment limit
+            await CheckAndIncrementAppointmentLimitAsync(appointment.CustomerId);
+
             await using var connection = new NpgsqlConnection(_context.Database.GetConnectionString());
             await connection.OpenAsync();
 

@@ -38,16 +38,20 @@ using Hangfire;
 using Hangfire.MemoryStorage;
 
 using PlusAppointment.Repositories.Implementation.CalculateMoneyRepo;
+using PlusAppointment.Repositories.Implementation.EmailUsageRepo;
 using PlusAppointment.Repositories.Implementation.NotAvailableDateRepository;
 using PlusAppointment.Repositories.Implementation.ServiceCategoryRepo;
 using PlusAppointment.Repositories.Interfaces.CalculateMoneyRepo;
+using PlusAppointment.Repositories.Interfaces.EmailUsageRepo;
 using PlusAppointment.Repositories.Interfaces.ServiceCategoryRepo;
 using PlusAppointment.Services.Implementations.CalculateMoneyService;
 using PlusAppointment.Services.Implementations.ServiceCategoryService;
 using PlusAppointment.Services.Interfaces.CalculateMoneyService;
 using PlusAppointment.Services.Interfaces.ServiceCategoryService;
 using PlusAppointment.Repositories.Interfaces.NotAvailableDateRepository;
+using PlusAppointment.Services.Implementations.EmailUsageService;
 using PlusAppointment.Services.Implementations.NotAvailableDate;
+using PlusAppointment.Services.Interfaces.EmailUsageService;
 using PlusAppointment.Services.Interfaces.NotAvailableDateService;
 using PlusAppointment.Utils.Hub;
 
@@ -99,6 +103,9 @@ builder.Services.AddScoped<IServiceCategoryService, ServiceCategoryService>();
 builder.Services.AddScoped<IServiceCategoryRepo, ServiceCategoryRepo>();
 builder.Services.AddScoped<INotAvailableDateRepository, NotAvailableDateRepository>();
 builder.Services.AddScoped<INotAvailableDateService, NotAvailableDateService>();
+builder.Services.AddScoped<IEmailUsageRepo, EmailUsageRepo>();
+builder.Services.AddScoped<IEmailUsageService, EmailUsageService>();
+
 
 builder.Services.AddSingleton<EmailService>();
 builder.Services.AddSingleton<SmsService>();

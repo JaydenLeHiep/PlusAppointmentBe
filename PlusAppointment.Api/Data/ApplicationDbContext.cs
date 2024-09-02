@@ -21,6 +21,7 @@ namespace PlusAppointment.Data
         public DbSet<UserRefreshToken> UserRefreshTokens { get; set; }
         
         public DbSet<NotAvailableDate> NotAvailableDates { get; set; }
+        public DbSet<EmailUsage> EmailUsages { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -34,6 +35,7 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<Staff>().ToTable("staffs");
             modelBuilder.Entity<Customer>().ToTable("customers");
             modelBuilder.Entity<AppointmentServiceStaffMapping>().ToTable("appointment_services_staffs");
+            modelBuilder.Entity<EmailUsage>().ToTable("email_usage");
 
             // Configure column names to be lowercase
             modelBuilder.Entity<User>().Property(u => u.UserId).HasColumnName("user_id");
@@ -119,6 +121,15 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<UserRefreshToken>().Property(urt => urt.UserId).HasColumnName("user_id");
             modelBuilder.Entity<UserRefreshToken>().Property(urt => urt.Token).HasColumnName("token");
             modelBuilder.Entity<UserRefreshToken>().Property(urt => urt.ExpiryTime).HasColumnName("expiry_time");
+            
+            // Configure EmailUsage table
+            modelBuilder.Entity<EmailUsage>().ToTable("email_usage");
+            modelBuilder.Entity<EmailUsage>().Property(eu => eu.EmailUsageId).HasColumnName("email_usage_id");
+            modelBuilder.Entity<EmailUsage>().Property(eu => eu.BusinessId).HasColumnName("business_id");
+            modelBuilder.Entity<EmailUsage>().Property(eu => eu.Year).HasColumnName("year");
+            modelBuilder.Entity<EmailUsage>().Property(eu => eu.Month).HasColumnName("month");
+            modelBuilder.Entity<EmailUsage>().Property(eu => eu.EmailCount).HasColumnName("email_count");
+
 
             // Configure relationships
             modelBuilder.Entity<Business>()
@@ -174,6 +185,13 @@ namespace PlusAppointment.Data
                 .WithMany(s => s.NotAvailableDates)
                 .HasForeignKey(nad => nad.StaffId);
             
+            modelBuilder.Entity<EmailUsage>()
+                .HasOne(eu => eu.Business)
+                .WithMany(b => b.EmailUsages) // Assuming you want to navigate from Business to EmailUsage
+                .HasForeignKey(eu => eu.BusinessId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            
             // Add indexes to improve performance
             modelBuilder.Entity<Business>()
                 .HasIndex(b => b.UserID);
@@ -221,6 +239,10 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<UserRefreshToken>()
                 .HasIndex(urt => urt.Token)
                 .IsUnique();
+            modelBuilder.Entity<EmailUsage>()
+                .HasIndex(eu => new { eu.BusinessId, eu.Year, eu.Month })
+                .IsUnique(); // Ensure uniqueness for each Business per month
+        
         }
     }
 }

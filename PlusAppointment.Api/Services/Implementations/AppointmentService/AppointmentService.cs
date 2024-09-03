@@ -3,7 +3,11 @@ using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
 using PlusAppointment.Repositories.Interfaces.AppointmentRepo;
 using PlusAppointment.Repositories.Interfaces.BusinessRepo;
+
+using PlusAppointment.Repositories.Interfaces.ServicesRepo;
+using PlusAppointment.Repositories.Interfaces.StaffRepo;
 using PlusAppointment.Services.Interfaces.AppointmentService;
+using PlusAppointment.Services.Interfaces.EmailUsageService;
 using PlusAppointment.Utils.SendingEmail;
 using PlusAppointment.Utils.SendingSms;
 
@@ -15,37 +19,45 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
         private readonly IBusinessRepository _businessRepository;
 
         private readonly EmailService _emailService;
-
-        //private readonly SmsService _smsService;
         private readonly SmsTextMagicService _smsTextMagicService;
+        private readonly IServicesRepository _servicesRepository;
+        private readonly IStaffRepository _staffRepository;
+        private readonly IEmailUsageService _emailUsageService;
 
         public AppointmentService(IAppointmentRepository appointmentRepository, IBusinessRepository businessRepository,
-            EmailService emailService, SmsTextMagicService smsTextMagicService)
+            EmailService emailService, SmsTextMagicService smsTextMagicService, IServicesRepository servicesRepository,
+            IStaffRepository staffRepository, IEmailUsageService emailUsageService)
         {
             _appointmentRepository = appointmentRepository;
             _businessRepository = businessRepository;
             _emailService = emailService;
-            //_smsService = smsService;
             _smsTextMagicService = smsTextMagicService;
+            _servicesRepository = servicesRepository;
+            _staffRepository = staffRepository;
+            _emailUsageService = emailUsageService;
         }
 
         public async Task<IEnumerable<AppointmentRetrieveDto?>> GetAllAppointmentsAsync()
         {
             var appointments = await _appointmentRepository.GetAllAppointmentsAsync();
-            return appointments.Select(a => MapToDto(a));
+            var dtoList = new List<AppointmentRetrieveDto>();
+
+            foreach (var appointment in appointments)
+            {
+                dtoList.Add(await MapToDtoAsync(appointment));
+            }
+
+            return dtoList;
         }
 
         public async Task<AppointmentRetrieveDto?> GetAppointmentByIdAsync(int id)
         {
             var appointment = await _appointmentRepository.GetAppointmentByIdAsync(id);
-            return appointment == null ? null : MapToDto(appointment);
+            return appointment == null ? null : await MapToDtoAsync(appointment);
         }
-
-
 
         public async Task<bool> AddAppointmentAsync(AppointmentDto appointmentDto)
         {
-            // Validate the BusinessId
             var business = await _businessRepository.GetByIdAsync(appointmentDto.BusinessId);
             if (business == null)
             {
@@ -57,21 +69,36 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             {
                 throw new ArgumentException("Invalid CustomerId");
             }
-            
-            // Create mappings for services and staff
-            var mappings = appointmentDto.Services.Select(serviceStaff => new AppointmentServiceStaffMapping
-            {
-                ServiceId = serviceStaff.ServiceId,
-                StaffId = serviceStaff.StaffId
-            }).ToList();
 
-            // Create the Appointment entity
+            var mappings = new List<AppointmentServiceStaffMapping>();
+
+            foreach (var serviceStaff in appointmentDto.Services)
+            {
+                var staff = await _staffRepository.GetByIdAsync(serviceStaff.StaffId);
+                var service = await _servicesRepository.GetByIdAsync(serviceStaff.ServiceId);
+
+                if (staff == null || service == null)
+                {
+                    throw new ArgumentException("Invalid ServiceId or StaffId");
+                }
+
+                mappings.Add(new AppointmentServiceStaffMapping
+                {
+                    ServiceId = service.ServiceId,
+                    StaffId = staff.StaffId,
+                    Service = service,
+                    Staff = staff
+                });
+            }
+
             var appointment = new Appointment
             {
                 CustomerId = appointmentDto.CustomerId,
+                Customer = customer,
                 BusinessId = appointmentDto.BusinessId,
+                Business = business,
                 AppointmentTime = appointmentDto.AppointmentTime,
-                Duration = TimeSpan.Zero, // We'll calculate the correct duration in the repository
+                Duration = TimeSpan.Zero,
                 Status = "Pending",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
@@ -79,21 +106,34 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 AppointmentServices = mappings
             };
 
-            // TURN ON FOR PRODUCTION****
             var errors = new List<string>();
 
-            // // Try to send the email first
-            
-            var subject = "Appointment Confirmation";
-            var appointmentTimeFormatted = appointment.AppointmentTime.ToString("HH:mm 'on' dd.MM.yyyy");
+            // Convert appointment time to Vienna local time
+            TimeZoneInfo viennaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
+            DateTime viennaTime = TimeZoneInfo.ConvertTimeFromUtc(appointmentDto.AppointmentTime, viennaTimeZone);
+            var appointmentTimeFormatted = viennaTime.ToString("HH:mm 'on' dd.MM.yyyy");
 
-            var bodySms = 
-                $"Plus Appointment. Your appointment at {business.Name} for {appointmentTimeFormatted} has been confirmed.";
+            var subject = "Appointment Received";
+
+            var bodySms =
+                $"Dear Customer, \n\nThank you for choosing {business.Name}. We have successfully received your appointment request for {appointmentTimeFormatted}. Our team is currently processing it, and we will confirm the details with you shortly. If needed, we will reach out to you via email or phone. \n\nBest regards,\n{business.Name}";
+
 
             try
             {
                 var emailSent = await _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodySms);
-                if (!emailSent)
+                if (emailSent)
+                {
+                    // Update EmailUsage
+                    await _emailUsageService.AddEmailUsageAsync(new EmailUsage
+                    {
+                        BusinessId = appointmentDto.BusinessId,
+                        Year = DateTime.UtcNow.Year,
+                        Month = DateTime.UtcNow.Month,
+                        EmailCount = 1
+                    });
+                }
+                else
                 {
                     Console.WriteLine("Failed to send confirmation email.");
                     errors.Add("Failed to send confirmation email.");
@@ -105,52 +145,67 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 errors.Add($"Error sending confirmation email: {ex.Message}");
             }
 
-            
-            // // Attempt to send an SMS notification
-            // try
-            // {
-            //     var smsSent = await _smsTextMagicService.SendSmsAsync(customer.Phone ?? string.Empty, bodySms);
-            //     if (!smsSent)
-            //     {
-            //         errors.Add("Failed to send SMS notification.");
-            //     }
-            // }
-            // catch (Exception ex)
-            // {
-            //     errors.Add($"Error sending SMS notification: {ex.Message}");
-            // }
-            //
-            // // Save the appointment even if sending email or SMS failed
             await _appointmentRepository.AddAppointmentAsync(appointment);
-            //
-            // // Schedule SMS reminder
-            var bodyEmail = $"Plus Appointment. Do not forget your appointment at {business.Name} for {appointmentTimeFormatted}.";
-            var sendTime = appointmentDto.AppointmentTime.AddDays(-1);
-            BackgroundJob.Schedule(
-                () => _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodyEmail),
-                sendTime);
+
+            var bodyEmail =
+                $"Dear Customer, \n\nThis is a friendly reminder of your upcoming appointment at {business.Name} scheduled for {appointmentTimeFormatted}. Please ensure you arrive on time. We look forward to seeing you! \n\nBest regards,\n{business.Name}";
+
+            // Schedule the reminder email 48 hours (2 days) before the appointment
+            var sendTime = viennaTime.AddDays(-2);
+
+            if (sendTime <= DateTime.UtcNow)
+            {
+                // If the send time is in the past (less than 48 hours left), send the email immediately
+                var reminderEmailSent = await _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodyEmail);
+                if (reminderEmailSent)
+                {
+                    // Update EmailUsage
+                    await _emailUsageService.AddEmailUsageAsync(new EmailUsage
+                    {
+                        BusinessId = appointmentDto.BusinessId,
+                        Year = DateTime.UtcNow.Year,
+                        Month = DateTime.UtcNow.Month,
+                        EmailCount = 1
+                    });
+                }
+            }
+            else
+            {
+                BackgroundJob.Schedule(
+                    () => SendReminderEmail(customer.Email ?? string.Empty, subject, bodyEmail, appointmentDto.BusinessId),
+                    new DateTimeOffset(sendTime));
+            }
 
             if (errors.Any())
             {
-                // Log the errors or handle them as needed
                 foreach (var error in errors)
                 {
-                    //_logger.LogError(error);
+                    // Log the errors or handle them as needed
                 }
             }
 
             return true;
         }
 
-
+        // Separate method for sending the reminder email and updating the email usage
+        public async Task SendReminderEmail(string email, string subject, string bodyEmail, int businessId)
+        {
+            var emailSent = await _emailService.SendEmailAsync(email, subject, bodyEmail);
+            if (emailSent)
+            {
+                await _emailUsageService.AddEmailUsageAsync(new EmailUsage
+                {
+                    BusinessId = businessId,
+                    Year = DateTime.UtcNow.Year,
+                    Month = DateTime.UtcNow.Month,
+                    EmailCount = 1
+                });
+            }
+        }
         public async Task UpdateAppointmentAsync(int id, UpdateAppointmentDto updateAppointmentDto)
         {
-            // No need to validate services here as it's handled on the frontend
-
-            // Update the appointment and services through the repository
             await _appointmentRepository.UpdateAppointmentWithServicesAsync(id, updateAppointmentDto);
         }
-
 
         public async Task UpdateAppointmentStatusAsync(int id, string status)
         {
@@ -162,8 +217,58 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
             appointment.Status = status;
             appointment.UpdatedAt = DateTime.UtcNow;
+            
+            var customer = await _appointmentRepository.GetByCustomerIdAsync(appointment.CustomerId);
+            if (customer == null)
+            {
+                throw new ArgumentException("Invalid CustomerId");
+            }
+            
+            var business = await _businessRepository.GetByIdAsync(appointment.BusinessId);
+            if (business == null)
+            {
+                throw new ArgumentException("Invalid BusinessId");
+            }
+            
+            TimeZoneInfo viennaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
+            DateTime viennaTime = TimeZoneInfo.ConvertTimeFromUtc(appointment.AppointmentTime, viennaTimeZone);
+            var appointmentTimeFormatted = viennaTime.ToString("HH:mm 'on' dd.MM.yyyy");
+            
+            var errors = new List<string>();
+            // Convert appointment time to Vienna local time
 
+            var subject = "Appointment Confirmation";
+            var bodySms =
+                $"Dear Customer, \n\nThank you for choosing {business.Name}. We are pleased to confirm your appointment at {appointmentTimeFormatted}. We look forward to serving you! \n\nBest regards,\n{business.Name}";
+
+            try
+            {
+                var emailSent = await _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodySms);
+                if (emailSent)
+                {
+                    // Update EmailUsage
+                    await _emailUsageService.AddEmailUsageAsync(new EmailUsage
+                    {
+                        BusinessId = appointment.BusinessId,
+                        Year = DateTime.UtcNow.Year,
+                        Month = DateTime.UtcNow.Month,
+                        EmailCount = 1
+                    });
+                }
+                else
+                {
+                    Console.WriteLine("Failed to send confirmation email.");
+                    errors.Add("Failed to send confirmation email.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed to send confirmation email.");
+                errors.Add($"Error sending confirmation email: {ex.Message}");
+            }
+            
             await _appointmentRepository.UpdateAppointmentStatusAsync(appointment);
+            
         }
 
         public async Task DeleteAppointmentAsync(int id)
@@ -174,44 +279,86 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
         public async Task<IEnumerable<AppointmentRetrieveDto>> GetAppointmentsByCustomerIdAsync(int customerId)
         {
             var appointments = await _appointmentRepository.GetAppointmentsByCustomerIdAsync(customerId);
-            return appointments.Select(a => MapToDto(a));
+            var dtoList = new List<AppointmentRetrieveDto>();
+
+            foreach (var appointment in appointments)
+            {
+                dtoList.Add(await MapToDtoAsync(appointment));
+            }
+
+            return dtoList;
         }
 
         public async Task<IEnumerable<AppointmentRetrieveDto>> GetCustomerAppointmentHistoryAsync(int customerId)
         {
             var appointments = await _appointmentRepository.GetCustomerAppointmentHistoryAsync(customerId);
-            return appointments.Select(a => MapToDto(a));
-        }
+            var dtoList = new List<AppointmentRetrieveDto>();
 
+            foreach (var appointment in appointments)
+            {
+                dtoList.Add(await MapToDtoAsync(appointment));
+            }
+
+            return dtoList;
+        }
 
         public async Task<IEnumerable<AppointmentRetrieveDto>> GetAppointmentsByBusinessIdAsync(int businessId)
         {
             var appointments = await _appointmentRepository.GetAppointmentsByBusinessIdAsync(businessId);
-            return appointments.Select(a => MapToDto(a));
+            var dtoList = new List<AppointmentRetrieveDto>();
+
+            foreach (var appointment in appointments)
+            {
+                dtoList.Add(await MapToDtoAsync(appointment));
+            }
+
+            return dtoList;
         }
 
         public async Task<IEnumerable<AppointmentRetrieveDto>> GetAppointmentsByStaffIdAsync(int staffId)
         {
             var appointments = await _appointmentRepository.GetAppointmentsByStaffIdAsync(staffId);
-            return appointments.Select(a => MapToDto(a));
+            var dtoList = new List<AppointmentRetrieveDto>();
+
+            foreach (var appointment in appointments)
+            {
+                dtoList.Add(await MapToDtoAsync(appointment));
+            }
+
+            return dtoList;
         }
-        
-        public async Task<IEnumerable<DateTime>>GetNotAvailableTimeSlotsAsync(int staffId, DateTime date)
+
+        public async Task<IEnumerable<DateTime>> GetNotAvailableTimeSlotsAsync(int staffId, DateTime date)
         {
             return await _appointmentRepository.GetNotAvailableTimeSlotsAsync(staffId, date);
         }
 
-        private AppointmentRetrieveDto MapToDto(Appointment appointment)
+        private async Task<AppointmentRetrieveDto> MapToDtoAsync(Appointment appointment)
         {
-            var services = appointment.AppointmentServices?
-                .Select(apptService => new ServiceStaffListsRetrieveDto
+            var services = new List<ServiceStaffListsRetrieveDto>();
+
+            foreach (var apptService in appointment.AppointmentServices ??
+                                        Enumerable.Empty<AppointmentServiceStaffMapping>())
+            {
+                var category = apptService.Service?.CategoryId != null
+                    ? await _appointmentRepository.GetServiceCategoryByIdAsync(apptService.Service.CategoryId.Value)
+                    : null;
+
+                var serviceDto = new ServiceStaffListsRetrieveDto
                 {
                     ServiceId = apptService.ServiceId,
                     Name = apptService.Service?.Name ?? "Unknown Service Name",
+                    Description = apptService.Service?.Description,
                     Duration = apptService.Service?.Duration ?? TimeSpan.Zero,
+                    Price = apptService.Service?.Price,
                     StaffId = apptService.StaffId,
-                    StaffName = apptService.Staff?.Name ?? "Unknown Staff Name"
-                }).ToList() ?? new List<ServiceStaffListsRetrieveDto>();
+                    StaffName = apptService.Staff?.Name ?? "Unknown Staff Name",
+                    CategoryId = apptService.Service?.CategoryId,
+                    CategoryName = category?.Name ?? "Unknown Category"
+                };
+
+                services.Add(serviceDto);
+            }
 
             return new AppointmentRetrieveDto
             {

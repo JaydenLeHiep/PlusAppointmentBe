@@ -1,33 +1,72 @@
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
-using PlusAppointment.Models.Enums;
 using PlusAppointment.Repositories.Interfaces.ServicesRepo;
 using PlusAppointment.Services.Interfaces.ServicesService;
+
+using PlusAppointment.Models.Enums;
+using PlusAppointment.Repositories.Interfaces.ServiceCategoryRepo;
 
 namespace PlusAppointment.Services.Implementations.ServicesService
 {
     public class ServicesService : IServicesService
     {
         private readonly IServicesRepository _servicesRepository;
+        private readonly IServiceCategoryRepo _serviceCategoryRepo;
 
-        public ServicesService(IServicesRepository servicesRepository)
+        public ServicesService(IServicesRepository servicesRepository, IServiceCategoryRepo serviceCategoryRepo)
         {
             _servicesRepository = servicesRepository;
+            _serviceCategoryRepo = serviceCategoryRepo;
         }
 
-        public async Task<IEnumerable<Service?>> GetAllServicesAsync()
+        public async Task<IEnumerable<ServiceDto?>> GetAllServicesAsync()
         {
-            return await _servicesRepository.GetAllAsync();
+            var services = await _servicesRepository.GetAllAsync();
+            return services.Select(s => new ServiceDto
+            {
+                ServiceId = s.ServiceId,
+                Name = s.Name,
+                Description = s.Description,
+                Duration = s.Duration,
+                Price = s.Price,
+                CategoryId = s.CategoryId,
+                CategoryName = s.Category?.Name // Include CategoryName in the DTO
+            }).ToList();
         }
 
-        public async Task<Service?> GetServiceByIdAsync(int id)
+        public async Task<ServiceDto?> GetServiceByIdAsync(int id)
         {
-            return await _servicesRepository.GetByIdAsync(id);
+            var service = await _servicesRepository.GetByIdAsync(id);
+            if (service == null)
+            {
+                return null;
+            }
+
+            return new ServiceDto
+            {
+                ServiceId = service.ServiceId,
+                Name = service.Name,
+                Description = service.Description,
+                Duration = service.Duration,
+                Price = service.Price,
+                CategoryId = service.CategoryId,
+                CategoryName = service.Category?.Name // Include CategoryName in the DTO
+            };
         }
 
-        public async Task<IEnumerable<Service?>> GetAllServiceByBusinessIdAsync(int businessId)
+        public async Task<IEnumerable<ServiceDto?>> GetAllServiceByBusinessIdAsync(int businessId)
         {
-            return await _servicesRepository.GetAllByBusinessIdAsync(businessId);
+            var services = await _servicesRepository.GetAllByBusinessIdAsync(businessId);
+            return services.Select(s => new ServiceDto
+            {
+                ServiceId = s.ServiceId,
+                Name = s.Name,
+                Description = s.Description,
+                Duration = s.Duration,
+                Price = s.Price,
+                CategoryId = s.CategoryId,
+                CategoryName = s.Category?.Name // Include CategoryName in the DTO
+            }).ToList();
         }
 
         public async Task AddServiceAsync(ServiceDto? serviceDto, int businessId, string userId, string userRole)
@@ -57,19 +96,23 @@ namespace PlusAppointment.Services.Implementations.ServicesService
                 throw new ArgumentException("Service price is required.");
             }
 
-            if (serviceDto.Description != null)
+            var serviceCategory = await _serviceCategoryRepo.GetServiceCategoryByIdAsync(serviceDto.CategoryId.Value);
+            if (serviceCategory == null)
             {
-                var service = new Service
-                {
-                    Name = serviceDto.Name,
-                    Description = serviceDto.Description,
-                    Duration = serviceDto.Duration.Value,
-                    Price = serviceDto.Price.Value,
-                    BusinessId = businessId
-                };
-
-                await _servicesRepository.AddServiceAsync(service, businessId);
+                throw new ArgumentException("Invalid category ID.");
             }
+
+            var service = new Service
+            {
+                Name = serviceDto.Name,
+                Description = serviceDto.Description,
+                Duration = serviceDto.Duration.Value,
+                Price = serviceDto.Price.Value,
+                BusinessId = businessId,
+                CategoryId = serviceCategory.CategoryId // Set the category ID
+            };
+
+            await _servicesRepository.AddServiceAsync(service, businessId);
         }
 
         public async Task AddListServicesAsync(ServicesDto? servicesDto, int businessId, string userId, string userRole)
@@ -104,19 +147,23 @@ namespace PlusAppointment.Services.Implementations.ServicesService
                         throw new ArgumentException("Service price is required.");
                     }
 
-                    if (serviceDto.Description != null)
+                    var serviceCategory = await _serviceCategoryRepo.GetServiceCategoryByIdAsync(serviceDto.CategoryId.Value);
+                    if (serviceCategory == null)
                     {
-                        var service = new Service
-                        {
-                            Name = serviceDto.Name,
-                            Description = serviceDto.Description,
-                            Duration = serviceDto.Duration.Value,
-                            Price = serviceDto.Price.Value,
-                            BusinessId = businessId
-                        };
-
-                        services.Add(service);
+                        throw new ArgumentException("Invalid category ID.");
                     }
+
+                    var service = new Service
+                    {
+                        Name = serviceDto.Name,
+                        Description = serviceDto.Description,
+                        Duration = serviceDto.Duration.Value,
+                        Price = serviceDto.Price.Value,
+                        BusinessId = businessId,
+                        CategoryId = serviceCategory.CategoryId // Set the category ID
+                    };
+
+                    services.Add(service);
                 }
 
             await _servicesRepository.AddListServicesAsync(services, businessId);
@@ -160,6 +207,16 @@ namespace PlusAppointment.Services.Implementations.ServicesService
                 service.Price = serviceDto.Price.Value;
             }
 
+            if (serviceDto.CategoryId.HasValue)
+            {
+                var serviceCategory = await _serviceCategoryRepo.GetServiceCategoryByIdAsync(serviceDto.CategoryId.Value);
+                if (serviceCategory == null)
+                {
+                    throw new ArgumentException("Invalid category ID.");
+                }
+                service.CategoryId = serviceDto.CategoryId.Value;
+            }
+
             await _servicesRepository.UpdateAsync(service);
         }
 
@@ -167,7 +224,5 @@ namespace PlusAppointment.Services.Implementations.ServicesService
         {
             await _servicesRepository.DeleteAsync(businessId, serviceId);
         }
-
-
     }
 }

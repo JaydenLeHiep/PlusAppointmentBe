@@ -36,13 +36,13 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
         public async Task<Staff> GetByIdAsync(int id)
         {
             string cacheKey = $"staff_{id}";
-            var staff = await _redisHelper.GetCacheAsync<Staff>(cacheKey);
-            if (staff != null)
+            var cachedStaff = await _redisHelper.GetCacheAsync<Staff>(cacheKey);
+            if (cachedStaff != null)
             {
-                return staff;
+                return cachedStaff;
             }
 
-            staff = await _context.Staffs.FindAsync(id);
+            var staff = await _context.Staffs.FindAsync(id);
             if (staff == null)
             {
                 throw new KeyNotFoundException($"Staff with ID {id} not found");
@@ -55,17 +55,17 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
         public async Task<IEnumerable<Staff?>> GetAllByBusinessIdAsync(int businessId)
         {
             string cacheKey = $"staff_business_{businessId}";
-            var cachedStaff = await _redisHelper.GetCacheAsync<List<Staff>>(cacheKey);
+            var cachedStaffs = await _redisHelper.GetCacheAsync<List<Staff>>(cacheKey);
 
-            if (cachedStaff != null && cachedStaff.Any())
+            if (cachedStaffs != null && cachedStaffs.Any())
             {
-                return cachedStaff;
+                return cachedStaffs;
             }
 
-            var staff = await _context.Staffs.Where(s => s.BusinessId == businessId).ToListAsync();
-            await _redisHelper.SetCacheAsync(cacheKey, staff, TimeSpan.FromMinutes(10));
+            var staffs = await _context.Staffs.Where(s => s.BusinessId == businessId).ToListAsync();
+            await _redisHelper.SetCacheAsync(cacheKey, staffs, TimeSpan.FromMinutes(10));
 
-            return staff;
+            return staffs;
         }
 
         public async Task AddStaffAsync(Staff staff, int businessId)
@@ -81,6 +81,8 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
             await _context.SaveChangesAsync();
 
             await UpdateStaffCacheAsync(staff);
+            // Refresh related caches
+            await RefreshRelatedCachesAsync(staff);
         }
 
         public async Task AddListStaffsAsync(IEnumerable<Staff> staffs)
@@ -105,16 +107,31 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
             {
                 if (staff != null)
                 {
-                    await UpdateStaffCacheAsync(staff);
+                    await RefreshRelatedCachesAsync(staff);
                 }
             }
         }
 
         public async Task<Staff?> GetByBusinessIdServiceIdAsync(int businessId, int staffId)
         {
-            return await _context.Staffs
+            string cacheKey = $"staff_{staffId}";
+            var cachedStaff = await _redisHelper.GetCacheAsync<Staff>(cacheKey);
+            if (cachedStaff != null)
+            {
+                return cachedStaff;
+            }
+
+            var staff = await _context.Staffs
                 .Where(s => s.BusinessId == businessId && s.StaffId == staffId)
                 .FirstOrDefaultAsync();
+
+            if (staff == null)
+            {
+                throw new KeyNotFoundException($"Staff with ID {staffId} not found for Business ID {businessId}");
+            }
+
+            await _redisHelper.SetCacheAsync(cacheKey, staff, TimeSpan.FromMinutes(10));
+            return staff;
         }
 
         public async Task UpdateAsync(Staff staff)
@@ -123,6 +140,8 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
             await _context.SaveChangesAsync();
 
             await UpdateStaffCacheAsync(staff);
+            // Refresh related caches
+            await RefreshRelatedCachesAsync(staff);
         }
 
         public async Task DeleteAsync(int businessId, int staffId)
@@ -136,6 +155,8 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
                 _context.Staffs.Remove(staff);
                 await _context.SaveChangesAsync();
                 await InvalidateStaffCacheAsync(staff);
+                // Refresh related caches
+                await RefreshRelatedCachesAsync(staff);
             }
         }
 
@@ -168,12 +189,24 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
                 $"staff_business_{staff.BusinessId}",
                 list =>
                 {
-                    list.RemoveAll(s => s.StaffId == staff.StaffId);
-                    list.Add(staff);
+                    // Find the index of the existing staff in the list
+                    int index = list.FindIndex(s => s.StaffId == staff.StaffId);
+                    if (index != -1)
+                    {
+                        // Replace the existing staff with the updated one
+                        list[index] = staff;
+                    }
+                    else
+                    {
+                        // If the staff is not found in the list, add it to the list
+                        list.Add(staff);
+                    }
+
                     return list;
                 },
                 TimeSpan.FromMinutes(10));
         }
+
 
         private async Task InvalidateStaffCacheAsync(Staff staff)
         {
@@ -189,5 +222,26 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
                 },
                 TimeSpan.FromMinutes(10));
         }
+        
+        private async Task RefreshRelatedCachesAsync(Staff staff)
+        {
+            // Refresh individual Staff cache
+            var staffCacheKey = $"staff_{staff.StaffId}";
+            await _redisHelper.SetCacheAsync(staffCacheKey, staff, TimeSpan.FromMinutes(10));
+
+            // Refresh list of all Staff for the Business
+            string businessCacheKey = $"staff_business_{staff.BusinessId}";
+            var businessStaff = await _context.Staffs
+                .Where(s => s.BusinessId == staff.BusinessId)
+                .ToListAsync();
+
+            await _redisHelper.SetCacheAsync(businessCacheKey, businessStaff, TimeSpan.FromMinutes(10));
+
+            // Optionally refresh the cache for all staff members if required
+            const string allStaffCacheKey = "all_staffs";
+            var allStaffs = await _context.Staffs.ToListAsync();
+            await _redisHelper.SetCacheAsync(allStaffCacheKey, allStaffs, TimeSpan.FromMinutes(10));
+        }
+
     }
 }

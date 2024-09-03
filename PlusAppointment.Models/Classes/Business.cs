@@ -13,6 +13,10 @@ namespace PlusAppointment.Models.Classes
         public ICollection<Staff>? Staffs { get; set; } = new List<Staff>();
         public ICollection<Appointment>? Appointments { get; set; } = new List<Appointment>();
         public ICollection<Customer> Customers { get; set; } = new List<Customer>();
+        public ICollection<NotAvailableDate>? NotAvailableDates { get; set; }
+        
+        public ICollection<EmailUsage>? EmailUsages { get; set; } = new List<EmailUsage>();
+
         public Business( string name, string address, string phone, string email, int userID)
         {
             

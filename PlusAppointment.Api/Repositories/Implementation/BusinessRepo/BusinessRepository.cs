@@ -36,16 +36,35 @@ namespace PlusAppointment.Repositories.Implementation.BusinessRepo
         public async Task<Business?> GetByIdAsync(int id)
         {
             string cacheKey = $"business_{id}";
-            var business = await _redisHelper.GetCacheAsync<Business>(cacheKey);
-            if (business != null)
+            var cachedBusiness = await _redisHelper.GetCacheAsync<Business>(cacheKey);
+            if (cachedBusiness != null)
             {
-                return business;
+                return cachedBusiness;
             }
 
-            business = await _context.Businesses.FindAsync(id);
+            var business = await _context.Businesses.FindAsync(id);
             if (business == null)
             {
                 throw new KeyNotFoundException($"Business with ID {id} not found");
+            }
+
+            await _redisHelper.SetCacheAsync(cacheKey, business, TimeSpan.FromMinutes(10));
+            return business;
+        }
+
+        public async Task<Business?> GetByNameAsync(string businessName)
+        {
+            string cacheKey = $"business_name_{businessName.ToLower()}";
+            var cachedBusiness = await _redisHelper.GetCacheAsync<Business>(cacheKey);
+            if (cachedBusiness != null)
+            {
+                return cachedBusiness;
+            }
+
+            var business = await _context.Businesses.FirstOrDefaultAsync(b => b.Name.ToLower() == businessName.ToLower());
+            if (business == null)
+            {
+                throw new KeyNotFoundException($"Business with name {businessName} not found");
             }
 
             await _redisHelper.SetCacheAsync(cacheKey, business, TimeSpan.FromMinutes(10));
@@ -57,7 +76,7 @@ namespace PlusAppointment.Repositories.Implementation.BusinessRepo
             await _context.Businesses.AddAsync(business);
             await _context.SaveChangesAsync();
 
-            await InvalidateCache();
+            await UpdateBusinessCacheAsync(business);
         }
 
         public async Task UpdateAsync(Business business)
@@ -65,7 +84,7 @@ namespace PlusAppointment.Repositories.Implementation.BusinessRepo
             _context.Businesses.Update(business);
             await _context.SaveChangesAsync();
 
-            await InvalidateCache();
+            await UpdateBusinessCacheAsync(business);
         }
 
         public async Task DeleteAsync(int id)
@@ -76,7 +95,7 @@ namespace PlusAppointment.Repositories.Implementation.BusinessRepo
                 _context.Businesses.Remove(business);
                 await _context.SaveChangesAsync();
 
-                await InvalidateCache();
+                await InvalidateBusinessCacheAsync(business);
             }
         }
 
@@ -113,7 +132,7 @@ namespace PlusAppointment.Repositories.Implementation.BusinessRepo
 
             return staff;
         }
-        
+
         public async Task<IEnumerable<Business?>> GetAllByUserIdAsync(int userId)
         {
             string cacheKey = $"business_user_{userId}";
@@ -130,10 +149,35 @@ namespace PlusAppointment.Repositories.Implementation.BusinessRepo
             return businesses;
         }
 
-        private async Task InvalidateCache()
+        private async Task UpdateBusinessCacheAsync(Business business)
         {
-            await _redisHelper.DeleteKeysByPatternAsync("business_*");
-            await _redisHelper.DeleteCacheAsync("all_businesses");
+            var businessCacheKey = $"business_{business.BusinessId}";
+            await _redisHelper.SetCacheAsync(businessCacheKey, business, TimeSpan.FromMinutes(10));
+
+            await _redisHelper.UpdateListCacheAsync<Business>(
+                $"business_user_{business.UserID}",
+                list =>
+                {
+                    list.RemoveAll(b => b.BusinessId == business.BusinessId);
+                    list.Add(business);
+                    return list;
+                },
+                TimeSpan.FromMinutes(10));
+        }
+
+        private async Task InvalidateBusinessCacheAsync(Business business)
+        {
+            var businessCacheKey = $"business_{business.BusinessId}";
+            await _redisHelper.DeleteCacheAsync(businessCacheKey);
+
+            await _redisHelper.RemoveFromListCacheAsync<Business>(
+                $"business_user_{business.UserID}",
+                list =>
+                {
+                    list.RemoveAll(b => b.BusinessId == business.BusinessId);
+                    return list;
+                },
+                TimeSpan.FromMinutes(10));
         }
     }
 }

@@ -13,4 +13,5 @@ public interface IBusinessRepository
     Task<IEnumerable<Staff?>> GetStaffByBusinessIdAsync(int businessId);
     
     Task<IEnumerable<Business?>> GetAllByUserIdAsync(int userId);
+    Task<Business?> GetByNameAsync(string businessName);
 }

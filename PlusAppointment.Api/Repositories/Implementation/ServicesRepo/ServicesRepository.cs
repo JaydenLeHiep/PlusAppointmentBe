@@ -170,12 +170,24 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
                 $"service_business_{service.BusinessId}",
                 list =>
                 {
-                    list.RemoveAll(s => s.ServiceId == service.ServiceId);
-                    list.Add(service);
+                    // Find the index of the existing service in the list
+                    int index = list.FindIndex(s => s.ServiceId == service.ServiceId);
+                    if (index != -1)
+                    {
+                        // Replace the existing service with the updated one
+                        list[index] = service;
+                    }
+                    else
+                    {
+                        // If the service is not found in the list, add it to the list
+                        list.Add(service);
+                    }
+
                     return list;
                 },
                 TimeSpan.FromMinutes(10));
         }
+
 
         private async Task InvalidateServiceCacheAsync(Service service)
         {

@@ -189,12 +189,24 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
                 $"staff_business_{staff.BusinessId}",
                 list =>
                 {
-                    list.RemoveAll(s => s.StaffId == staff.StaffId);
-                    list.Add(staff);
+                    // Find the index of the existing staff in the list
+                    int index = list.FindIndex(s => s.StaffId == staff.StaffId);
+                    if (index != -1)
+                    {
+                        // Replace the existing staff with the updated one
+                        list[index] = staff;
+                    }
+                    else
+                    {
+                        // If the staff is not found in the list, add it to the list
+                        list.Add(staff);
+                    }
+
                     return list;
                 },
                 TimeSpan.FromMinutes(10));
         }
+
 
         private async Task InvalidateStaffCacheAsync(Staff staff)
         {

@@ -239,12 +239,24 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 $"customers_business_{customer.BusinessId}",
                 list =>
                 {
-                    list.RemoveAll(c => c.CustomerId == customer.CustomerId);
-                    list.Add(customer);
+                    // Find the index of the existing customer in the list
+                    int index = list.FindIndex(c => c.CustomerId == customer.CustomerId);
+                    if (index != -1)
+                    {
+                        // Replace the existing customer with the updated one
+                        list[index] = customer;
+                    }
+                    else
+                    {
+                        // If the customer is not found in the list, add them to the list
+                        list.Add(customer);
+                    }
+
                     return list;
                 },
                 TimeSpan.FromMinutes(10));
         }
+
 
         private async Task InvalidateCustomerCacheAsync(Customer customer)
         {

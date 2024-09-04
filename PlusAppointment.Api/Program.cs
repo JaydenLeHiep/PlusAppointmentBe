@@ -36,11 +36,14 @@ using PlusAppointment.Utils.SendingEmail;
 using PlusAppointment.Utils.SendingSms;
 using Hangfire;
 using Hangfire.MemoryStorage;
-
+using PlusAppointment.Repositories.Implementation.AppointmentRepo.AppointmentRead;
+using PlusAppointment.Repositories.Implementation.AppointmentRepo.AppointmentWrite;
 using PlusAppointment.Repositories.Implementation.CalculateMoneyRepo;
 using PlusAppointment.Repositories.Implementation.EmailUsageRepo;
 using PlusAppointment.Repositories.Implementation.NotAvailableDateRepository;
 using PlusAppointment.Repositories.Implementation.ServiceCategoryRepo;
+using PlusAppointment.Repositories.Interfaces.AppointmentRepo.AppointmentRead;
+using PlusAppointment.Repositories.Interfaces.AppointmentRepo.AppointmentWrite;
 using PlusAppointment.Repositories.Interfaces.CalculateMoneyRepo;
 using PlusAppointment.Repositories.Interfaces.EmailUsageRepo;
 using PlusAppointment.Repositories.Interfaces.ServiceCategoryRepo;
@@ -87,22 +90,35 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Register repositories and services
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
+
 builder.Services.AddScoped<IBusinessRepository, BusinessRepository>();
 builder.Services.AddScoped<IBusinessService, BusinessService>();
+
 builder.Services.AddScoped<IServicesRepository, ServicesRepository>();
 builder.Services.AddScoped<IServicesService, ServicesService>();
+
 builder.Services.AddScoped<IStaffRepository, StaffRepository>();
 builder.Services.AddScoped<IStaffService, StaffService>();
-builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
+
+// Register the new read and write repositories separately
+builder.Services.AddScoped<IAppointmentReadRepository, AppointmentReadRepository>();
+builder.Services.AddScoped<IAppointmentWriteRepository, AppointmentWriteRepository>();
+
+// Register the AppointmentService as before
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
+
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
+
 builder.Services.AddScoped<ICalculateMoneyRepo, CalculateMoneyRepo>();
 builder.Services.AddScoped<ICalculateMoneyService, CalculateMoneyService>();
+
 builder.Services.AddScoped<IServiceCategoryService, ServiceCategoryService>();
 builder.Services.AddScoped<IServiceCategoryRepo, ServiceCategoryRepo>();
+
 builder.Services.AddScoped<INotAvailableDateRepository, NotAvailableDateRepository>();
 builder.Services.AddScoped<INotAvailableDateService, NotAvailableDateService>();
+
 builder.Services.AddScoped<IEmailUsageRepo, EmailUsageRepo>();
 builder.Services.AddScoped<IEmailUsageService, EmailUsageService>();
 

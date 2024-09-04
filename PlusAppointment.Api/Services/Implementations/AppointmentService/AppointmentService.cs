@@ -1,7 +1,9 @@
 using Hangfire;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
-using PlusAppointment.Repositories.Interfaces.AppointmentRepo;
+
+using PlusAppointment.Repositories.Interfaces.AppointmentRepo.AppointmentRead;
+using PlusAppointment.Repositories.Interfaces.AppointmentRepo.AppointmentWrite;
 using PlusAppointment.Repositories.Interfaces.BusinessRepo;
 
 using PlusAppointment.Repositories.Interfaces.ServicesRepo;
@@ -15,7 +17,10 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 {
     public class AppointmentService : IAppointmentService
     {
-        private readonly IAppointmentRepository _appointmentRepository;
+        //private readonly IAppointmentRepository _appointmentRepository;
+        
+        private readonly IAppointmentWriteRepository _appointmentWriteRepository;
+        private readonly IAppointmentReadRepository _appointmentReadRepository;
         private readonly IBusinessRepository _businessRepository;
 
         private readonly EmailService _emailService;
@@ -24,11 +29,12 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
         private readonly IStaffRepository _staffRepository;
         private readonly IEmailUsageService _emailUsageService;
 
-        public AppointmentService(IAppointmentRepository appointmentRepository, IBusinessRepository businessRepository,
+        public AppointmentService( IAppointmentWriteRepository appointmentWriteRepository, IAppointmentReadRepository appointmentReadRepository,IBusinessRepository businessRepository,
             EmailService emailService, SmsTextMagicService smsTextMagicService, IServicesRepository servicesRepository,
             IStaffRepository staffRepository, IEmailUsageService emailUsageService)
         {
-            _appointmentRepository = appointmentRepository;
+            _appointmentWriteRepository = appointmentWriteRepository;
+            _appointmentReadRepository = appointmentReadRepository;
             _businessRepository = businessRepository;
             _emailService = emailService;
             _smsTextMagicService = smsTextMagicService;
@@ -39,7 +45,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
         public async Task<IEnumerable<AppointmentRetrieveDto?>> GetAllAppointmentsAsync()
         {
-            var appointments = await _appointmentRepository.GetAllAppointmentsAsync();
+            var appointments = await _appointmentReadRepository.GetAllAppointmentsAsync();
             var dtoList = new List<AppointmentRetrieveDto>();
 
             foreach (var appointment in appointments)
@@ -52,7 +58,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
         public async Task<AppointmentRetrieveDto?> GetAppointmentByIdAsync(int id)
         {
-            var appointment = await _appointmentRepository.GetAppointmentByIdAsync(id);
+            var appointment = await _appointmentReadRepository.GetAppointmentByIdAsync(id);
             return appointment == null ? null : await MapToDtoAsync(appointment);
         }
 
@@ -64,7 +70,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 throw new ArgumentException("Invalid BusinessId");
             }
 
-            var customer = await _appointmentRepository.GetByCustomerIdAsync(appointmentDto.CustomerId);
+            var customer = await _appointmentReadRepository.GetByCustomerIdAsync(appointmentDto.CustomerId);
             if (customer == null)
             {
                 throw new ArgumentException("Invalid CustomerId");
@@ -145,7 +151,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 errors.Add($"Error sending confirmation email: {ex.Message}");
             }
 
-            await _appointmentRepository.AddAppointmentAsync(appointment);
+            await _appointmentWriteRepository.AddAppointmentAsync(appointment);
 
             var bodyEmail =
                 $"Dear Customer, \n\nThis is a friendly reminder of your upcoming appointment at {business.Name} scheduled for {appointmentTimeFormatted}. Please ensure you arrive on time. We look forward to seeing you! \n\nBest regards,\n{business.Name}";
@@ -204,12 +210,12 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
         }
         public async Task UpdateAppointmentAsync(int id, UpdateAppointmentDto updateAppointmentDto)
         {
-            await _appointmentRepository.UpdateAppointmentWithServicesAsync(id, updateAppointmentDto);
+            await _appointmentWriteRepository.UpdateAppointmentWithServicesAsync(id, updateAppointmentDto);
         }
 
         public async Task UpdateAppointmentStatusAsync(int id, string status)
         {
-            var appointment = await _appointmentRepository.GetAppointmentByIdAsync(id);
+            var appointment = await _appointmentReadRepository.GetAppointmentByIdAsync(id);
             if (appointment == null)
             {
                 throw new KeyNotFoundException("Appointment not found");
@@ -218,7 +224,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             appointment.Status = status;
             appointment.UpdatedAt = DateTime.UtcNow;
             
-            var customer = await _appointmentRepository.GetByCustomerIdAsync(appointment.CustomerId);
+            var customer = await _appointmentReadRepository.GetByCustomerIdAsync(appointment.CustomerId);
             if (customer == null)
             {
                 throw new ArgumentException("Invalid CustomerId");
@@ -267,18 +273,18 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 errors.Add($"Error sending confirmation email: {ex.Message}");
             }
             
-            await _appointmentRepository.UpdateAppointmentStatusAsync(appointment);
+            await _appointmentWriteRepository.UpdateAppointmentStatusAsync(appointment);
             
         }
 
         public async Task DeleteAppointmentAsync(int id)
         {
-            await _appointmentRepository.DeleteAppointmentAsync(id);
+            await _appointmentWriteRepository.DeleteAppointmentAsync(id);
         }
 
         public async Task<IEnumerable<AppointmentRetrieveDto>> GetAppointmentsByCustomerIdAsync(int customerId)
         {
-            var appointments = await _appointmentRepository.GetAppointmentsByCustomerIdAsync(customerId);
+            var appointments = await _appointmentReadRepository.GetAppointmentsByCustomerIdAsync(customerId);
             var dtoList = new List<AppointmentRetrieveDto>();
 
             foreach (var appointment in appointments)
@@ -291,7 +297,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
         public async Task<IEnumerable<AppointmentRetrieveDto>> GetCustomerAppointmentHistoryAsync(int customerId)
         {
-            var appointments = await _appointmentRepository.GetCustomerAppointmentHistoryAsync(customerId);
+            var appointments = await _appointmentReadRepository.GetCustomerAppointmentHistoryAsync(customerId);
             var dtoList = new List<AppointmentRetrieveDto>();
 
             foreach (var appointment in appointments)
@@ -304,7 +310,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
         public async Task<IEnumerable<AppointmentRetrieveDto>> GetAppointmentsByBusinessIdAsync(int businessId)
         {
-            var appointments = await _appointmentRepository.GetAppointmentsByBusinessIdAsync(businessId);
+            var appointments = await _appointmentReadRepository.GetAppointmentsByBusinessIdAsync(businessId);
             var dtoList = new List<AppointmentRetrieveDto>();
 
             foreach (var appointment in appointments)
@@ -317,7 +323,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
         public async Task<IEnumerable<AppointmentRetrieveDto>> GetAppointmentsByStaffIdAsync(int staffId)
         {
-            var appointments = await _appointmentRepository.GetAppointmentsByStaffIdAsync(staffId);
+            var appointments = await _appointmentReadRepository.GetAppointmentsByStaffIdAsync(staffId);
             var dtoList = new List<AppointmentRetrieveDto>();
 
             foreach (var appointment in appointments)
@@ -330,7 +336,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
         public async Task<IEnumerable<DateTime>> GetNotAvailableTimeSlotsAsync(int staffId, DateTime date)
         {
-            return await _appointmentRepository.GetNotAvailableTimeSlotsAsync(staffId, date);
+            return await _appointmentReadRepository.GetNotAvailableTimeSlotsAsync(staffId, date);
         }
 
         private async Task<AppointmentRetrieveDto> MapToDtoAsync(Appointment appointment)
@@ -341,7 +347,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                                         Enumerable.Empty<AppointmentServiceStaffMapping>())
             {
                 var category = apptService.Service?.CategoryId != null
-                    ? await _appointmentRepository.GetServiceCategoryByIdAsync(apptService.Service.CategoryId.Value)
+                    ? await _appointmentReadRepository.GetServiceCategoryByIdAsync(apptService.Service.CategoryId.Value)
                     : null;
 
                 var serviceDto = new ServiceStaffListsRetrieveDto

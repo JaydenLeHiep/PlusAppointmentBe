@@ -5,7 +5,7 @@ using PlusAppointment.Services.Interfaces.CustomerService;
 
 namespace PlusAppointment.Services.Implementations.CustomerService;
 
-public class CustomerService: ICustomerService
+public class CustomerService : ICustomerService
 {
     private readonly ICustomerRepository _customerRepository;
 
@@ -13,7 +13,7 @@ public class CustomerService: ICustomerService
     {
         _customerRepository = customerRepository;
     }
-    
+
     public async Task<IEnumerable<Customer?>> GetAllCustomersAsync()
     {
         return await _customerRepository.GetAllCustomersAsync();
@@ -29,7 +29,7 @@ public class CustomerService: ICustomerService
 
         return customer;
     }
-    
+
     public async Task<Customer?> GetCustomerByEmailOrPhoneAsync(string emailOrPhone)
     {
         var customer = await _customerRepository.GetCustomerByEmailOrPhoneAsync(emailOrPhone);
@@ -40,7 +40,7 @@ public class CustomerService: ICustomerService
 
         return customer;
     }
-    
+
     public async Task<Customer?> GetCustomerByEmailOrPhoneAndBusinessIdAsync(string emailOrPhone, int businessId)
     {
         return await _customerRepository.GetCustomerByEmailOrPhoneAndBusinessIdAsync(emailOrPhone, businessId);
@@ -104,46 +104,63 @@ public class CustomerService: ICustomerService
             throw new KeyNotFoundException("Customer not found.");
         }
 
-        // Update only the fields that are provided in the DTO
-        if (!string.IsNullOrWhiteSpace(customerDto.Email) && customerDto.Email != existingCustomer.Email)
+        // Update only the fields that are provided in the DTO or explicitly cleared
+        if (customerDto.Email != null) // Check for null to update or clear
         {
-            if (!await _customerRepository.IsEmailUniqueAsync(customerDto.Email))
+            if (!string.IsNullOrWhiteSpace(customerDto.Email) && customerDto.Email != existingCustomer.Email)
             {
-                throw new ArgumentException("Email is already in use.");
+                if (!await _customerRepository.IsEmailUniqueAsync(customerDto.Email))
+                {
+                    throw new ArgumentException("Email is already in use.");
+                }
+
+                existingCustomer.Email = customerDto.Email; // Update email if provided
             }
-            existingCustomer.Email = customerDto.Email;
+            else if (customerDto.Email == string.Empty)
+            {
+                existingCustomer.Email = string.Empty; // Clear email if explicitly set to empty
+            }
         }
 
-        if (!string.IsNullOrWhiteSpace(customerDto.Phone) && customerDto.Phone != existingCustomer.Phone)
+        if (customerDto.Phone != null) // Check for null to update or clear
         {
-            if (!await _customerRepository.IsPhoneUniqueAsync(customerDto.Phone))
+            if (!string.IsNullOrWhiteSpace(customerDto.Phone) && customerDto.Phone != existingCustomer.Phone)
             {
-                throw new ArgumentException("Phone is already in use.");
+                if (!await _customerRepository.IsPhoneUniqueAsync(customerDto.Phone))
+                {
+                    throw new ArgumentException("Phone is already in use.");
+                }
+
+                existingCustomer.Phone = customerDto.Phone; // Update phone if provided
             }
-            existingCustomer.Phone = customerDto.Phone;
+            else if (customerDto.Phone == string.Empty)
+            {
+                existingCustomer.Phone = string.Empty; // Clear phone if explicitly set to empty
+            }
         }
 
-        if (!string.IsNullOrWhiteSpace(customerDto.Name))
+        if (customerDto.Name != null) // Update or clear the name if provided
         {
-            existingCustomer.Name = customerDto.Name;
+            existingCustomer.Name = customerDto.Name; // Update the name if it's not null
         }
 
         // Update other properties as necessary
 
         await _customerRepository.UpdateCustomerAsync(existingCustomer);
     }
-    
-    public async Task DeleteCustomerAsync(int businessId,int customerId)
+
+
+    public async Task DeleteCustomerAsync(int businessId, int customerId)
     {
         await _customerRepository.DeleteCustomerAsync(customerId);
     }
-    
+
     public async Task<IEnumerable<Customer>> SearchCustomersByNameOrPhoneAsync(string searchTerm)
     {
         var customers = await _customerRepository.SearchCustomersByNameOrPhoneAsync(searchTerm);
         return customers.Where(c => c != null)!; // Filter out null values
     }
-    
+
     public async Task<IEnumerable<AppointmentHistoryDto>> GetCustomerAppointmentsAsync(int customerId)
     {
         return await _customerRepository.GetAppointmentsByCustomerIdAsync(customerId);
@@ -155,10 +172,8 @@ public class CustomerService: ICustomerService
     }
 
 
-    
     public async Task<Customer?> GetCustomerByNameOrPhoneAsync(string nameOrPhone)
     {
         return await _customerRepository.GetCustomerByNameOrPhoneAsync(nameOrPhone);
     }
-
 }

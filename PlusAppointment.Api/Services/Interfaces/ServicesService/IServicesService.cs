@@ -12,5 +12,7 @@ namespace PlusAppointment.Services.Interfaces.ServicesService
         Task AddListServicesAsync(ServicesDto? servicesDto, int businessId, string userId, string userRole);
         Task UpdateServiceAsync(int businessId, int serviceId, ServiceDto? serviceDto, string userId);
         Task DeleteServiceAsync(int businessId, int serviceId);
+        Task<ServiceDto?> GetServiceByBusinessAndServiceIdAsync(int serviceId, int businessId);
+    
     }
 }

@@ -1,21 +1,22 @@
-using PlusAppointment.Repositories.Interfaces.AppointmentRepo;
+
+using PlusAppointment.Repositories.Interfaces.AppointmentRepo.AppointmentRead;
 
 namespace PlusAppointment.Utils.SendingSms;
 
 public class SmsReminderJob
 {
     private readonly SmsService _smsService;
-    private readonly IAppointmentRepository _appointmentRepository;
+    private readonly IAppointmentReadRepository _appointmentReadRepository;
 
-    public SmsReminderJob(SmsService smsService, IAppointmentRepository appointmentRepository)
+    public SmsReminderJob(SmsService smsService, IAppointmentReadRepository appointmentReadRepository)
     {
         _smsService = smsService;
-        _appointmentRepository = appointmentRepository;
+        _appointmentReadRepository = appointmentReadRepository;
     }
 
     public async Task SendSmsReminderAsync(int appointmentId)
     {
-        var appointment = await _appointmentRepository.GetAppointmentByIdAsync(appointmentId);
+        var appointment = await _appointmentReadRepository.GetAppointmentByIdAsync(appointmentId);
         if (appointment == null)
         {
             Console.WriteLine($"Appointment with ID {appointmentId} not found.");

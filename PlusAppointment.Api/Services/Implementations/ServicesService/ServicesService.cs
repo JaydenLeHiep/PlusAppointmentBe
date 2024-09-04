@@ -68,23 +68,6 @@ namespace PlusAppointment.Services.Implementations.ServicesService
                 CategoryName = s.Category?.Name // Include CategoryName in the DTO
             }).ToList();
         }
-        
-        public async Task<ServiceDto?> GetServiceByBusinessAndServiceIdAsync(int serviceId, int businessId)
-        {
-            var service = await _servicesRepository.GetServiceByBusinessAndServiceIdAsync(serviceId, businessId);
-            if (service == null) return null;
-
-            return new ServiceDto
-            {
-                ServiceId = service.ServiceId,
-                Name = service.Name,
-                Description = service.Description,
-                Duration = service.Duration,
-                Price = service.Price,
-                CategoryId = service.CategoryId,
-                CategoryName = service.Category?.Name
-            };
-        }
 
         public async Task AddServiceAsync(ServiceDto? serviceDto, int businessId, string userId, string userRole)
         {

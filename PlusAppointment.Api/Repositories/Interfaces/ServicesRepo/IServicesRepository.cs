@@ -14,6 +14,5 @@ public interface IServicesRepository
     public Task AddListServicesAsync(IEnumerable<Service?> services, int businessId);
     Task UpdateAsync(Service service);
     Task DeleteAsync(int businessId, int serviceId);
-    Task<Service?> GetServiceByBusinessAndServiceIdAsync(int serviceId, int businessId);
     
 }

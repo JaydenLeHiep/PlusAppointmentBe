@@ -38,6 +38,11 @@ namespace PlusAppointment.Services.Implementations.StaffService
         {
             return await _staffRepository.GetAllByBusinessIdAsync(businessId);
         }
+        
+        public async Task<Staff?> GetStaffByBusinessAndStaffIdAsync(int staffId, int businessId)
+        {
+            return await _staffRepository.GetStaffByBusinessAndStaffIdAsync(staffId, businessId);
+        }
 
         public async Task AddStaffAsync(StaffDto staffDto)
         {

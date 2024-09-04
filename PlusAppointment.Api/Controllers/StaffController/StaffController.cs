@@ -66,6 +66,27 @@ namespace PlusAppointment.Controllers.StaffController
             }
             return Ok(staff);
         }
+        
+        [Authorize]
+        [HttpGet("staff_id={staffId}/business_id={businessId}")]
+        public async Task<IActionResult> GetStaffByBusinessAndStaffId(int staffId, int businessId)
+        {
+            var userRole = HttpContext.Items["UserRole"]?.ToString();
+            if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
+            {
+                return NotFound(new { message = "You are not authorized to view this staff." });
+            }
+
+            var staff = await _staffService.GetStaffByBusinessAndStaffIdAsync(staffId, businessId);
+            if (staff == null)
+            {
+                return NotFound(new { message = "Staff not found for this business." });
+            }
+
+            return Ok(staff);
+        }
+
+        
         [Authorize] 
         [HttpPost("business_id={businessId}/add")]
         public async Task<IActionResult> AddStaff(int businessId, [FromBody] StaffDto staffDto)

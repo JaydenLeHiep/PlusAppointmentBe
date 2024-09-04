@@ -14,4 +14,6 @@ public interface IStaffService
     Task DeleteStaffAsync(int businessId, int staffId);
     
     Task<string> LoginAsync(string email, string password);
+    Task<Staff?> GetStaffByBusinessAndStaffIdAsync(int staffId, int businessId);
+
 }

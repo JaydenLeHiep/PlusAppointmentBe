@@ -71,6 +71,27 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
 
             return services;
         }
+        
+        public async Task<Service?> GetServiceByBusinessAndServiceIdAsync(int serviceId, int businessId)
+        {
+            string cacheKey = $"service_{serviceId}_business_{businessId}";
+            var cachedService = await _redisHelper.GetCacheAsync<Service>(cacheKey);
+            if (cachedService != null)
+            {
+                return cachedService;
+            }
+
+            var service = await _context.Services
+                .Include(s => s.Category)
+                .FirstOrDefaultAsync(s => s.ServiceId == serviceId && s.BusinessId == businessId);
+
+            if (service != null)
+            {
+                await _redisHelper.SetCacheAsync(cacheKey, service, TimeSpan.FromMinutes(10));
+            }
+
+            return service;
+        }
 
         public async Task AddServiceAsync(Service? service, int businessId)
         {

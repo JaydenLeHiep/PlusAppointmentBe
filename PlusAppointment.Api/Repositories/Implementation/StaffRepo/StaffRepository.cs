@@ -67,6 +67,26 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
 
             return staffs;
         }
+        public async Task<Staff?> GetStaffByBusinessAndStaffIdAsync(int staffId, int businessId)
+        {
+            string cacheKey = $"staff_{staffId}_business_{businessId}";
+            var cachedStaff = await _redisHelper.GetCacheAsync<Staff>(cacheKey);
+            if (cachedStaff != null)
+            {
+                return cachedStaff;
+            }
+
+            var staff = await _context.Staffs
+                .Where(s => s.StaffId == staffId && s.BusinessId == businessId)
+                .FirstOrDefaultAsync();
+
+            if (staff != null)
+            {
+                await _redisHelper.SetCacheAsync(cacheKey, staff, TimeSpan.FromMinutes(10));
+            }
+
+            return staff;
+        }
 
         public async Task AddStaffAsync(Staff staff, int businessId)
         {

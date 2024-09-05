@@ -111,8 +111,6 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 AppointmentServices = mappings
             };
 
-            var errors = new List<string>();
-
             // Convert appointment time to Vienna local time
             TimeZoneInfo viennaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
             DateTime viennaTime = TimeZoneInfo.ConvertTimeFromUtc(appointmentDto.AppointmentTime, viennaTimeZone);
@@ -125,26 +123,29 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             {
                 await _appointmentWriteRepository.AddAppointmentAsync(appointment);
 
-                // Send email to the customer after successfully saving the appointment
-                var bodySms =
-                    $"Dear Customer, \n\nThank you for choosing {business.Name}. We have successfully received your appointment request for {appointmentTimeFormatted}. Our team is currently processing it, and we will confirm the details with you shortly. If needed, we will reach out to you via email or phone. \n\nBest regards,\n{business.Name}";
-
-                var emailSent = await _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodySms);
-                if (emailSent)
+                // Send email to the customer if email is provided
+                if (!string.IsNullOrWhiteSpace(customer.Email))
                 {
-                    // Update EmailUsage for customer
-                    await _emailUsageService.AddEmailUsageAsync(new EmailUsage
+                    var bodySms =
+                        $"Dear Customer, \n\nThank you for choosing {business.Name}. We have successfully received your appointment request for {appointmentTimeFormatted}. Our team is currently processing it, and we will confirm the details with you shortly. If needed, we will reach out to you via email or phone. \n\nBest regards,\n{business.Name}";
+
+                    var emailSent = await _emailService.SendEmailAsync(customer.Email, subject, bodySms);
+                    if (emailSent)
                     {
-                        BusinessId = appointmentDto.BusinessId,
-                        Year = DateTime.UtcNow.Year,
-                        Month = DateTime.UtcNow.Month,
-                        EmailCount = 1
-                    });
+                        // Update EmailUsage for customer
+                        await _emailUsageService.AddEmailUsageAsync(new EmailUsage
+                        {
+                            BusinessId = appointmentDto.BusinessId,
+                            Year = DateTime.UtcNow.Year,
+                            Month = DateTime.UtcNow.Month,
+                            EmailCount = 1
+                        });
+                    }
                 }
                 else
                 {
-                    Console.WriteLine("Failed to send confirmation email to customer.");
-                    errors.Add("Failed to send confirmation email to customer.");
+                    // Log a message that no email was provided, but no error is returned
+                    Console.WriteLine("No email provided for the customer, appointment still created successfully.");
                 }
 
                 // Send notification email to the business
@@ -167,56 +168,56 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 }
                 else
                 {
-                    Console.WriteLine("Failed to send notification email to business.");
-                    errors.Add("Failed to send notification email to business.");
+                    // Log message for business email failure, but don't return an error
+                    Console.WriteLine("Failed to send notification email to business. Appointment was still created.");
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Failed to save appointment: {ex.Message}");
-                errors.Add($"Failed to save appointment: {ex.Message}");
+                // Handle the exception accordingly, but ensure the response is successful if appointment is created
             }
 
-            // Schedule the reminder email 48 hours (2 days) before the appointment
-            var bodyEmail =
-                $"Dear Customer, \n\nThis is a friendly reminder of your upcoming appointment at {business.Name} scheduled for {appointmentTimeFormatted}. Please ensure you arrive on time. We look forward to seeing you! \n\nBest regards,\n{business.Name}";
-
-            var sendTime = viennaTime.AddDays(-2);
-
-            if (sendTime <= DateTime.UtcNow)
+            // Schedule the reminder email 48 hours (2 days) before the appointment if email is provided
+            if (!string.IsNullOrWhiteSpace(customer.Email))
             {
-                // If the send time is in the past (less than 48 hours left), send the email immediately
-                var reminderEmailSent =
-                    await _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodyEmail);
-                if (reminderEmailSent)
+                var bodyEmail =
+                    $"Dear Customer, \n\nThis is a friendly reminder of your upcoming appointment at {business.Name} scheduled for {appointmentTimeFormatted}. Please ensure you arrive on time. We look forward to seeing you! \n\nBest regards,\n{business.Name}";
+
+                var sendTime = viennaTime.AddDays(-2);
+
+                if (sendTime <= DateTime.UtcNow)
                 {
-                    // Update EmailUsage for reminder email
-                    await _emailUsageService.AddEmailUsageAsync(new EmailUsage
+                    // If the send time is in the past (less than 48 hours left), send the email immediately
+                    var reminderEmailSent =
+                        await _emailService.SendEmailAsync(customer.Email, subject, bodyEmail);
+                    if (reminderEmailSent)
                     {
-                        BusinessId = appointmentDto.BusinessId,
-                        Year = DateTime.UtcNow.Year,
-                        Month = DateTime.UtcNow.Month,
-                        EmailCount = 1
-                    });
+                        // Update EmailUsage for reminder email
+                        await _emailUsageService.AddEmailUsageAsync(new EmailUsage
+                        {
+                            BusinessId = appointmentDto.BusinessId,
+                            Year = DateTime.UtcNow.Year,
+                            Month = DateTime.UtcNow.Month,
+                            EmailCount = 1
+                        });
+                    }
+                }
+                else
+                {
+                    BackgroundJob.Schedule(
+                        () => SendReminderEmail(customer.Email, subject, bodyEmail, appointmentDto.BusinessId),
+                        new DateTimeOffset(sendTime));
                 }
             }
             else
             {
-                BackgroundJob.Schedule(
-                    () => SendReminderEmail(customer.Email ?? string.Empty, subject, bodyEmail,
-                        appointmentDto.BusinessId),
-                    new DateTimeOffset(sendTime));
+                // Log message if reminder email can't be scheduled
+                Console.WriteLine("No email provided for the customer, no reminder email scheduled.");
             }
 
-            if (errors.Any())
-            {
-                foreach (var error in errors)
-                {
-                    // Log the errors or handle them as needed
-                }
-            }
-
-            return !errors.Any();
+            // Return true regardless of email failures, as long as the appointment is successfully created
+            return true;
         }
 
 

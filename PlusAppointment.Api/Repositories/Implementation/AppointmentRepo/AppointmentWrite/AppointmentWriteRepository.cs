@@ -60,7 +60,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo.Appointmen
 
         public async Task AddAppointmentAsync(Appointment appointment)
         {
-            await CheckAndIncrementAppointmentLimitAsync(appointment.CustomerId);
+            //await CheckAndIncrementAppointmentLimitAsync(appointment.CustomerId);
 
             await using var connection = new NpgsqlConnection(_context.Database.GetConnectionString());
             await connection.OpenAsync();

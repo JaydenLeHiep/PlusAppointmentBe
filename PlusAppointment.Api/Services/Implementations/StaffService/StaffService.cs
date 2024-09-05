@@ -100,29 +100,30 @@ namespace PlusAppointment.Services.Implementations.StaffService
                 throw new KeyNotFoundException("Staff not found");
             }
 
-            // Update only if new values are provided
-            if (!string.IsNullOrEmpty(staffDto.Name))
+            // Update only if new values are provided, or if the value is explicitly cleared
+            if (staffDto.Name != null) // Update if the user provides a new name
             {
                 staff.Name = staffDto.Name;
             }
 
-            if (!string.IsNullOrEmpty(staffDto.Email))
+            if (staffDto.Email != null) // Update or clear the email
             {
-                staff.Email = staffDto.Email;
+                staff.Email = staffDto.Email; // Set to the new email or empty string if user clears it
             }
 
-            if (!string.IsNullOrEmpty(staffDto.Phone))
+            if (staffDto.Phone != null) // Update or clear the phone
             {
-                staff.Phone = staffDto.Phone;
+                staff.Phone = staffDto.Phone; // Set to the new phone or empty string if user clears it
             }
 
-            if (!string.IsNullOrEmpty(staffDto.Password))
+            if (!string.IsNullOrEmpty(staffDto.Password)) // Update the password if provided
             {
                 staff.Password = HashUtility.HashPassword(staffDto.Password);
             }
 
             await _staffRepository.UpdateAsync(staff);
         }
+
 
 
         public async Task DeleteStaffAsync(int businessId, int staffId)

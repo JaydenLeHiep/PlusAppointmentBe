@@ -79,7 +79,7 @@ namespace PlusAppointment.Controllers.CustomerController
                 return Ok(new { message = "Customer not found.", customerExists = false });
             }
 
-            return Ok(new { customer.CustomerId, customerExists = true });
+            return Ok(new { customer.CustomerId, customer.Name, customerExists = true });
         }
 
         

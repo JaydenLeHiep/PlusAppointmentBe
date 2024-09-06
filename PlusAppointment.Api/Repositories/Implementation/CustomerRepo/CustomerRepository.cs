@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using PlusAppointment.Data;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
@@ -116,12 +117,49 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 throw new ArgumentNullException(nameof(customer));
             }
 
-            _context.Customers.Update(customer);
-            await _context.SaveChangesAsync();
+            await using var connection = new NpgsqlConnection(_context.Database.GetConnectionString());
+            await connection.OpenAsync();
+            await using var transaction = await connection.BeginTransactionAsync();
 
-            await UpdateCustomerCacheAsync(customer);
-            await RefreshRelatedCachesAsync(customer);
+            try
+            {
+                // SQL query to update the customer in PostgreSQL
+                var updateQuery = @"
+            UPDATE customers
+            SET 
+                name = @Name, 
+                email = @Email, 
+                phone = @Phone,
+                business_id = @BusinessId
+            WHERE customer_id = @CustomerId";
+
+                await using var command = new NpgsqlCommand(updateQuery, connection, transaction);
+
+                // Add parameters to prevent SQL injection
+                command.Parameters.AddWithValue("@Name", (object)customer.Name ?? DBNull.Value);
+                command.Parameters.AddWithValue("@Email", (object)customer.Email ?? DBNull.Value);
+                command.Parameters.AddWithValue("@Phone", (object)customer.Phone ?? DBNull.Value);
+                command.Parameters.AddWithValue("@BusinessId", customer.BusinessId);
+                command.Parameters.AddWithValue("@CustomerId", customer.CustomerId);
+
+                // Execute the update query
+                await command.ExecuteNonQueryAsync();
+
+                // Commit the transaction after successful update
+                await transaction.CommitAsync();
+
+                // After updating the database, refresh the cache
+                await UpdateCustomerCacheAsync(customer);
+                await RefreshRelatedCachesAsync(customer);
+            }
+            catch
+            {
+                // Rollback transaction in case of any error
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
+
 
         public async Task DeleteCustomerAsync(int customerId)
         {
@@ -252,10 +290,12 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                         list.Add(customer);
                     }
 
-                    return list;
+                    // Ensure the list is sorted by CustomerId (or any other relevant field)
+                    return list.OrderBy(c => c.CustomerId).ToList();
                 },
                 TimeSpan.FromMinutes(10));
         }
+
 
 
         private async Task InvalidateCustomerCacheAsync(Customer customer)

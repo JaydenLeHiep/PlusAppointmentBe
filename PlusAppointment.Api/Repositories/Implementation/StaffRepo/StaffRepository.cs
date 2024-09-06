@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using PlusAppointment.Data;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Repositories.Interfaces.StaffRepo;
@@ -136,13 +137,51 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
 
         public async Task UpdateAsync(Staff staff)
         {
-            _context.Staffs.Update(staff);
-            await _context.SaveChangesAsync();
+            await using var connection = new NpgsqlConnection(_context.Database.GetConnectionString());
+            await connection.OpenAsync();
+            await using var transaction = await connection.BeginTransactionAsync();
 
-            await UpdateStaffCacheAsync(staff);
-            // Refresh related caches
-            await RefreshRelatedCachesAsync(staff);
+            try
+            {
+                // SQL query to update the staff in PostgreSQL
+                var updateQuery = @"
+            UPDATE staffs 
+            SET 
+                name = @Name, 
+                email = @Email, 
+                phone = @Phone, 
+                password = @Password,
+                business_id = @BusinessId
+            WHERE staff_id = @StaffId";
+
+                await using var command = new NpgsqlCommand(updateQuery, connection, transaction);
+
+                // Add parameters to prevent SQL injection
+                command.Parameters.AddWithValue("@Name", staff.Name);
+                command.Parameters.AddWithValue("@Email", staff.Email);
+                command.Parameters.AddWithValue("@Phone", staff.Phone);
+                command.Parameters.AddWithValue("@Password", staff.Password);
+                command.Parameters.AddWithValue("@BusinessId", staff.BusinessId);
+                command.Parameters.AddWithValue("@StaffId", staff.StaffId);
+
+                // Execute the update query
+                await command.ExecuteNonQueryAsync();
+
+                // Commit the transaction after successful update
+                await transaction.CommitAsync();
+
+                // After updating the database, refresh the cache
+                await UpdateStaffCacheAsync(staff);
+                await RefreshRelatedCachesAsync(staff);
+            }
+            catch
+            {
+                // Rollback transaction in case of any error
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
+
 
         public async Task DeleteAsync(int businessId, int staffId)
         {
@@ -202,10 +241,12 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
                         list.Add(staff);
                     }
 
-                    return list;
+                    // Sort the list by StaffId
+                    return list.OrderBy(s => s.StaffId).ToList();
                 },
                 TimeSpan.FromMinutes(10));
         }
+
 
 
         private async Task InvalidateStaffCacheAsync(Staff staff)

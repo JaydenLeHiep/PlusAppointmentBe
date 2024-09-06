@@ -80,4 +80,6 @@ appsettings.Development.json
 !appsettings.json
 
 PlusAppointment.Api/appsettings.json
+PlusAppointment.Api/appsettings.txt
+
 

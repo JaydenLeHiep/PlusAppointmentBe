@@ -61,18 +61,21 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
 
             if (cachedServices != null && cachedServices.Any())
             {
-                return cachedServices;
+                // Ensure the cached services are sorted by ServiceId before returning
+                return cachedServices.OrderBy(s => s.ServiceId);
             }
 
             var services = await _context.Services
                 .Include(s => s.Category)
                 .Where(s => s.BusinessId == businessId)
+                .OrderBy(s => s.ServiceId) // Sort the services by ServiceId when fetching from the database
                 .ToListAsync();
 
             await _redisHelper.SetCacheAsync(cacheKey, services, TimeSpan.FromMinutes(10));
 
             return services;
         }
+
 
         public async Task AddServiceAsync(Service? service, int businessId)
         {

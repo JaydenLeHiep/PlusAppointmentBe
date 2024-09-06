@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using NpgsqlTypes;
 using PlusAppointment.Data;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Repositories.Interfaces.ServicesRepo;
@@ -71,27 +73,6 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
 
             return services;
         }
-        
-        public async Task<Service?> GetServiceByBusinessAndServiceIdAsync(int serviceId, int businessId)
-        {
-            string cacheKey = $"service_{serviceId}_business_{businessId}";
-            var cachedService = await _redisHelper.GetCacheAsync<Service>(cacheKey);
-            if (cachedService != null)
-            {
-                return cachedService;
-            }
-
-            var service = await _context.Services
-                .Include(s => s.Category)
-                .FirstOrDefaultAsync(s => s.ServiceId == serviceId && s.BusinessId == businessId);
-
-            if (service != null)
-            {
-                await _redisHelper.SetCacheAsync(cacheKey, service, TimeSpan.FromMinutes(10));
-            }
-
-            return service;
-        }
 
         public async Task AddServiceAsync(Service? service, int businessId)
         {
@@ -158,13 +139,51 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
 
         public async Task UpdateAsync(Service service)
         {
-            _context.Services.Update(service);
-            await _context.SaveChangesAsync();
+            await using var connection = new NpgsqlConnection(_context.Database.GetConnectionString());
+            await connection.OpenAsync();
+            await using var transaction = await connection.BeginTransactionAsync();
 
-            await UpdateServiceCacheAsync(service);
-            // Refresh related caches
-            await RefreshRelatedCachesAsync(service);
+            try
+            {
+                // SQL query to update the service in PostgreSQL
+                var updateQuery = @"
+            UPDATE services 
+            SET 
+                name = @Name, 
+                description = @Description, 
+                duration = @Duration, 
+                price = @Price, 
+                category_id = @CategoryId
+            WHERE service_id = @ServiceId";
+
+                await using var command = new NpgsqlCommand(updateQuery, connection, transaction);
+
+                // Add parameters to prevent SQL injection
+                command.Parameters.AddWithValue("@Name", service.Name);
+                command.Parameters.AddWithValue("@Description", service.Description);
+                command.Parameters.AddWithValue("@Duration", NpgsqlDbType.Interval, service.Duration);
+                command.Parameters.AddWithValue("@Price", service.Price);
+                command.Parameters.AddWithValue("@CategoryId", service.CategoryId ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@ServiceId", service.ServiceId);
+
+                // Execute the update query
+                await command.ExecuteNonQueryAsync();
+
+                // Commit transaction after successful update
+                await transaction.CommitAsync();
+
+                // After updating the database, refresh the cache
+                await UpdateServiceCacheAsync(service);
+                await RefreshRelatedCachesAsync(service);
+            }
+            catch
+            {
+                // Rollback transaction in case of any error
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
+
 
         public async Task DeleteAsync(int businessId, int serviceId)
         {
@@ -204,10 +223,12 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
                         list.Add(service);
                     }
 
-                    return list;
+                    // Sort the list by ServiceId
+                    return list.OrderBy(s => s.ServiceId).ToList();
                 },
                 TimeSpan.FromMinutes(10));
         }
+
 
 
         private async Task InvalidateServiceCacheAsync(Service service)

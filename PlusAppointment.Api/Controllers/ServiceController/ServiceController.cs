@@ -71,27 +71,6 @@ namespace PlusAppointment.Controllers.ServiceController
             }
             return Ok(services);
         }
-        
-        [Authorize]
-        [HttpGet("service_id={serviceId}/business_id={businessId}")]
-        public async Task<IActionResult> GetServiceByBusinessAndServiceId(int serviceId, int businessId)
-        {
-            var userRole = HttpContext.Items["UserRole"]?.ToString();
-            if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
-            {
-                return NotFound(new { message = "You are not authorized to view this service." });
-            }
-
-            var service = await _servicesService.GetServiceByBusinessAndServiceIdAsync(serviceId, businessId);
-            if (service == null)
-            {
-                return NotFound(new { message = "Service not found for this business." });
-            }
-
-            return Ok(service);
-        }
-
-        
         [Authorize] 
         [HttpPost("business_id={businessId}/add")]
         public async Task<IActionResult> AddService(int businessId, [FromBody] ServiceDto? serviceDto)

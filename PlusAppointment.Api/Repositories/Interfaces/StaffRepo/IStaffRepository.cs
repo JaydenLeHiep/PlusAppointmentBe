@@ -16,5 +16,4 @@ public interface IStaffRepository
     Task<Staff> GetByEmailAsync(string email);
     Task<bool> EmailExistsAsync(string email);
     Task<bool> PhoneExistsAsync(string phone);
-    Task<Staff?> GetStaffByBusinessAndStaffIdAsync(int staffId, int businessId);
 }

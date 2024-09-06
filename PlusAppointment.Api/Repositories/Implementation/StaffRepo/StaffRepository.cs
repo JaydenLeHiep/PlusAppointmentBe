@@ -60,14 +60,20 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
 
             if (cachedStaffs != null && cachedStaffs.Any())
             {
-                return cachedStaffs;
+                // Ensure the cached staff list is sorted by StaffId before returning
+                return cachedStaffs.OrderBy(s => s.StaffId);
             }
 
-            var staffs = await _context.Staffs.Where(s => s.BusinessId == businessId).ToListAsync();
+            var staffs = await _context.Staffs
+                .Where(s => s.BusinessId == businessId)
+                .OrderBy(s => s.StaffId)  // Sort the staff list by StaffId when fetching from the database
+                .ToListAsync();
+
             await _redisHelper.SetCacheAsync(cacheKey, staffs, TimeSpan.FromMinutes(10));
 
             return staffs;
         }
+
 
         public async Task AddStaffAsync(Staff staff, int businessId)
         {

@@ -219,7 +219,7 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
 
             if (cachedCustomers != null && cachedCustomers.Any())
             {
-                return cachedCustomers;
+                return cachedCustomers.OrderBy(c => c.CustomerId);
             }
 
             var customers = await _context.Customers

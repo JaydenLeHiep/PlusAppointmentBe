@@ -1,5 +1,3 @@
-
-
 services:
   db:
     image: postgres:13
@@ -35,10 +33,26 @@ services:
     depends_on:
       - db
       - redis
+      - localstack  # Add dependency on LocalStack
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=db;Database=plus_appointments_database;Username=hieple;Password=hieple
       - ConnectionStrings__RedisConnection=plus_appointments_redis:6379
+      - AWS__SQS__ServiceURL=http://localstack:4566  # Add LocalStack endpoint
+      - AWS__SQS__Region=us-east-1  # Default region for LocalStack
+      - AWS__SQS__QueueName=plus-appointments-queue
+    networks:
+      - plus_network
+
+  localstack:
+    image: localstack/localstack
+    container_name: plus_appointments_localstack
+    ports:
+      - "4566:4566"  # Main LocalStack port
+      - "4571:4571"
+    environment:
+      - SERVICES=sqs  # Only run SQS for now; you can add more services later
+      - DEFAULT_REGION=us-east-1  # Set the default region
     networks:
       - plus_network
 

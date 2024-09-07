@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="AWSSDK.SimpleEmail" Version="3.7.301.4" />
     <PackageReference Include="AWSSDK.SimpleNotificationService" Version="3.7.302.1" />
+    <PackageReference Include="AWSSDK.SQS" Version="3.7.400.15" />
     <PackageReference Include="Hangfire" Version="1.8.14" />
     <PackageReference Include="Hangfire.AspNetCore" Version="1.8.14" />
     <PackageReference Include="Hangfire.MemoryStorage" Version="1.8.1.1" />

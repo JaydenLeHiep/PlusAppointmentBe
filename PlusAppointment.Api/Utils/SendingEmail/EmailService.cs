@@ -4,7 +4,7 @@ using Amazon.SimpleEmail.Model;
 
 namespace PlusAppointment.Utils.SendingEmail
 {
-    public class EmailService
+    public class EmailService : IEmailService
     {
         private readonly AmazonSimpleEmailServiceClient _client;
 

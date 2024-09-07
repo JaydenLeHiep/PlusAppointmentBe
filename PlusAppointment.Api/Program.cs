@@ -13,7 +13,7 @@ using PlusAppointment.Repositories.Implementation.BusinessRepo;
 using PlusAppointment.Repositories.Implementation.CustomerRepo;
 using PlusAppointment.Repositories.Implementation.ServicesRepo;
 using PlusAppointment.Repositories.Implementation.StaffRepo;
-using PlusAppointment.Repositories.Interfaces.AppointmentRepo;
+
 using PlusAppointment.Repositories.Interfaces.BusinessRepo;
 using PlusAppointment.Repositories.Interfaces.CustomerRepo;
 using PlusAppointment.Repositories.Interfaces.ServicesRepo;
@@ -24,7 +24,7 @@ using PlusAppointment.Services.Interfaces.CustomerService;
 using PlusAppointment.Services.Interfaces.ServicesService;
 using PlusAppointment.Services.Interfaces.StaffService;
 using StackExchange.Redis;
-using PlusAppointment.Repositories.Implementation.AppointmentRepo;
+
 using PlusAppointment.Services.Implementations.AppointmentService;
 using PlusAppointment.Services.Implementations.BusinessService;
 using PlusAppointment.Services.Implementations.CustomerService;
@@ -57,6 +57,7 @@ using PlusAppointment.Services.Implementations.NotAvailableDate;
 using PlusAppointment.Services.Interfaces.EmailUsageService;
 using PlusAppointment.Services.Interfaces.NotAvailableDateService;
 using PlusAppointment.Utils.Hub;
+using PlusAppointment.Utils.SQS;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -123,10 +124,13 @@ builder.Services.AddScoped<IEmailUsageRepo, EmailUsageRepo>();
 builder.Services.AddScoped<IEmailUsageService, EmailUsageService>();
 
 
-builder.Services.AddSingleton<EmailService>();
+builder.Services.AddScoped<IEmailService, EmailService>(); // Register interface and its implementation
+
 builder.Services.AddSingleton<SmsService>();
 builder.Services.AddSingleton<RedisHelper>();
 builder.Services.AddTransient<SmsTextMagicService>();
+
+builder.Services.AddScoped<SqsConsumer>();
 
 // Configure Redis
 var redisConnectionString = builder.Configuration.GetConnectionString("RedisConnection");
@@ -253,10 +257,17 @@ app.UseRoleMiddleware();
 app.UseAuthorization();
 
 // Use Hangfire dashboard
+// Use Hangfire dashboard
 app.UseHangfireDashboard("/api/hangfire", new DashboardOptions
 {
     Authorization = new[] { new Hangfire.Dashboard.LocalRequestsOnlyAuthorizationFilter() }
 });
+
+// Schedule the SqsConsumer background job to run periodically
+RecurringJob.AddOrUpdate<SqsConsumer>(
+    consumer => consumer.ProcessEmailQueueAsync(),
+    Cron.Minutely); // This runs the job every minute (you can adjust this interval)
+
 
 
 // Map the SignalR hub

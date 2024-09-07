@@ -1,4 +1,5 @@
 using Hangfire;
+using Newtonsoft.Json;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
 using PlusAppointment.Repositories.Interfaces.AppointmentRepo.AppointmentRead;
@@ -10,6 +11,8 @@ using PlusAppointment.Services.Interfaces.AppointmentService;
 using PlusAppointment.Services.Interfaces.EmailUsageService;
 using PlusAppointment.Utils.SendingEmail;
 using PlusAppointment.Utils.SendingSms;
+using PlusAppointment.Utils.SQS;
+
 
 namespace PlusAppointment.Services.Implementations.AppointmentService
 {
@@ -21,16 +24,17 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
         private readonly IAppointmentReadRepository _appointmentReadRepository;
         private readonly IBusinessRepository _businessRepository;
 
-        private readonly EmailService _emailService;
+        private readonly IEmailService _emailService;
         private readonly SmsTextMagicService _smsTextMagicService;
         private readonly IServicesRepository _servicesRepository;
         private readonly IStaffRepository _staffRepository;
         private readonly IEmailUsageService _emailUsageService;
+        private readonly IConfiguration _configuration;
 
         public AppointmentService(IAppointmentWriteRepository appointmentWriteRepository,
             IAppointmentReadRepository appointmentReadRepository, IBusinessRepository businessRepository,
-            EmailService emailService, SmsTextMagicService smsTextMagicService, IServicesRepository servicesRepository,
-            IStaffRepository staffRepository, IEmailUsageService emailUsageService)
+            IEmailService emailService, SmsTextMagicService smsTextMagicService, IServicesRepository servicesRepository,
+            IStaffRepository staffRepository, IEmailUsageService emailUsageService, IConfiguration configuration)
         {
             _appointmentWriteRepository = appointmentWriteRepository;
             _appointmentReadRepository = appointmentReadRepository;
@@ -40,6 +44,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             _servicesRepository = servicesRepository;
             _staffRepository = staffRepository;
             _emailUsageService = emailUsageService;
+            _configuration = configuration;
         }
 
         public async Task<IEnumerable<AppointmentRetrieveDto?>> GetAllAppointmentsAsync()
@@ -129,18 +134,25 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                     var bodySms =
                         $"Dear Customer, \n\nThank you for choosing {business.Name}. We have successfully received your appointment request for {appointmentTimeFormatted}. Our team is currently processing it, and we will confirm the details with you shortly. If needed, we will reach out to you via email or phone. \n\nBest regards,\n{business.Name}";
 
-                    var emailSent = await _emailService.SendEmailAsync(customer.Email, subject, bodySms);
-                    if (emailSent)
+                    var emailMessage = new EmailMessage
                     {
-                        // Update EmailUsage for customer
-                        await _emailUsageService.AddEmailUsageAsync(new EmailUsage
-                        {
-                            BusinessId = appointmentDto.BusinessId,
-                            Year = DateTime.UtcNow.Year,
-                            Month = DateTime.UtcNow.Month,
-                            EmailCount = 1
-                        });
-                    }
+                        ToEmail = customer.Email,
+                        Subject = subject,
+                        Body = bodySms
+                    };
+
+                    // Enqueue email to SQS for customer
+                    var sqsProducer = new SqsProducer(_configuration);
+                    await sqsProducer.SendMessageAsync(JsonConvert.SerializeObject(emailMessage));
+
+                    // Update EmailUsage for customer
+                    // await _emailUsageService.AddEmailUsageAsync(new EmailUsage
+                    // {
+                    //     BusinessId = appointmentDto.BusinessId,
+                    //     Year = DateTime.UtcNow.Year,
+                    //     Month = DateTime.UtcNow.Month,
+                    //     EmailCount = 1
+                    // });
                 }
                 else
                 {
@@ -153,18 +165,27 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 var businessNotificationBody =
                     $"Customer {customer.Name} has requested an appointment at {appointmentTimeFormatted}. Please review the appointment details and confirm accordingly.";
 
-                var businessEmailSent = await _emailService.SendEmailAsync(business.Email ?? string.Empty,
-                    businessNotificationSubject, businessNotificationBody);
-                if (businessEmailSent)
+                if (!string.IsNullOrWhiteSpace(business.Email))
                 {
-                    // Update EmailUsage for business email
-                    await _emailUsageService.AddEmailUsageAsync(new EmailUsage
+                    var businessEmailMessage = new EmailMessage
                     {
-                        BusinessId = appointmentDto.BusinessId,
-                        Year = DateTime.UtcNow.Year,
-                        Month = DateTime.UtcNow.Month,
-                        EmailCount = 1
-                    });
+                        ToEmail = business.Email,
+                        Subject = businessNotificationSubject,
+                        Body = businessNotificationBody
+                    };
+
+                    // Enqueue email to SQS for business
+                    var sqsProducer = new SqsProducer(_configuration);
+                    await sqsProducer.SendMessageAsync(JsonConvert.SerializeObject(businessEmailMessage));
+
+                    // Update EmailUsage for business email
+                    // await _emailUsageService.AddEmailUsageAsync(new EmailUsage
+                    // {
+                    //     BusinessId = appointmentDto.BusinessId,
+                    //     Year = DateTime.UtcNow.Year,
+                    //     Month = DateTime.UtcNow.Month,
+                    //     EmailCount = 1
+                    // });
                 }
                 else
                 {
@@ -175,7 +196,6 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             catch (Exception ex)
             {
                 Console.WriteLine($"Failed to save appointment: {ex.Message}");
-                // Handle the exception accordingly, but ensure the response is successful if appointment is created
             }
 
             // Schedule the reminder email 48 hours (2 days) before the appointment if email is provided
@@ -194,17 +214,18 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                     if (reminderEmailSent)
                     {
                         // Update EmailUsage for reminder email
-                        await _emailUsageService.AddEmailUsageAsync(new EmailUsage
-                        {
-                            BusinessId = appointmentDto.BusinessId,
-                            Year = DateTime.UtcNow.Year,
-                            Month = DateTime.UtcNow.Month,
-                            EmailCount = 1
-                        });
+                        // await _emailUsageService.AddEmailUsageAsync(new EmailUsage
+                        // {
+                        //     BusinessId = appointmentDto.BusinessId,
+                        //     Year = DateTime.UtcNow.Year,
+                        //     Month = DateTime.UtcNow.Month,
+                        //     EmailCount = 1
+                        // });
                     }
                 }
                 else
                 {
+                    // Schedule a reminder email via Hangfire
                     BackgroundJob.Schedule(
                         () => SendReminderEmail(customer.Email, subject, bodyEmail, appointmentDto.BusinessId),
                         new DateTimeOffset(sendTime));
@@ -224,9 +245,20 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
         // Separate method for sending the reminder email and updating the email usage
         public async Task SendReminderEmail(string email, string subject, string bodyEmail, int businessId)
         {
-            var emailSent = await _emailService.SendEmailAsync(email, subject, bodyEmail);
-            if (emailSent)
+            var emailMessage = new EmailMessage
             {
+                ToEmail = email,
+                Subject = subject,
+                Body = bodyEmail
+            };
+
+            try
+            {
+                // Send email message to SQS
+                var sqsProducer = new SqsProducer(_configuration); // Assuming _configuration is already injected
+                await sqsProducer.SendMessageAsync(JsonConvert.SerializeObject(emailMessage));
+
+                // Optionally update the email usage stats after sending the message to SQS
                 await _emailUsageService.AddEmailUsageAsync(new EmailUsage
                 {
                     BusinessId = businessId,
@@ -235,7 +267,12 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                     EmailCount = 1
                 });
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error while enqueueing the email: {ex.Message}");
+            }
         }
+
 
         public async Task UpdateAppointmentAsync(int id, UpdateAppointmentDto updateAppointmentDto)
         {
@@ -269,41 +306,40 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             DateTime viennaTime = TimeZoneInfo.ConvertTimeFromUtc(appointment.AppointmentTime, viennaTimeZone);
             var appointmentTimeFormatted = viennaTime.ToString("HH:mm 'on' dd.MM.yyyy");
 
-            var errors = new List<string>();
-            // Convert appointment time to Vienna local time
-
             var subject = "Appointment Confirmation";
             var bodySms =
                 $"Dear Customer, \n\nThank you for choosing {business.Name}. We are pleased to confirm your appointment at {appointmentTimeFormatted}. We look forward to serving you! \n\nBest regards,\n{business.Name}";
 
+            var emailMessage = new EmailMessage
+            {
+                ToEmail = customer.Email ?? string.Empty,
+                Subject = subject,
+                Body = bodySms
+            };
+
             try
             {
-                var emailSent = await _emailService.SendEmailAsync(customer.Email ?? string.Empty, subject, bodySms);
-                if (emailSent)
-                {
-                    // Update EmailUsage
-                    await _emailUsageService.AddEmailUsageAsync(new EmailUsage
-                    {
-                        BusinessId = appointment.BusinessId,
-                        Year = DateTime.UtcNow.Year,
-                        Month = DateTime.UtcNow.Month,
-                        EmailCount = 1
-                    });
-                }
-                else
-                {
-                    Console.WriteLine("Failed to send confirmation email.");
-                    errors.Add("Failed to send confirmation email.");
-                }
+                // Send email message to SQS
+                var sqsProducer = new SqsProducer(_configuration); // Assuming _configuration is already injected
+                await sqsProducer.SendMessageAsync(JsonConvert.SerializeObject(emailMessage));
+
+                // Optionally update EmailUsage
+                // await _emailUsageService.AddEmailUsageAsync(new EmailUsage
+                // {
+                //     BusinessId = appointment.BusinessId,
+                //     Year = DateTime.UtcNow.Year,
+                //     Month = DateTime.UtcNow.Month,
+                //     EmailCount = 1
+                // });
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Failed to send confirmation email.");
-                errors.Add($"Error sending confirmation email: {ex.Message}");
+                Console.WriteLine($"Error while enqueueing the email: {ex.Message}");
             }
 
             await _appointmentWriteRepository.UpdateAppointmentStatusAsync(appointment);
         }
+
 
         public async Task DeleteAppointmentAsync(int id)
         {

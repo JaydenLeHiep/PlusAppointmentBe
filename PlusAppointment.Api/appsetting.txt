@@ -1,8 +1,0 @@
-"DefaultConnection": "Host=database-plus-appointment-v1.c7q2waoq0gkz.eu-central-1.rds.amazonaws.com;Port=5432;Database=postgres;Username=postgres;Password=Hieple99!!",
-"RedisConnection": "clustercfg.plusappointmentredis.bypyrn.euc1.cache.amazonaws.com:6379,ssl=true,abortConnect=false"
-
-"DefaultConnection": "Server=localhost;Port=5434;Database=plus_appointments_database;Username=hieple;Password=hieple",
-"RedisConnection": "localhost:6379"
-
-"ServiceURL": "http://localhost:4566",
-"SQSQueueUrl": "http://sqs.eu-central-1.localhost.localstack.cloud:4566/000000000000/plus-appointments-queue"

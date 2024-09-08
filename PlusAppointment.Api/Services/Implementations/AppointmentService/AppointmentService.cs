@@ -161,9 +161,9 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 }
 
                 // Send notification email to the business
-                var businessNotificationSubject = "New Appointment Request";
+                var businessNotificationSubject = "Yêu cầu đặt hẹn mới";
                 var businessNotificationBody =
-                    $"Customer {customer.Name} has requested an appointment at {appointmentTimeFormatted}. Please review the appointment details and confirm accordingly.";
+                    $"Khách hàng {customer.Name} đã yêu cầu một cuộc hẹn vào {appointmentTimeFormatted}. Vui lòng xem lại chi tiết cuộc hẹn và xác nhận theo yêu cầu.";
 
                 if (!string.IsNullOrWhiteSpace(business.Email))
                 {

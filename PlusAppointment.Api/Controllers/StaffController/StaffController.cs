@@ -68,7 +68,7 @@ namespace PlusAppointment.Controllers.StaffController
         }
         [Authorize] 
         [HttpPost("business_id={businessId}/add")]
-        public async Task<IActionResult> AddStaff(int businessId, [FromBody] StaffDto staffDto)
+        public async Task<IActionResult> AddStaff(int businessId, [FromBody] StaffDto? staffDto)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -96,7 +96,7 @@ namespace PlusAppointment.Controllers.StaffController
         }
         [Authorize] 
         [HttpPost("business_id={businessId}/addList")]
-        public async Task<IActionResult> AddStaffs(int businessId, [FromBody] IEnumerable<StaffDto> staffDtos)
+        public async Task<IActionResult> AddStaffs(int businessId, [FromBody] IEnumerable<StaffDto?> staffDtos)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())

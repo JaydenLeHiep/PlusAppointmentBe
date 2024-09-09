@@ -15,11 +15,13 @@ namespace PlusAppointment.Services.Implementations.UserService
     {
         private readonly IUserRepository _userRepository;
         private readonly IConfiguration _configuration;
+        private readonly IHashUtility _hashUtility;
 
-        public UserService(IUserRepository userRepository, IConfiguration configuration)
+        public UserService(IUserRepository userRepository, IConfiguration configuration, IHashUtility hashUtility)
         {
             _userRepository = userRepository;
             _configuration = configuration;
+            _hashUtility = hashUtility;
         }
 
         public async Task<IEnumerable<User?>> GetAllUsersAsync()
@@ -60,7 +62,7 @@ namespace PlusAppointment.Services.Implementations.UserService
             var user = new User 
             (
                 username: userRegisterDto.Username,
-                password: HashUtility.HashPassword(userRegisterDto.Password), // Use HashUtility
+                password: _hashUtility.HashPassword(userRegisterDto.Password), // Use HashUtility
                 email: userRegisterDto.Email,
                 phone: userRegisterDto.Phone,
                 role: Role.Owner
@@ -84,7 +86,7 @@ namespace PlusAppointment.Services.Implementations.UserService
 
             if (!string.IsNullOrEmpty(userUpdateDto.Password))
             {
-                existingUser.Password = HashUtility.HashPassword(userUpdateDto.Password); // Ensure you hash the password
+                existingUser.Password = _hashUtility.HashPassword(userUpdateDto.Password); // Ensure you hash the password
             }
 
             if (!string.IsNullOrEmpty(userUpdateDto.Email))
@@ -115,7 +117,7 @@ namespace PlusAppointment.Services.Implementations.UserService
             {
                 var user = await _userRepository.GetUserByUsernameOrEmailAsync(loginDto.UsernameOrEmail);
 
-                if (string.IsNullOrEmpty(user.Password) || !HashUtility.VerifyPassword(user.Password, loginDto.Password))
+                if (string.IsNullOrEmpty(user.Password) || !_hashUtility.VerifyPassword(user.Password, loginDto.Password))
                 {
                     return (null, null, null, "Invalid password.");
                 }

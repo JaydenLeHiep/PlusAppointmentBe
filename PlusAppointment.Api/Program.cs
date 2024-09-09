@@ -56,6 +56,7 @@ using PlusAppointment.Services.Implementations.EmailUsageService;
 using PlusAppointment.Services.Implementations.NotAvailableDate;
 using PlusAppointment.Services.Interfaces.EmailUsageService;
 using PlusAppointment.Services.Interfaces.NotAvailableDateService;
+using PlusAppointment.Utils.Hash;
 using PlusAppointment.Utils.Hub;
 using PlusAppointment.Utils.SQS;
 
@@ -125,6 +126,9 @@ builder.Services.AddScoped<IEmailUsageService, EmailUsageService>();
 
 
 builder.Services.AddScoped<IEmailService, EmailService>(); // Register interface and its implementation
+
+builder.Services.AddScoped<IHashUtility, HashUtility>();
+
 
 builder.Services.AddSingleton<SmsService>();
 builder.Services.AddSingleton<RedisHelper>();

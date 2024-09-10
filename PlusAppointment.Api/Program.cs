@@ -290,10 +290,10 @@ app.UseHangfireDashboard("/api/hangfire", new DashboardOptions
 });
 
 // Schedule the SqsConsumer background job to run periodically
-RecurringJob.AddOrUpdate<SqsConsumer>(
-    consumer => consumer.ProcessEmailQueueAsync(),
-    Cron.Minutely); // This runs the job every minute (you can adjust this interval)
-
+// RecurringJob.AddOrUpdate<SqsConsumer>(
+//     consumer => consumer.ProcessEmailQueueAsync(),
+//     Cron.Minutely); // This runs the job every minute (you can adjust this interval)
+//
 
 
 // Map the SignalR hub

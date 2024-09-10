@@ -141,18 +141,8 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                         Body = bodySms
                     };
 
-                    // Enqueue email to SQS for customer
-                    var sqsProducer = new SqsProducer(_configuration);
-                    await sqsProducer.SendMessageAsync(JsonConvert.SerializeObject(emailMessage));
-
-                    // Update EmailUsage for customer
-                    // await _emailUsageService.AddEmailUsageAsync(new EmailUsage
-                    // {
-                    //     BusinessId = appointmentDto.BusinessId,
-                    //     Year = DateTime.UtcNow.Year,
-                    //     Month = DateTime.UtcNow.Month,
-                    //     EmailCount = 1
-                    // });
+                    // Send email directly using _emailService
+                    await _emailService.SendEmailAsync(emailMessage.ToEmail, emailMessage.Subject, emailMessage.Body);
                 }
                 else
                 {
@@ -174,18 +164,9 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                         Body = businessNotificationBody
                     };
 
-                    // Enqueue email to SQS for business
-                    var sqsProducer = new SqsProducer(_configuration);
-                    await sqsProducer.SendMessageAsync(JsonConvert.SerializeObject(businessEmailMessage));
-
-                    // Update EmailUsage for business email
-                    // await _emailUsageService.AddEmailUsageAsync(new EmailUsage
-                    // {
-                    //     BusinessId = appointmentDto.BusinessId,
-                    //     Year = DateTime.UtcNow.Year,
-                    //     Month = DateTime.UtcNow.Month,
-                    //     EmailCount = 1
-                    // });
+                    // Send email directly using _emailService
+                    await _emailService.SendEmailAsync(businessEmailMessage.ToEmail, businessEmailMessage.Subject,
+                        businessEmailMessage.Body);
                 }
                 else
                 {
@@ -209,18 +190,10 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 if (sendTime <= DateTime.UtcNow)
                 {
                     // If the send time is in the past (less than 48 hours left), send the email immediately
-                    var reminderEmailSent =
-                        await _emailService.SendEmailAsync(customer.Email, subject, bodyEmail);
+                    var reminderEmailSent = await _emailService.SendEmailAsync(customer.Email, subject, bodyEmail);
                     if (reminderEmailSent)
                     {
-                        // Update EmailUsage for reminder email
-                        // await _emailUsageService.AddEmailUsageAsync(new EmailUsage
-                        // {
-                        //     BusinessId = appointmentDto.BusinessId,
-                        //     Year = DateTime.UtcNow.Year,
-                        //     Month = DateTime.UtcNow.Month,
-                        //     EmailCount = 1
-                        // });
+                        // Update EmailUsage for reminder email (optional)
                     }
                 }
                 else
@@ -254,22 +227,14 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
             try
             {
-                // Send email message to SQS
-                var sqsProducer = new SqsProducer(_configuration); // Assuming _configuration is already injected
-                await sqsProducer.SendMessageAsync(JsonConvert.SerializeObject(emailMessage));
+                // Send the email directly using _emailService
+                await _emailService.SendEmailAsync(emailMessage.ToEmail, emailMessage.Subject, emailMessage.Body);
 
-                // Optionally update the email usage stats after sending the message to SQS
-                await _emailUsageService.AddEmailUsageAsync(new EmailUsage
-                {
-                    BusinessId = businessId,
-                    Year = DateTime.UtcNow.Year,
-                    Month = DateTime.UtcNow.Month,
-                    EmailCount = 1
-                });
+                // Optionally update the email usage stats after sending the email
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error while enqueueing the email: {ex.Message}");
+                Console.WriteLine($"Error while sending the reminder email: {ex.Message}");
             }
         }
 
@@ -302,6 +267,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 throw new ArgumentException("Invalid BusinessId");
             }
 
+            // Convert appointment time to Vienna local time
             TimeZoneInfo viennaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
             DateTime viennaTime = TimeZoneInfo.ConvertTimeFromUtc(appointment.AppointmentTime, viennaTimeZone);
             var appointmentTimeFormatted = viennaTime.ToString("HH:mm 'on' dd.MM.yyyy");
@@ -319,11 +285,17 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
             try
             {
-                // Send email message to SQS
-                var sqsProducer = new SqsProducer(_configuration); // Assuming _configuration is already injected
-                await sqsProducer.SendMessageAsync(JsonConvert.SerializeObject(emailMessage));
+                // Send email directly using _emailService
+                if (!string.IsNullOrWhiteSpace(emailMessage.ToEmail))
+                {
+                    await _emailService.SendEmailAsync(emailMessage.ToEmail, emailMessage.Subject, emailMessage.Body);
+                }
+                else
+                {
+                    Console.WriteLine("No customer email provided, skipping email notification.");
+                }
 
-                // Optionally update EmailUsage
+                // Optionally update EmailUsage (if needed)
                 // await _emailUsageService.AddEmailUsageAsync(new EmailUsage
                 // {
                 //     BusinessId = appointment.BusinessId,
@@ -334,9 +306,10 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error while enqueueing the email: {ex.Message}");
+                Console.WriteLine($"Error while sending the email: {ex.Message}");
             }
 
+            // Update the appointment status in the database
             await _appointmentWriteRepository.UpdateAppointmentStatusAsync(appointment);
         }
 

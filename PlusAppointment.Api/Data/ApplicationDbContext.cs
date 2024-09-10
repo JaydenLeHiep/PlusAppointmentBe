@@ -22,6 +22,9 @@ namespace PlusAppointment.Data
         
         public DbSet<NotAvailableDate> NotAvailableDates { get; set; }
         public DbSet<EmailUsage> EmailUsages { get; set; }
+        
+        public DbSet<ShopPicture> ShopPictures { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -85,6 +88,14 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<NotAvailableDate>().Property(nad => nad.StartDate).HasColumnName("start_date");
             modelBuilder.Entity<NotAvailableDate>().Property(nad => nad.EndDate).HasColumnName("end_date");
             modelBuilder.Entity<NotAvailableDate>().Property(nad => nad.Reason).HasColumnName("reason");
+            
+            modelBuilder.Entity<ShopPicture>().ToTable("shop_pictures");
+            modelBuilder.Entity<ShopPicture>().Property(sp => sp.ShopPictureId).HasColumnName("shop_picture_id");
+            modelBuilder.Entity<ShopPicture>().Property(sp => sp.S3ImageUrl).HasColumnName("s3_image_url");
+            modelBuilder.Entity<ShopPicture>().Property(sp => sp.CreatedAt).HasColumnName("created_at");
+            modelBuilder.Entity<ShopPicture>().Property(sp => sp.BusinessId).HasColumnName("business_id"); // Rename to business_id
+
+
             
             modelBuilder.Entity<Service>()
                 .HasOne(s => s.Category)
@@ -190,7 +201,12 @@ namespace PlusAppointment.Data
                 .WithMany(b => b.EmailUsages) // Assuming you want to navigate from Business to EmailUsage
                 .HasForeignKey(eu => eu.BusinessId)
                 .OnDelete(DeleteBehavior.Cascade);
-
+            
+            modelBuilder.Entity<ShopPicture>()
+                .HasOne(sp => sp.Business)
+                .WithMany(b => b.ShopPictures)
+                .HasForeignKey(sp => sp.BusinessId)
+                .OnDelete(DeleteBehavior.Cascade); // Optional: delete pictures when a business is deleted
             
             // Add indexes to improve performance
             modelBuilder.Entity<Business>()
@@ -242,6 +258,11 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<EmailUsage>()
                 .HasIndex(eu => new { eu.BusinessId, eu.Year, eu.Month })
                 .IsUnique(); // Ensure uniqueness for each Business per month
+            
+            modelBuilder.Entity<ShopPicture>()
+                .HasIndex(sp => sp.BusinessId)
+                .HasDatabaseName("IX_ShopPictures_BusinessId");
+
         
         }
     }

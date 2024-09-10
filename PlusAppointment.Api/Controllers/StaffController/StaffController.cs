@@ -22,6 +22,7 @@ namespace PlusAppointment.Controllers.StaffController
             _staffService = staffService;
             _hubContext = hubContext;
         }
+        
         [Authorize] 
         [HttpGet]
         public async Task<IActionResult> GetAll()
@@ -35,6 +36,7 @@ namespace PlusAppointment.Controllers.StaffController
             var staffs = await _staffService.GetAllStaffsAsync();
             return Ok(staffs);
         }
+        
         [Authorize] 
         [HttpGet("staff_id={staffId}")]
         public async Task<IActionResult> GetById(int staffId)
@@ -66,6 +68,7 @@ namespace PlusAppointment.Controllers.StaffController
             }
             return Ok(staff);
         }
+        
         [Authorize] 
         [HttpPost("business_id={businessId}/add")]
         public async Task<IActionResult> AddStaff(int businessId, [FromBody] StaffDto? staffDto)

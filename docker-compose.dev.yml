@@ -55,6 +55,20 @@ services:
       - DEFAULT_REGION=us-east-1  # Set the default region
     networks:
       - plus_network
+  
+  db_test:
+    image: postgres:13
+    container_name: plus_appointments_test_database
+    environment:
+      POSTGRES_DB: plus_appointments_test
+      POSTGRES_USER: hieple
+      POSTGRES_PASSWORD: hieple
+    ports:
+      - "5435:5432"  # Maps port 5435 on the host to port 5432 in the container
+    volumes:
+      - db_test_data:/var/lib/postgresql/data
+    networks:
+      - plus_network
 
 networks:
   plus_network:
@@ -63,3 +77,4 @@ networks:
 volumes:
   db_data:
   redis_data:
+  db_test_data:

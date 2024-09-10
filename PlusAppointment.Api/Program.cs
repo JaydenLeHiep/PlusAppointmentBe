@@ -64,10 +64,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Load environment-specific configuration
 builder.Configuration
-    .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
-    .AddEnvironmentVariables();
+    .SetBasePath(Directory.GetCurrentDirectory())  // Set base path for configurations
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)  // Load the base config
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)  // Load environment-specific config
+    .AddEnvironmentVariables();  // Override with environment variables
+
 
 // Ensure the Logs directory exists
 EnsureLogsDirectory();

@@ -1,4 +1,7 @@
 using System.Text;
+using Amazon;
+using Amazon.Extensions.NETCore.Setup;
+using Amazon.Runtime;
 using log4net;
 using log4net.Config;
 using Microsoft.EntityFrameworkCore;
@@ -42,6 +45,7 @@ using PlusAppointment.Repositories.Implementation.CalculateMoneyRepo;
 using PlusAppointment.Repositories.Implementation.EmailUsageRepo;
 using PlusAppointment.Repositories.Implementation.NotAvailableDateRepository;
 using PlusAppointment.Repositories.Implementation.ServiceCategoryRepo;
+using PlusAppointment.Repositories.Implementation.ShopPicturesRepo;
 using PlusAppointment.Repositories.Interfaces.AppointmentRepo.AppointmentRead;
 using PlusAppointment.Repositories.Interfaces.AppointmentRepo.AppointmentWrite;
 using PlusAppointment.Repositories.Interfaces.CalculateMoneyRepo;
@@ -52,10 +56,13 @@ using PlusAppointment.Services.Implementations.ServiceCategoryService;
 using PlusAppointment.Services.Interfaces.CalculateMoneyService;
 using PlusAppointment.Services.Interfaces.ServiceCategoryService;
 using PlusAppointment.Repositories.Interfaces.NotAvailableDateRepository;
+using PlusAppointment.Repositories.Interfaces.ShopPicturesRepo;
 using PlusAppointment.Services.Implementations.EmailUsageService;
 using PlusAppointment.Services.Implementations.NotAvailableDate;
+using PlusAppointment.Services.Implementations.ShopPictureService;
 using PlusAppointment.Services.Interfaces.EmailUsageService;
 using PlusAppointment.Services.Interfaces.NotAvailableDateService;
+using PlusAppointment.Services.Interfaces.ShopPictureService;
 using PlusAppointment.Utils.Hash;
 using PlusAppointment.Utils.Hub;
 using PlusAppointment.Utils.SQS;
@@ -69,6 +76,15 @@ builder.Configuration
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)  // Load environment-specific config
     .AddEnvironmentVariables();  // Override with environment variables
 
+// Configure AWS options based on the environment
+var awsOptions = new AWSOptions
+{
+    Credentials = new BasicAWSCredentials(
+        builder.Configuration["AWS:AccessKey"],
+        builder.Configuration["AWS:SecretKey"]
+    ),
+    Region = RegionEndpoint.GetBySystemName(builder.Configuration["AWS:Region"])
+};
 
 // Ensure the Logs directory exists
 EnsureLogsDirectory();
@@ -136,6 +152,11 @@ builder.Services.AddSingleton<RedisHelper>();
 builder.Services.AddTransient<SmsTextMagicService>();
 
 builder.Services.AddScoped<SqsConsumer>();
+
+builder.Services.AddScoped<IShopPictureRepository, ShopPictureRepository>();
+builder.Services.AddScoped<IShopPictureService, ShopPictureService>();
+builder.Services.AddAWSService<Amazon.S3.IAmazonS3>(awsOptions);  // AWS S3 service
+builder.Services.AddSingleton<S3Service>();
 
 // Configure Redis
 var redisConnectionString = builder.Configuration.GetConnectionString("RedisConnection");

@@ -83,3 +83,6 @@ PlusAppointment.Api/appsettings.json
 PlusAppointment.Api/appsetting.txt
 
 
+# Ignore Docker Compose environment-specific files
+docker-compose.dev.yml
+docker-compose.prod.yml

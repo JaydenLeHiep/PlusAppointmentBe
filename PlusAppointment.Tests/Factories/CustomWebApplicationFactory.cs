@@ -2,8 +2,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using PlusAppointment.Models.Classes; 
+using Microsoft.Extensions.Configuration;
 using PlusAppointment.Data;
+using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.Enums; // Your DbContext namespace
 
 namespace PlusAppointment.Tests.Factories
@@ -12,7 +13,13 @@ namespace PlusAppointment.Tests.Factories
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
-            builder.ConfigureServices(services =>
+            builder.ConfigureAppConfiguration((context, config) =>
+            {
+                // Load the appsettings.Test.json file
+                config.AddJsonFile("appsettings.Test.json");
+            });
+
+            builder.ConfigureServices((context, services) =>
             {
                 // Remove the real ApplicationDbContext registration
                 var descriptor = services.SingleOrDefault(
@@ -22,10 +29,13 @@ namespace PlusAppointment.Tests.Factories
                     services.Remove(descriptor);
                 }
 
-                // Add the in-memory database
+                // Use the connection string from the configuration
+                var connectionString = context.Configuration.GetConnectionString("DefaultConnection");
+
+                // Add the PostgreSQL test database
                 services.AddDbContext<ApplicationDbContext>(options =>
                 {
-                    options.UseNpgsql("Host=localhost;Port=5435;Database=plus_appointments_test;Username=hieple;Password=hieple");
+                    options.UseNpgsql(connectionString);
                 });
 
                 // Ensure the database is created and seeded with data
@@ -43,18 +53,17 @@ namespace PlusAppointment.Tests.Factories
         {
             // Reset the tables by truncating them
             context.Database.ExecuteSqlRaw("TRUNCATE TABLE users, businesses, staffs RESTART IDENTITY CASCADE;");
+            
             // Seed a User entity
             var user = new User(
                 username: "test_user",
-                password: "hashedpassword", // Ensure this is hashed appropriately in real scenarios
+                password: "hashedpassword",
                 email: "testuser@example.com",
                 phone: "1234567890",
-                role: Role.Owner // Assuming you're using Role enums such as Admin, Owner, etc.
+                role: Role.Owner
             );
 
-            context.Users.Add(user);  // Add the user to the context
-
-            // Save changes to generate the UserId for the business reference
+            context.Users.Add(user);
             context.SaveChanges();
 
             // Create and seed a Business entity
@@ -63,17 +72,16 @@ namespace PlusAppointment.Tests.Factories
                 address: "123 Test St", 
                 phone: "1234567890", 
                 email: "testbusiness@example.com", 
-                userID: 1 // Assuming there's a user with ID 1 in the system
+                userID: user.UserId
             );
 
             context.Businesses.Add(business);
-            
-            // Save the Business entity first to ensure BusinessId is generated
             context.SaveChanges();
-            // Seed test data
+
+            // Seed Staff entities
             context.Staffs.AddRange(
-                new Models.Classes.Staff { StaffId = 1, BusinessId = business.BusinessId, Name = "Staff Member 1", Email = "", Phone = ""},
-                new Models.Classes.Staff { StaffId = 2, BusinessId = business.BusinessId, Name = "Staff Member 2" , Email = "", Phone = ""}
+                new Models.Classes.Staff { BusinessId = business.BusinessId, Name = "Staff Member 1", Email = "", Phone = "" },
+                new Models.Classes.Staff { BusinessId = business.BusinessId, Name = "Staff Member 2", Email = "", Phone = "" }
             );
 
             context.SaveChanges();

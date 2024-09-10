@@ -56,6 +56,7 @@ using PlusAppointment.Services.Implementations.EmailUsageService;
 using PlusAppointment.Services.Implementations.NotAvailableDate;
 using PlusAppointment.Services.Interfaces.EmailUsageService;
 using PlusAppointment.Services.Interfaces.NotAvailableDateService;
+using PlusAppointment.Utils.Hash;
 using PlusAppointment.Utils.Hub;
 using PlusAppointment.Utils.SQS;
 
@@ -63,10 +64,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Load environment-specific configuration
 builder.Configuration
-    .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
-    .AddEnvironmentVariables();
+    .SetBasePath(Directory.GetCurrentDirectory())  // Set base path for configurations
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)  // Load the base config
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)  // Load environment-specific config
+    .AddEnvironmentVariables();  // Override with environment variables
+
 
 // Ensure the Logs directory exists
 EnsureLogsDirectory();
@@ -125,6 +127,9 @@ builder.Services.AddScoped<IEmailUsageService, EmailUsageService>();
 
 
 builder.Services.AddScoped<IEmailService, EmailService>(); // Register interface and its implementation
+
+builder.Services.AddScoped<IHashUtility, HashUtility>();
+
 
 builder.Services.AddSingleton<SmsService>();
 builder.Services.AddSingleton<RedisHelper>();

@@ -11,11 +11,12 @@ namespace PlusAppointment.Services.Implementations.StaffService
     {
         private readonly IStaffRepository _staffRepository;
         private readonly IConfiguration _configuration;
-
-        public StaffService(IStaffRepository staffRepository, IConfiguration configuration)
+        private readonly IHashUtility _hashUtility; 
+        public StaffService(IStaffRepository staffRepository, IConfiguration configuration, IHashUtility hashUtility)
         {
             _staffRepository = staffRepository;
             _configuration = configuration;
+            _hashUtility = hashUtility;
         }
 
         public async Task<IEnumerable<Staff>> GetAllStaffsAsync()
@@ -39,26 +40,20 @@ namespace PlusAppointment.Services.Implementations.StaffService
             return await _staffRepository.GetAllByBusinessIdAsync(businessId);
         }
 
-        public async Task AddStaffAsync(StaffDto staffDto)
+        public async Task AddStaffAsync(StaffDto? staffDto)
         {
             ValidateStaffDto(staffDto);
 
-            // if (staffDto.Email != null && await _staffRepository.EmailExistsAsync(staffDto.Email))
-            // {
-            //     throw new Exception("Email already exists");
-            // }
-            //
-            // if (staffDto.Phone != null && await _staffRepository.PhoneExistsAsync(staffDto.Phone))
-            // {
-            //     throw new Exception("Phone number already exists");
-            // }
 
-            var staff = CreateStaffFromDto(staffDto, staffDto.BusinessId);
+            if (staffDto != null)
+            {
+                var staff = CreateStaffFromDto(staffDto, staffDto.BusinessId);
 
-            await _staffRepository.AddStaffAsync(staff, staffDto.BusinessId);
+                await _staffRepository.AddStaffAsync(staff, staffDto.BusinessId);
+            }
         }
 
-        public async Task AddListStaffsAsync(IEnumerable<StaffDto> staffDtos, int businessId)
+        public async Task AddListStaffsAsync(IEnumerable<StaffDto?> staffDtos, int businessId)
         {
             if (staffDtos == null)
             {
@@ -71,12 +66,12 @@ namespace PlusAppointment.Services.Implementations.StaffService
             {
                 ValidateStaffDto(staffDto);
 
-                if (staffDto.Email != null && await _staffRepository.EmailExistsAsync(staffDto.Email))
+                if (staffDto?.Email != null && await _staffRepository.EmailExistsAsync(staffDto.Email))
                 {
                     throw new Exception($"Email {staffDto.Email} already exists");
                 }
 
-                if (staffDto.Phone != null && await _staffRepository.PhoneExistsAsync(staffDto.Phone))
+                if (staffDto?.Phone != null && await _staffRepository.PhoneExistsAsync(staffDto.Phone))
                 {
                     throw new Exception($"Phone number {staffDto.Phone} already exists");
                 }
@@ -118,7 +113,7 @@ namespace PlusAppointment.Services.Implementations.StaffService
 
             if (!string.IsNullOrEmpty(staffDto.Password)) // Update the password if provided
             {
-                staff.Password = HashUtility.HashPassword(staffDto.Password);
+                staff.Password = _hashUtility.HashPassword(staffDto.Password);
             }
 
             await _staffRepository.UpdateAsync(staff);
@@ -144,7 +139,7 @@ namespace PlusAppointment.Services.Implementations.StaffService
             }
 
             var staff = await _staffRepository.GetByEmailAsync(email);
-            if (string.IsNullOrEmpty(staff.Password) || !HashUtility.VerifyPassword(staff.Password, password))
+            if (string.IsNullOrEmpty(staff.Password) || !_hashUtility.VerifyPassword(staff.Password, password))
             {
                 throw new UnauthorizedAccessException("Invalid email or password");
             }
@@ -152,22 +147,13 @@ namespace PlusAppointment.Services.Implementations.StaffService
             return JwtUtility.GenerateJwtToken(staff, _configuration);
         }
 
-        private void ValidateStaffDto(StaffDto staffDto)
+        private void ValidateStaffDto(StaffDto? staffDto)
         {
             if (staffDto == null)
             {
                 throw new ArgumentNullException(nameof(staffDto), "Staff DTO cannot be null");
             }
-
-            // if (string.IsNullOrEmpty(staffDto.Email))
-            // {
-            //     throw new ArgumentException("Email cannot be null or empty.", nameof(staffDto.Email));
-            // }
-            //
-            // if (string.IsNullOrEmpty(staffDto.Phone))
-            // {
-            //     throw new ArgumentException("Phone cannot be null or empty.", nameof(staffDto.Phone));
-            // }
+            
 
             if (string.IsNullOrEmpty(staffDto.Password))
             {
@@ -175,29 +161,20 @@ namespace PlusAppointment.Services.Implementations.StaffService
             }
         }
 
-        private Staff CreateStaffFromDto(StaffDto staffDto, int businessId)
+        private Staff CreateStaffFromDto(StaffDto? staffDto, int businessId)
         {
-            // if (string.IsNullOrEmpty(staffDto.Email))
-            // {
-            //     throw new ArgumentNullException(nameof(staffDto.Email), "Email cannot be null or empty.");
-            // }
-            //
-            // if (string.IsNullOrEmpty(staffDto.Phone))
-            // {
-            //     throw new ArgumentNullException(nameof(staffDto.Phone), "Phone cannot be null or empty.");
-            // }
 
-            if (string.IsNullOrEmpty(staffDto.Password))
+            if (string.IsNullOrEmpty(staffDto?.Password))
             {
                 throw new ArgumentNullException(nameof(staffDto.Password), "Password cannot be null or empty.");
             }
-
+            
             return new Staff
             {
                 Name = staffDto.Name ?? throw new ArgumentNullException(nameof(staffDto.Name), "Name cannot be null."),
                 Email = staffDto.Email,
                 Phone = staffDto.Phone,
-                Password = HashUtility.HashPassword(staffDto.Password),
+                Password = _hashUtility.HashPassword(staffDto.Password),
                 BusinessId = businessId
             };
         }

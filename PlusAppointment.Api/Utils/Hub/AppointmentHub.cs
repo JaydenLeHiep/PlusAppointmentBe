@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
+using PlusAppointment.Models.Classes;
+
 namespace PlusAppointment.Utils.Hub;
 
 public class AppointmentHub: Microsoft.AspNetCore.SignalR.Hub
@@ -9,6 +11,20 @@ public class AppointmentHub: Microsoft.AspNetCore.SignalR.Hub
         // Send a message to all connected clients
         await Clients.All.SendAsync("ReceiveAppointmentUpdate", message);
     }
+    
+    public async Task SendAppointmentDelete(int appointmentId)
+    {
+        // Send a message to all connected clients
+        await Clients.All.SendAsync("ReceiveAppointmentDeleted", appointmentId);
+    }
+
+    public async Task SendAppointmentStatusChange(int appointmentId, string status)
+    {
+        // Send a message to all connected clients
+        await Clients.All.SendAsync("ReceiveAppointmentStatusChanged", new { AppointmentId = appointmentId, Status = status });
+    }
+
+    
     public async Task SendCustomerUpdate(string message)
     {
         await Clients.All.SendAsync("ReceiveCustomerUpdate", message);

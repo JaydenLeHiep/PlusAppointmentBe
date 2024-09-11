@@ -132,7 +132,7 @@ public class AppointmentsController : ControllerBase
         return Ok(appointments);
     }
 
-    [HttpPost("add")]
+    [HttpPost("add-appointment")]
     public async Task<IActionResult> AddAppointment([FromBody] AppointmentDto appointmentDto)
     {
         try
@@ -149,6 +149,7 @@ public class AppointmentsController : ControllerBase
             await _hubContext.Clients.All.SendAsync("ReceiveAppointmentUpdate", "A new appointment has been booked.");
 
 
+
             return Ok(new { message = "Appointment added successfully" });
         }
         catch (Exception ex)
@@ -157,7 +158,7 @@ public class AppointmentsController : ControllerBase
         }
     }
 
-    [HttpPut("appointment_id={appointmentId}")]
+    [HttpPut("appointment_id={appointmentId}/update-appointment")]
     public async Task<IActionResult> UpdateAppointment(int appointmentId,
         [FromBody] UpdateAppointmentDto updateAppointmentDto)
     {
@@ -183,7 +184,7 @@ public class AppointmentsController : ControllerBase
     }
 
 
-    [HttpPut("appointment_id={appointmentId}/status")]
+    [HttpPut("appointment_id={appointmentId}/status-appointment")]
     [Authorize]
     public async Task<IActionResult> UpdateAppointmentStatus(int appointmentId,
         [FromBody] UpdateStatusDto updateStatusDto)
@@ -191,6 +192,8 @@ public class AppointmentsController : ControllerBase
         try
         {
             await _appointmentService.UpdateAppointmentStatusAsync(appointmentId, updateStatusDto.Status);
+            // Notify all connected clients about the status change
+            await _hubContext.Clients.All.SendAsync("ReceiveAppointmentStatusChanged", new { AppointmentId = appointmentId, status = updateStatusDto.Status });
             return Ok(new { message = "Appointment status updated successfully" });
         }
         catch (KeyNotFoundException ex)
@@ -204,13 +207,15 @@ public class AppointmentsController : ControllerBase
     }
 
 
-    [HttpDelete("appointment_id={appointmentId}")]
+    [HttpDelete("appointment_id={appointmentId}/delete-appointment")]
     [Authorize]
     public async Task<IActionResult> DeleteAppointment(int appointmentId)
     {
         try
         {
             await _appointmentService.DeleteAppointmentAsync(appointmentId);
+            // Notify all connected clients about the deletion
+            await _hubContext.Clients.All.SendAsync("ReceiveAppointmentDeleted", appointmentId);
             return Ok(new { message = "Appointment deleted successfully" });
         }
         catch (Exception ex)

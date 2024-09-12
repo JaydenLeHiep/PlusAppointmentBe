@@ -148,7 +148,8 @@ public class AppointmentsController : ControllerBase
             }
             await _hubContext.Clients.All.SendAsync("ReceiveAppointmentUpdate", "A new appointment has been booked.");
 
-
+            // Send notification update to the frontend (You can customize the notification message)
+            await _hubContext.Clients.All.SendAsync("ReceiveNotificationUpdate", "A new notification for the appointment!");
 
             return Ok(new { message = "Appointment added successfully" });
         }

@@ -39,11 +39,13 @@ using PlusAppointment.Utils.SendingEmail;
 using PlusAppointment.Utils.SendingSms;
 using Hangfire;
 using Hangfire.MemoryStorage;
+
 using PlusAppointment.Repositories.Implementation.AppointmentRepo.AppointmentRead;
 using PlusAppointment.Repositories.Implementation.AppointmentRepo.AppointmentWrite;
 using PlusAppointment.Repositories.Implementation.CalculateMoneyRepo;
 using PlusAppointment.Repositories.Implementation.EmailUsageRepo;
 using PlusAppointment.Repositories.Implementation.NotAvailableDateRepository;
+using PlusAppointment.Repositories.Implementation.NotificationRepo;
 using PlusAppointment.Repositories.Implementation.ServiceCategoryRepo;
 using PlusAppointment.Repositories.Implementation.ShopPicturesRepo;
 using PlusAppointment.Repositories.Interfaces.AppointmentRepo.AppointmentRead;
@@ -56,12 +58,15 @@ using PlusAppointment.Services.Implementations.ServiceCategoryService;
 using PlusAppointment.Services.Interfaces.CalculateMoneyService;
 using PlusAppointment.Services.Interfaces.ServiceCategoryService;
 using PlusAppointment.Repositories.Interfaces.NotAvailableDateRepository;
+using PlusAppointment.Repositories.Interfaces.NotificationRepo;
 using PlusAppointment.Repositories.Interfaces.ShopPicturesRepo;
 using PlusAppointment.Services.Implementations.EmailUsageService;
 using PlusAppointment.Services.Implementations.NotAvailableDate;
+using PlusAppointment.Services.Implementations.NotificationService;
 using PlusAppointment.Services.Implementations.ShopPictureService;
 using PlusAppointment.Services.Interfaces.EmailUsageService;
 using PlusAppointment.Services.Interfaces.NotAvailableDateService;
+using PlusAppointment.Services.Interfaces.NotificationService;
 using PlusAppointment.Services.Interfaces.ShopPictureService;
 using PlusAppointment.Utils.Hash;
 using PlusAppointment.Utils.Hub;
@@ -102,9 +107,11 @@ builder.Services.AddSignalR(); // Add SignalR services
 
 
 
-// Configure the DbContext with the connection string from appsettings.json
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
+
+// Register the DbContext using the factory method
+builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 
 // Register repositories and services
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -144,7 +151,11 @@ builder.Services.AddScoped<IEmailUsageService, EmailUsageService>();
 
 builder.Services.AddScoped<IEmailService, EmailService>(); // Register interface and its implementation
 
+
 builder.Services.AddScoped<IHashUtility, HashUtility>();
+
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 
 builder.Services.AddSingleton<SmsService>();

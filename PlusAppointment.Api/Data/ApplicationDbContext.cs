@@ -24,6 +24,8 @@ namespace PlusAppointment.Data
         public DbSet<EmailUsage> EmailUsages { get; set; }
         
         public DbSet<ShopPicture> ShopPictures { get; set; }
+        
+        public DbSet<Notification> Notifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -96,6 +98,9 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<ShopPicture>().Property(sp => sp.BusinessId).HasColumnName("business_id"); // Rename to business_id
 
 
+           
+            
+
             
             modelBuilder.Entity<Service>()
                 .HasOne(s => s.Category)
@@ -141,7 +146,20 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<EmailUsage>().Property(eu => eu.Month).HasColumnName("month");
             modelBuilder.Entity<EmailUsage>().Property(eu => eu.EmailCount).HasColumnName("email_count");
 
+            // Configure Notification entity
+            modelBuilder.Entity<Notification>().ToTable("notification_table");
+            modelBuilder.Entity<Notification>().Property(n => n.NotificationId).HasColumnName("notification_id");
+            modelBuilder.Entity<Notification>().Property(n => n.BusinessId).HasColumnName("business_id");
+            modelBuilder.Entity<Notification>().Property(n => n.Message).HasColumnName("message");
 
+            modelBuilder.Entity<Notification>().Property(n => n.NotificationType)
+                .HasColumnName("notification_type")
+                .HasConversion(
+                    v => v.ToString(), // Convert Enum to string when saving
+                    v => (NotificationType)Enum.Parse(typeof(NotificationType), v) // Convert string to Enum when reading
+                );
+
+            modelBuilder.Entity<Notification>().Property(n => n.CreatedAt).HasColumnName("created_at");
             // Configure relationships
             modelBuilder.Entity<Business>()
                 .HasOne(b => b.User)
@@ -208,6 +226,12 @@ namespace PlusAppointment.Data
                 .HasForeignKey(sp => sp.BusinessId)
                 .OnDelete(DeleteBehavior.Cascade); // Optional: delete pictures when a business is deleted
             
+             
+            modelBuilder.Entity<Notification>()
+                .HasOne(n => n.Business)
+                .WithMany(b => b.Notifications)
+                .HasForeignKey(n => n.BusinessId);
+            
             // Add indexes to improve performance
             modelBuilder.Entity<Business>()
                 .HasIndex(b => b.UserID);
@@ -263,7 +287,20 @@ namespace PlusAppointment.Data
                 .HasIndex(sp => sp.BusinessId)
                 .HasDatabaseName("IX_ShopPictures_BusinessId");
 
-        
+            // Relationship with Business
+            modelBuilder.Entity<Notification>()
+                .HasOne(n => n.Business)
+                .WithMany(b => b.Notifications)
+                .HasForeignKey(n => n.BusinessId);
+
+            // Indexes to optimize performance
+            modelBuilder.Entity<Notification>()
+                .HasIndex(n => n.BusinessId)
+                .HasDatabaseName("IX_Notification_BusinessId");
+
+            modelBuilder.Entity<Notification>()
+                .HasIndex(n => n.CreatedAt)
+                .HasDatabaseName("IX_Notification_CreatedAt");
         }
     }
 }

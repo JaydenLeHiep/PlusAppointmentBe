@@ -9,6 +9,7 @@ using PlusAppointment.Repositories.Interfaces.ServicesRepo;
 using PlusAppointment.Repositories.Interfaces.StaffRepo;
 using PlusAppointment.Services.Interfaces.AppointmentService;
 using PlusAppointment.Services.Interfaces.EmailUsageService;
+using PlusAppointment.Services.Interfaces.NotificationService;
 using PlusAppointment.Utils.SendingEmail;
 using PlusAppointment.Utils.SendingSms;
 using PlusAppointment.Utils.SQS;
@@ -30,11 +31,12 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
         private readonly IStaffRepository _staffRepository;
         private readonly IEmailUsageService _emailUsageService;
         private readonly IConfiguration _configuration;
+        private readonly INotificationService _notificationService;
 
         public AppointmentService(IAppointmentWriteRepository appointmentWriteRepository,
             IAppointmentReadRepository appointmentReadRepository, IBusinessRepository businessRepository,
             IEmailService emailService, SmsTextMagicService smsTextMagicService, IServicesRepository servicesRepository,
-            IStaffRepository staffRepository, IEmailUsageService emailUsageService, IConfiguration configuration)
+            IStaffRepository staffRepository, IEmailUsageService emailUsageService, IConfiguration configuration, INotificationService notificationService)
         {
             _appointmentWriteRepository = appointmentWriteRepository;
             _appointmentReadRepository = appointmentReadRepository;
@@ -45,6 +47,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             _staffRepository = staffRepository;
             _emailUsageService = emailUsageService;
             _configuration = configuration;
+            _notificationService = notificationService;
         }
 
         public async Task<IEnumerable<AppointmentRetrieveDto?>> GetAllAppointmentsAsync()
@@ -126,7 +129,16 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             // Add the appointment to the database
             try
             {
-                await _appointmentWriteRepository.AddAppointmentAsync(appointment);
+                // Add appointment and notification in parallel
+                var addAppointmentTask = _appointmentWriteRepository.AddAppointmentAsync(appointment);
+                var addNotificationTask = _notificationService.AddNotificationAsync(
+                    appointmentDto.BusinessId,
+                    $"Khách {customer.Name} đã đặt 1 lịch lúc {appointmentTimeFormatted}.",
+                    NotificationType.Add
+                );
+
+                // Run both tasks in parallel
+                await Task.WhenAll(addAppointmentTask, addNotificationTask);
 
                 // Send email to the customer if email is provided
                 if (!string.IsNullOrWhiteSpace(customer.Email))

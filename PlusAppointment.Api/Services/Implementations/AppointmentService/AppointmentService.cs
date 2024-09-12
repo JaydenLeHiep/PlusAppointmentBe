@@ -121,7 +121,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             DateTime viennaTime = TimeZoneInfo.ConvertTimeFromUtc(appointmentDto.AppointmentTime, viennaTimeZone);
             var appointmentTimeFormatted = viennaTime.ToString("HH:mm 'on' dd.MM.yyyy");
 
-            var subject = "Appointment Received";
+            var subject = "Appointment Received - Termin erhalten";
 
             // Add the appointment to the database
             try
@@ -131,8 +131,10 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 // Send email to the customer if email is provided
                 if (!string.IsNullOrWhiteSpace(customer.Email))
                 {
-                    var bodySms =
-                        $"Dear Customer, \n\nThank you for choosing {business.Name}. We have successfully received your appointment request for {appointmentTimeFormatted}. Our team is currently processing it, and we will confirm the details with you shortly. If needed, we will reach out to you via email or phone. \n\nBest regards,\n{business.Name}";
+                    var bodySms = 
+                        $"Hi, \n\nThank you for choosing {business.Name}. We have received your appointment request for {appointmentTimeFormatted}. We will confirm the details with you shortly. If needed, we’ll contact you via email or phone. \n\nBest regards,\n{business.Name}" +
+                        $"\n\n---\n\n" +
+                        $"Hallo, \n\nVielen Dank, dass Sie {business.Name} gewählt haben. Wir haben Ihre Terminanfrage für {appointmentTimeFormatted} erhalten. Wir werden die Details in Kürze bestätigen. Bei Bedarf werden wir Sie per E-Mail oder Telefon kontaktieren. \n\nLiebe Grüße,\n{business.Name}";
 
                     var emailMessage = new EmailMessage
                     {
@@ -178,19 +180,24 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             {
                 Console.WriteLine($"Failed to save appointment: {ex.Message}");
             }
+            
+            var subjectReminder = "Appointment Reminder - Termin Erinnerung";
 
             // Schedule the reminder email 48 hours (2 days) before the appointment if email is provided
             if (!string.IsNullOrWhiteSpace(customer.Email))
             {
                 var bodyEmail =
-                    $"Dear Customer, \n\nThis is a friendly reminder of your upcoming appointment at {business.Name} scheduled for {appointmentTimeFormatted}. Please ensure you arrive on time. We look forward to seeing you! \n\nBest regards,\n{business.Name}";
+                    $"Dear Customer, \n\nThis is a friendly reminder of your upcoming appointment at {business.Name} scheduled for {appointmentTimeFormatted}. Please ensure you arrive on time. We look forward to seeing you! \n\nBest regards,\n{business.Name}" +
+                    $"\n\n---\n\n" +
+                    $"Hallo, \n\nDies ist eine freundliche Erinnerung an Ihren bevorstehenden Termin bei {business.Name}, der für {appointmentTimeFormatted} geplant ist. Bitte stellen Sie sicher, dass Sie pünktlich erscheinen. Wir freuen uns darauf, Sie zu sehen! \n\nLiebe Grüße,\n{business.Name}";
+
 
                 var sendTime = viennaTime.AddDays(-2);
 
                 if (sendTime <= DateTime.UtcNow)
                 {
                     // If the send time is in the past (less than 48 hours left), send the email immediately
-                    var reminderEmailSent = await _emailService.SendEmailAsync(customer.Email, subject, bodyEmail);
+                    var reminderEmailSent = await _emailService.SendEmailAsync(customer.Email, subjectReminder, bodyEmail);
                     if (reminderEmailSent)
                     {
                         // Update EmailUsage for reminder email (optional)
@@ -200,7 +207,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 {
                     // Schedule a reminder email via Hangfire
                     BackgroundJob.Schedule(
-                        () => SendReminderEmail(customer.Email, subject, bodyEmail, appointmentDto.BusinessId),
+                        () => SendReminderEmail(customer.Email, subjectReminder, bodyEmail, appointmentDto.BusinessId),
                         new DateTimeOffset(sendTime));
                 }
             }
@@ -272,9 +279,12 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             DateTime viennaTime = TimeZoneInfo.ConvertTimeFromUtc(appointment.AppointmentTime, viennaTimeZone);
             var appointmentTimeFormatted = viennaTime.ToString("HH:mm 'on' dd.MM.yyyy");
 
-            var subject = "Appointment Confirmation";
+            var subject = "Appointment Confirmation - Terminbestätigung";
             var bodySms =
-                $"Dear Customer, \n\nThank you for choosing {business.Name}. We are pleased to confirm your appointment at {appointmentTimeFormatted}. We look forward to serving you! \n\nBest regards,\n{business.Name}";
+                $"Dear Customer, \n\nThank you for choosing {business.Name}. We are pleased to confirm your appointment at {appointmentTimeFormatted}. We look forward to serving you! \n\nBest regards,\n{business.Name}" +
+                $"\n\n---\n\n" +
+                $"Hallo, \n\nVielen Dank, dass Sie {business.Name} gewählt haben. Wir freuen uns, Ihren Termin für {appointmentTimeFormatted} bestätigen zu können. Wir freuen uns darauf, Ihnen zu dienen! \n\nLiebe Grüße,\n{business.Name}";
+
 
             var emailMessage = new EmailMessage
             {

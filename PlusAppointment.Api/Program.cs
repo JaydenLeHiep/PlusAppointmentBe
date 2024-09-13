@@ -66,6 +66,10 @@ using PlusAppointment.Services.Implementations.NotificationService;
 using PlusAppointment.Services.Implementations.ShopPictureService;
 using PlusAppointment.Services.Interfaces.EmailUsageService;
 using PlusAppointment.Services.Interfaces.NotAvailableDateService;
+using PlusAppointment.Services.Interfaces.NotAvailableTimeService;
+using PlusAppointment.Repositories.Interfaces.NotAvailableTimeRepo;
+using PlusAppointment.Services.Implementations.NotAvailableTimeService;
+using PlusAppointment.Repositories.Implementation.NotAvailableTimeRepo;
 using PlusAppointment.Services.Interfaces.NotificationService;
 using PlusAppointment.Services.Interfaces.ShopPictureService;
 using PlusAppointment.Utils.Hash;
@@ -148,6 +152,8 @@ builder.Services.AddScoped<INotAvailableDateService, NotAvailableDateService>();
 builder.Services.AddScoped<IEmailUsageRepo, EmailUsageRepo>();
 builder.Services.AddScoped<IEmailUsageService, EmailUsageService>();
 
+builder.Services.AddScoped<INotAvailableTimeRepository, NotAvailableTimeRepository>();
+builder.Services.AddScoped<INotAvailableTimeService, NotAvailableTimeService>();
 
 builder.Services.AddScoped<IEmailService, EmailService>(); // Register interface and its implementation
 

@@ -201,7 +201,7 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
                 await _context.SaveChangesAsync();
                 await InvalidateStaffCacheAsync(staff);
                 // Refresh related caches
-                //await RefreshRelatedCachesAsync(staff);
+                await RefreshRelatedCachesAsync(staff);
             }
         }
 

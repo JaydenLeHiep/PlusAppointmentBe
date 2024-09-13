@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PlusAppointment.Data;
@@ -11,9 +12,11 @@ using PlusAppointment.Data;
 namespace PlusAppointment.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240910074625_RenameBusinessIdToBusiness_idInShopPictures")]
+    partial class RenameBusinessIdToBusiness_idInShopPictures
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -238,91 +241,6 @@ namespace PlusAppointment.Migrations
                     b.HasIndex("StaffId");
 
                     b.ToTable("not_available_dates", (string)null);
-                });
-
-<<<<<<< HEAD
-            modelBuilder.Entity("PlusAppointment.Models.Classes.NotAvailableTime", b =>
-                {
-                    b.Property<int>("NotAvailableTimeId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("not_available_time_id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("NotAvailableTimeId"));
-=======
-            modelBuilder.Entity("PlusAppointment.Models.Classes.Notification", b =>
-                {
-                    b.Property<int>("NotificationId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("notification_id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("NotificationId"));
->>>>>>> develop
-
-                    b.Property<int>("BusinessId")
-                        .HasColumnType("integer")
-                        .HasColumnName("business_id");
-
-<<<<<<< HEAD
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("date");
-
-                    b.Property<DateTime>("From")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("from");
-
-                    b.Property<string>("Reason")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("reason");
-
-                    b.Property<int>("StaffId")
-                        .HasColumnType("integer")
-                        .HasColumnName("staff_id");
-
-                    b.Property<DateTime>("To")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("to");
-
-                    b.HasKey("NotAvailableTimeId");
-
-                    b.HasIndex("BusinessId")
-                        .HasDatabaseName("IX_NotAvailableTime_BusinessId");
-
-                    b.HasIndex("StaffId")
-                        .HasDatabaseName("IX_NotAvailableTime_StaffId");
-
-                    b.HasIndex("Date", "From", "To")
-                        .HasDatabaseName("IX_NotAvailableTime_DateRange");
-
-                    b.ToTable("not_available_times", (string)null);
-=======
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("message");
-
-                    b.Property<string>("NotificationType")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("notification_type");
-
-                    b.HasKey("NotificationId");
-
-                    b.HasIndex("BusinessId")
-                        .HasDatabaseName("IX_Notification_BusinessId");
-
-                    b.HasIndex("CreatedAt")
-                        .HasDatabaseName("IX_Notification_CreatedAt");
-
-                    b.ToTable("notification_table", (string)null);
->>>>>>> develop
                 });
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.Service", b =>
@@ -632,36 +550,6 @@ namespace PlusAppointment.Migrations
                     b.Navigation("Staff");
                 });
 
-<<<<<<< HEAD
-            modelBuilder.Entity("PlusAppointment.Models.Classes.NotAvailableTime", b =>
-                {
-                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
-                        .WithMany("NotAvailableTimes")
-=======
-            modelBuilder.Entity("PlusAppointment.Models.Classes.Notification", b =>
-                {
-                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
-                        .WithMany("Notifications")
->>>>>>> develop
-                        .HasForeignKey("BusinessId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-<<<<<<< HEAD
-                    b.HasOne("PlusAppointment.Models.Classes.Staff", "Staff")
-                        .WithMany("NotAvailableTimes")
-                        .HasForeignKey("StaffId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Business");
-
-                    b.Navigation("Staff");
-=======
-                    b.Navigation("Business");
->>>>>>> develop
-                });
-
             modelBuilder.Entity("PlusAppointment.Models.Classes.Service", b =>
                 {
                     b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
@@ -728,12 +616,6 @@ namespace PlusAppointment.Migrations
 
                     b.Navigation("NotAvailableDates");
 
-<<<<<<< HEAD
-                    b.Navigation("NotAvailableTimes");
-=======
-                    b.Navigation("Notifications");
->>>>>>> develop
-
                     b.Navigation("Services");
 
                     b.Navigation("ShopPictures");
@@ -761,8 +643,6 @@ namespace PlusAppointment.Migrations
                     b.Navigation("AppointmentServicesStaffs");
 
                     b.Navigation("NotAvailableDates");
-
-                    b.Navigation("NotAvailableTimes");
                 });
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.User", b =>

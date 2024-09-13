@@ -2,13 +2,13 @@ using System.Security.Cryptography;
 
 namespace PlusAppointment.Utils.Hash;
 
-public class HashUtility
+public class HashUtility : IHashUtility
 {
     private const int SaltSize = 16; // 128 bit
     private const int KeySize = 32; // 256 bit
     private const int Iterations = 10000;
 
-    public static string HashPassword(string password)
+    public string HashPassword(string password)
     {
         using var rng = RandomNumberGenerator.Create();
         var salt = new byte[SaltSize];
@@ -24,7 +24,7 @@ public class HashUtility
         return Convert.ToBase64String(hashBytes);
     }
 
-    public static bool VerifyPassword(string hashedPassword, string password)
+    public bool VerifyPassword(string hashedPassword, string password)
     {
         var hashBytes = Convert.FromBase64String(hashedPassword);
         var salt = new byte[SaltSize];

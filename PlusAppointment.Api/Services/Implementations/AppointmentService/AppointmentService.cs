@@ -9,6 +9,7 @@ using PlusAppointment.Repositories.Interfaces.ServicesRepo;
 using PlusAppointment.Repositories.Interfaces.StaffRepo;
 using PlusAppointment.Services.Interfaces.AppointmentService;
 using PlusAppointment.Services.Interfaces.EmailUsageService;
+using PlusAppointment.Services.Interfaces.NotificationService;
 using PlusAppointment.Utils.SendingEmail;
 using PlusAppointment.Utils.SendingSms;
 using PlusAppointment.Utils.SQS;
@@ -30,11 +31,12 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
         private readonly IStaffRepository _staffRepository;
         private readonly IEmailUsageService _emailUsageService;
         private readonly IConfiguration _configuration;
+        private readonly INotificationService _notificationService;
 
         public AppointmentService(IAppointmentWriteRepository appointmentWriteRepository,
             IAppointmentReadRepository appointmentReadRepository, IBusinessRepository businessRepository,
             IEmailService emailService, SmsTextMagicService smsTextMagicService, IServicesRepository servicesRepository,
-            IStaffRepository staffRepository, IEmailUsageService emailUsageService, IConfiguration configuration)
+            IStaffRepository staffRepository, IEmailUsageService emailUsageService, IConfiguration configuration, INotificationService notificationService)
         {
             _appointmentWriteRepository = appointmentWriteRepository;
             _appointmentReadRepository = appointmentReadRepository;
@@ -45,6 +47,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             _staffRepository = staffRepository;
             _emailUsageService = emailUsageService;
             _configuration = configuration;
+            _notificationService = notificationService;
         }
 
         public async Task<IEnumerable<AppointmentRetrieveDto?>> GetAllAppointmentsAsync()
@@ -121,18 +124,29 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             DateTime viennaTime = TimeZoneInfo.ConvertTimeFromUtc(appointmentDto.AppointmentTime, viennaTimeZone);
             var appointmentTimeFormatted = viennaTime.ToString("HH:mm 'on' dd.MM.yyyy");
 
-            var subject = "Appointment Received";
+            var subject = "Appointment Received - Termin erhalten";
 
             // Add the appointment to the database
             try
             {
-                await _appointmentWriteRepository.AddAppointmentAsync(appointment);
+                // Add appointment and notification in parallel
+                var addAppointmentTask = _appointmentWriteRepository.AddAppointmentAsync(appointment);
+                var addNotificationTask = _notificationService.AddNotificationAsync(
+                    appointmentDto.BusinessId,
+                    $"Khách {customer.Name} đã đặt 1 lịch lúc {appointmentTimeFormatted}.",
+                    NotificationType.Add
+                );
+
+                // Run both tasks in parallel
+                await Task.WhenAll(addAppointmentTask, addNotificationTask);
 
                 // Send email to the customer if email is provided
                 if (!string.IsNullOrWhiteSpace(customer.Email))
                 {
-                    var bodySms =
-                        $"Dear Customer, \n\nThank you for choosing {business.Name}. We have successfully received your appointment request for {appointmentTimeFormatted}. Our team is currently processing it, and we will confirm the details with you shortly. If needed, we will reach out to you via email or phone. \n\nBest regards,\n{business.Name}";
+                    var bodySms = 
+                        $"Hi, \n\nThank you for choosing {business.Name}. We have received your appointment request for {appointmentTimeFormatted}. We will confirm the details with you shortly. If needed, we’ll contact you via email or phone. \n\nBest regards,\n{business.Name}" +
+                        $"\n\n---\n\n" +
+                        $"Hallo, \n\nVielen Dank, dass Sie {business.Name} gewählt haben. Wir haben Ihre Terminanfrage für {appointmentTimeFormatted} erhalten. Wir werden die Details in Kürze bestätigen. Bei Bedarf werden wir Sie per E-Mail oder Telefon kontaktieren. \n\nLiebe Grüße,\n{business.Name}";
 
                     var emailMessage = new EmailMessage
                     {
@@ -141,18 +155,8 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                         Body = bodySms
                     };
 
-                    // Enqueue email to SQS for customer
-                    var sqsProducer = new SqsProducer(_configuration);
-                    await sqsProducer.SendMessageAsync(JsonConvert.SerializeObject(emailMessage));
-
-                    // Update EmailUsage for customer
-                    // await _emailUsageService.AddEmailUsageAsync(new EmailUsage
-                    // {
-                    //     BusinessId = appointmentDto.BusinessId,
-                    //     Year = DateTime.UtcNow.Year,
-                    //     Month = DateTime.UtcNow.Month,
-                    //     EmailCount = 1
-                    // });
+                    // Send email directly using _emailService
+                    await _emailService.SendEmailAsync(emailMessage.ToEmail, emailMessage.Subject, emailMessage.Body);
                 }
                 else
                 {
@@ -161,9 +165,9 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 }
 
                 // Send notification email to the business
-                var businessNotificationSubject = "New Appointment Request";
+                var businessNotificationSubject = "Yêu cầu đặt hẹn mới";
                 var businessNotificationBody =
-                    $"Customer {customer.Name} has requested an appointment at {appointmentTimeFormatted}. Please review the appointment details and confirm accordingly.";
+                    $"Khách hàng {customer.Name} đã yêu cầu một cuộc hẹn vào {appointmentTimeFormatted}. Vui lòng xem lại chi tiết cuộc hẹn và xác nhận theo yêu cầu.";
 
                 if (!string.IsNullOrWhiteSpace(business.Email))
                 {
@@ -174,18 +178,9 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                         Body = businessNotificationBody
                     };
 
-                    // Enqueue email to SQS for business
-                    var sqsProducer = new SqsProducer(_configuration);
-                    await sqsProducer.SendMessageAsync(JsonConvert.SerializeObject(businessEmailMessage));
-
-                    // Update EmailUsage for business email
-                    // await _emailUsageService.AddEmailUsageAsync(new EmailUsage
-                    // {
-                    //     BusinessId = appointmentDto.BusinessId,
-                    //     Year = DateTime.UtcNow.Year,
-                    //     Month = DateTime.UtcNow.Month,
-                    //     EmailCount = 1
-                    // });
+                    // Send email directly using _emailService
+                    await _emailService.SendEmailAsync(businessEmailMessage.ToEmail, businessEmailMessage.Subject,
+                        businessEmailMessage.Body);
                 }
                 else
                 {
@@ -197,37 +192,34 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             {
                 Console.WriteLine($"Failed to save appointment: {ex.Message}");
             }
+            
+            var subjectReminder = "Appointment Reminder - Termin Erinnerung";
 
             // Schedule the reminder email 48 hours (2 days) before the appointment if email is provided
             if (!string.IsNullOrWhiteSpace(customer.Email))
             {
                 var bodyEmail =
-                    $"Dear Customer, \n\nThis is a friendly reminder of your upcoming appointment at {business.Name} scheduled for {appointmentTimeFormatted}. Please ensure you arrive on time. We look forward to seeing you! \n\nBest regards,\n{business.Name}";
+                    $"Dear Customer, \n\nThis is a friendly reminder of your upcoming appointment at {business.Name} scheduled for {appointmentTimeFormatted}. Please ensure you arrive on time. We look forward to seeing you! \n\nBest regards,\n{business.Name}" +
+                    $"\n\n---\n\n" +
+                    $"Hallo, \n\nDies ist eine freundliche Erinnerung an Ihren bevorstehenden Termin bei {business.Name}, der für {appointmentTimeFormatted} geplant ist. Bitte stellen Sie sicher, dass Sie pünktlich erscheinen. Wir freuen uns darauf, Sie zu sehen! \n\nLiebe Grüße,\n{business.Name}";
+
 
                 var sendTime = viennaTime.AddDays(-2);
 
                 if (sendTime <= DateTime.UtcNow)
                 {
                     // If the send time is in the past (less than 48 hours left), send the email immediately
-                    var reminderEmailSent =
-                        await _emailService.SendEmailAsync(customer.Email, subject, bodyEmail);
+                    var reminderEmailSent = await _emailService.SendEmailAsync(customer.Email, subjectReminder, bodyEmail);
                     if (reminderEmailSent)
                     {
-                        // Update EmailUsage for reminder email
-                        // await _emailUsageService.AddEmailUsageAsync(new EmailUsage
-                        // {
-                        //     BusinessId = appointmentDto.BusinessId,
-                        //     Year = DateTime.UtcNow.Year,
-                        //     Month = DateTime.UtcNow.Month,
-                        //     EmailCount = 1
-                        // });
+                        // Update EmailUsage for reminder email (optional)
                     }
                 }
                 else
                 {
                     // Schedule a reminder email via Hangfire
                     BackgroundJob.Schedule(
-                        () => SendReminderEmail(customer.Email, subject, bodyEmail, appointmentDto.BusinessId),
+                        () => SendReminderEmail(customer.Email, subjectReminder, bodyEmail, appointmentDto.BusinessId),
                         new DateTimeOffset(sendTime));
                 }
             }
@@ -254,22 +246,14 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
             try
             {
-                // Send email message to SQS
-                var sqsProducer = new SqsProducer(_configuration); // Assuming _configuration is already injected
-                await sqsProducer.SendMessageAsync(JsonConvert.SerializeObject(emailMessage));
+                // Send the email directly using _emailService
+                await _emailService.SendEmailAsync(emailMessage.ToEmail, emailMessage.Subject, emailMessage.Body);
 
-                // Optionally update the email usage stats after sending the message to SQS
-                await _emailUsageService.AddEmailUsageAsync(new EmailUsage
-                {
-                    BusinessId = businessId,
-                    Year = DateTime.UtcNow.Year,
-                    Month = DateTime.UtcNow.Month,
-                    EmailCount = 1
-                });
+                // Optionally update the email usage stats after sending the email
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error while enqueueing the email: {ex.Message}");
+                Console.WriteLine($"Error while sending the reminder email: {ex.Message}");
             }
         }
 
@@ -302,13 +286,17 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 throw new ArgumentException("Invalid BusinessId");
             }
 
+            // Convert appointment time to Vienna local time
             TimeZoneInfo viennaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
             DateTime viennaTime = TimeZoneInfo.ConvertTimeFromUtc(appointment.AppointmentTime, viennaTimeZone);
             var appointmentTimeFormatted = viennaTime.ToString("HH:mm 'on' dd.MM.yyyy");
 
-            var subject = "Appointment Confirmation";
+            var subject = "Appointment Confirmation - Terminbestätigung";
             var bodySms =
-                $"Dear Customer, \n\nThank you for choosing {business.Name}. We are pleased to confirm your appointment at {appointmentTimeFormatted}. We look forward to serving you! \n\nBest regards,\n{business.Name}";
+                $"Dear Customer, \n\nThank you for choosing {business.Name}. We are pleased to confirm your appointment at {appointmentTimeFormatted}. We look forward to serving you! \n\nBest regards,\n{business.Name}" +
+                $"\n\n---\n\n" +
+                $"Hallo, \n\nVielen Dank, dass Sie {business.Name} gewählt haben. Wir freuen uns, Ihren Termin für {appointmentTimeFormatted} bestätigen zu können. Wir freuen uns darauf, Ihnen zu dienen! \n\nLiebe Grüße,\n{business.Name}";
+
 
             var emailMessage = new EmailMessage
             {
@@ -319,11 +307,17 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
             try
             {
-                // Send email message to SQS
-                var sqsProducer = new SqsProducer(_configuration); // Assuming _configuration is already injected
-                await sqsProducer.SendMessageAsync(JsonConvert.SerializeObject(emailMessage));
+                // Send email directly using _emailService
+                if (!string.IsNullOrWhiteSpace(emailMessage.ToEmail))
+                {
+                    await _emailService.SendEmailAsync(emailMessage.ToEmail, emailMessage.Subject, emailMessage.Body);
+                }
+                else
+                {
+                    Console.WriteLine("No customer email provided, skipping email notification.");
+                }
 
-                // Optionally update EmailUsage
+                // Optionally update EmailUsage (if needed)
                 // await _emailUsageService.AddEmailUsageAsync(new EmailUsage
                 // {
                 //     BusinessId = appointment.BusinessId,
@@ -334,9 +328,10 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error while enqueueing the email: {ex.Message}");
+                Console.WriteLine($"Error while sending the email: {ex.Message}");
             }
 
+            // Update the appointment status in the database
             await _appointmentWriteRepository.UpdateAppointmentStatusAsync(appointment);
         }
 

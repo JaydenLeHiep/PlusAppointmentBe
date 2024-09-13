@@ -16,6 +16,10 @@ namespace PlusAppointment.Models.Classes
         public ICollection<NotAvailableDate>? NotAvailableDates { get; set; }
         public ICollection<NotAvailableTime> NotAvailableTimes { get; set; }
         
+        public ICollection<ShopPicture>? ShopPictures { get; set; } = new List<ShopPicture>();
+
+        public ICollection<Notification>? Notifications { get; set; } = new List<Notification>();
+
         public ICollection<EmailUsage>? EmailUsages { get; set; } = new List<EmailUsage>();
 
         public Business( string name, string address, string phone, string email, int userID)

@@ -24,6 +24,11 @@ namespace PlusAppointment.Data
         public DbSet<EmailUsage> EmailUsages { get; set; }
         
         public DbSet<NotAvailableTime> NotAvailableTimes { get; set; }
+        
+        public DbSet<ShopPicture> ShopPictures { get; set; }
+        
+        public DbSet<Notification> Notifications { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -88,6 +93,17 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<NotAvailableDate>().Property(nad => nad.EndDate).HasColumnName("end_date");
             modelBuilder.Entity<NotAvailableDate>().Property(nad => nad.Reason).HasColumnName("reason");
             
+            modelBuilder.Entity<ShopPicture>().ToTable("shop_pictures");
+            modelBuilder.Entity<ShopPicture>().Property(sp => sp.ShopPictureId).HasColumnName("shop_picture_id");
+            modelBuilder.Entity<ShopPicture>().Property(sp => sp.S3ImageUrl).HasColumnName("s3_image_url");
+            modelBuilder.Entity<ShopPicture>().Property(sp => sp.CreatedAt).HasColumnName("created_at");
+            modelBuilder.Entity<ShopPicture>().Property(sp => sp.BusinessId).HasColumnName("business_id"); // Rename to business_id
+
+
+           
+            
+
+            
             modelBuilder.Entity<Service>()
                 .HasOne(s => s.Category)
                 .WithMany(sc => sc.Services)
@@ -147,7 +163,20 @@ namespace PlusAppointment.Data
                 .HasOne(nat => nat.Business)
                 .WithMany(b => b.NotAvailableTimes)
                 .HasForeignKey(nat => nat.BusinessId);
+            // Configure Notification entity
+            modelBuilder.Entity<Notification>().ToTable("notification_table");
+            modelBuilder.Entity<Notification>().Property(n => n.NotificationId).HasColumnName("notification_id");
+            modelBuilder.Entity<Notification>().Property(n => n.BusinessId).HasColumnName("business_id");
+            modelBuilder.Entity<Notification>().Property(n => n.Message).HasColumnName("message");
 
+            modelBuilder.Entity<Notification>().Property(n => n.NotificationType)
+                .HasColumnName("notification_type")
+                .HasConversion(
+                    v => v.ToString(), // Convert Enum to string when saving
+                    v => (NotificationType)Enum.Parse(typeof(NotificationType), v) // Convert string to Enum when reading
+                );
+
+            modelBuilder.Entity<Notification>().Property(n => n.CreatedAt).HasColumnName("created_at");
             modelBuilder.Entity<NotAvailableTime>()
                 .HasOne(nat => nat.Staff)
                 .WithMany(s => s.NotAvailableTimes)
@@ -212,7 +241,18 @@ namespace PlusAppointment.Data
                 .WithMany(b => b.EmailUsages) // Assuming you want to navigate from Business to EmailUsage
                 .HasForeignKey(eu => eu.BusinessId)
                 .OnDelete(DeleteBehavior.Cascade);
-
+            
+            modelBuilder.Entity<ShopPicture>()
+                .HasOne(sp => sp.Business)
+                .WithMany(b => b.ShopPictures)
+                .HasForeignKey(sp => sp.BusinessId)
+                .OnDelete(DeleteBehavior.Cascade); // Optional: delete pictures when a business is deleted
+            
+             
+            modelBuilder.Entity<Notification>()
+                .HasOne(n => n.Business)
+                .WithMany(b => b.Notifications)
+                .HasForeignKey(n => n.BusinessId);
             
             // Add indexes to improve performance
             modelBuilder.Entity<Business>()
@@ -264,6 +304,25 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<EmailUsage>()
                 .HasIndex(eu => new { eu.BusinessId, eu.Year, eu.Month })
                 .IsUnique(); // Ensure uniqueness for each Business per month
+            
+            modelBuilder.Entity<ShopPicture>()
+                .HasIndex(sp => sp.BusinessId)
+                .HasDatabaseName("IX_ShopPictures_BusinessId");
+
+            // Relationship with Business
+            modelBuilder.Entity<Notification>()
+                .HasOne(n => n.Business)
+                .WithMany(b => b.Notifications)
+                .HasForeignKey(n => n.BusinessId);
+
+            // Indexes to optimize performance
+            modelBuilder.Entity<Notification>()
+                .HasIndex(n => n.BusinessId)
+                .HasDatabaseName("IX_Notification_BusinessId");
+
+            modelBuilder.Entity<Notification>()
+                .HasIndex(n => n.CreatedAt)
+                .HasDatabaseName("IX_Notification_CreatedAt");
         
             // Add indexes for performance
             modelBuilder.Entity<NotAvailableTime>()

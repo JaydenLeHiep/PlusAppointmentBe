@@ -10,7 +10,7 @@ public interface IStaffRepository
     Task<Staff?> GetByBusinessIdServiceIdAsync(int businessId, int staffId);
     Task<Staff> GetByIdAsync(int id);
     public Task AddStaffAsync(Staff staff, int businessId);
-    public  Task AddListStaffsAsync(IEnumerable<Staff> staffs);
+    public  Task AddListStaffsAsync(IEnumerable<Staff>? staffs);
     Task UpdateAsync(Staff staff);
     Task DeleteAsync(int businessId, int staffId);
     Task<Staff> GetByEmailAsync(string email);

@@ -22,6 +22,7 @@ namespace PlusAppointment.Controllers.StaffController
             _staffService = staffService;
             _hubContext = hubContext;
         }
+        
         [Authorize] 
         [HttpGet]
         public async Task<IActionResult> GetAll()
@@ -35,7 +36,8 @@ namespace PlusAppointment.Controllers.StaffController
             var staffs = await _staffService.GetAllStaffsAsync();
             return Ok(staffs);
         }
-        [Authorize] 
+        
+        [Authorize]
         [HttpGet("staff_id={staffId}")]
         public async Task<IActionResult> GetById(int staffId)
         {
@@ -45,9 +47,17 @@ namespace PlusAppointment.Controllers.StaffController
                 return NotFound(new { message = "You are not authorized to view this staff." });
             }
 
-            var staff = await _staffService.GetStaffIdAsync(staffId);
-            return Ok(staff);
+            try
+            {
+                var staff = await _staffService.GetStaffIdAsync(staffId);
+                return Ok(staff);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
         }
+
 
         // Get all staff by business ID
         [HttpGet("business_id={businessId}")]
@@ -66,9 +76,10 @@ namespace PlusAppointment.Controllers.StaffController
             }
             return Ok(staff);
         }
+        
         [Authorize] 
         [HttpPost("business_id={businessId}/add")]
-        public async Task<IActionResult> AddStaff(int businessId, [FromBody] StaffDto staffDto)
+        public async Task<IActionResult> AddStaff(int businessId, [FromBody] StaffDto? staffDto)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -96,7 +107,7 @@ namespace PlusAppointment.Controllers.StaffController
         }
         [Authorize] 
         [HttpPost("business_id={businessId}/addList")]
-        public async Task<IActionResult> AddStaffs(int businessId, [FromBody] IEnumerable<StaffDto> staffDtos)
+        public async Task<IActionResult> AddStaffs(int businessId, [FromBody] IEnumerable<StaffDto?> staffDtos)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())

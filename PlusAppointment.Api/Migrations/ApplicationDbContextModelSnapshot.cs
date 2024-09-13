@@ -170,12 +170,12 @@ namespace PlusAppointment.Migrations
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.EmailUsage", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("EmailUsageId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("id");
+                        .HasColumnName("email_usage_id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("EmailUsageId"));
 
                     b.Property<int>("BusinessId")
                         .HasColumnType("integer")
@@ -193,7 +193,7 @@ namespace PlusAppointment.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("year");
 
-                    b.HasKey("Id");
+                    b.HasKey("EmailUsageId");
 
                     b.HasIndex("BusinessId", "Year", "Month")
                         .IsUnique();
@@ -238,6 +238,54 @@ namespace PlusAppointment.Migrations
                     b.HasIndex("StaffId");
 
                     b.ToTable("not_available_dates", (string)null);
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.NotAvailableTime", b =>
+                {
+                    b.Property<int>("NotAvailableTimeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("not_available_time_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("NotAvailableTimeId"));
+
+                    b.Property<int>("BusinessId")
+                        .HasColumnType("integer")
+                        .HasColumnName("business_id");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date");
+
+                    b.Property<DateTime>("From")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("from");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("reason");
+
+                    b.Property<int>("StaffId")
+                        .HasColumnType("integer")
+                        .HasColumnName("staff_id");
+
+                    b.Property<DateTime>("To")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("to");
+
+                    b.HasKey("NotAvailableTimeId");
+
+                    b.HasIndex("BusinessId")
+                        .HasDatabaseName("IX_NotAvailableTime_BusinessId");
+
+                    b.HasIndex("StaffId")
+                        .HasDatabaseName("IX_NotAvailableTime_StaffId");
+
+                    b.HasIndex("Date", "From", "To")
+                        .HasDatabaseName("IX_NotAvailableTime_DateRange");
+
+                    b.ToTable("not_available_times", (string)null);
                 });
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.Service", b =>
@@ -519,6 +567,25 @@ namespace PlusAppointment.Migrations
                     b.Navigation("Staff");
                 });
 
+            modelBuilder.Entity("PlusAppointment.Models.Classes.NotAvailableTime", b =>
+                {
+                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
+                        .WithMany("NotAvailableTimes")
+                        .HasForeignKey("BusinessId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PlusAppointment.Models.Classes.Staff", "Staff")
+                        .WithMany("NotAvailableTimes")
+                        .HasForeignKey("StaffId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Business");
+
+                    b.Navigation("Staff");
+                });
+
             modelBuilder.Entity("PlusAppointment.Models.Classes.Service", b =>
                 {
                     b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
@@ -574,6 +641,8 @@ namespace PlusAppointment.Migrations
 
                     b.Navigation("NotAvailableDates");
 
+                    b.Navigation("NotAvailableTimes");
+
                     b.Navigation("Services");
 
                     b.Navigation("Staffs");
@@ -599,6 +668,8 @@ namespace PlusAppointment.Migrations
                     b.Navigation("AppointmentServicesStaffs");
 
                     b.Navigation("NotAvailableDates");
+
+                    b.Navigation("NotAvailableTimes");
                 });
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.User", b =>

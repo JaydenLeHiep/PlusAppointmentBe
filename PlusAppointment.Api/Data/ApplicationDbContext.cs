@@ -22,6 +22,8 @@ namespace PlusAppointment.Data
         
         public DbSet<NotAvailableDate> NotAvailableDates { get; set; }
         public DbSet<EmailUsage> EmailUsages { get; set; }
+        
+        public DbSet<NotAvailableTime> NotAvailableTimes { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -130,7 +132,27 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<EmailUsage>().Property(eu => eu.Month).HasColumnName("month");
             modelBuilder.Entity<EmailUsage>().Property(eu => eu.EmailCount).HasColumnName("email_count");
 
+            // Configuration for NotAvailableTime entity
+            modelBuilder.Entity<NotAvailableTime>().ToTable("not_available_times");
+            modelBuilder.Entity<NotAvailableTime>().Property(nat => nat.NotAvailableTimeId).HasColumnName("not_available_time_id");
+            modelBuilder.Entity<NotAvailableTime>().Property(nat => nat.StaffId).HasColumnName("staff_id");
+            modelBuilder.Entity<NotAvailableTime>().Property(nat => nat.BusinessId).HasColumnName("business_id");
+            modelBuilder.Entity<NotAvailableTime>().Property(nat => nat.Date).HasColumnName("date");
+            modelBuilder.Entity<NotAvailableTime>().Property(nat => nat.From).HasColumnName("from");
+            modelBuilder.Entity<NotAvailableTime>().Property(nat => nat.To).HasColumnName("to");
+            modelBuilder.Entity<NotAvailableTime>().Property(nat => nat.Reason).HasColumnName("reason");
+            
+            // Configure relationships
+            modelBuilder.Entity<NotAvailableTime>()
+                .HasOne(nat => nat.Business)
+                .WithMany(b => b.NotAvailableTimes)
+                .HasForeignKey(nat => nat.BusinessId);
 
+            modelBuilder.Entity<NotAvailableTime>()
+                .HasOne(nat => nat.Staff)
+                .WithMany(s => s.NotAvailableTimes)
+                .HasForeignKey(nat => nat.StaffId);
+            
             // Configure relationships
             modelBuilder.Entity<Business>()
                 .HasOne(b => b.User)
@@ -243,6 +265,18 @@ namespace PlusAppointment.Data
                 .HasIndex(eu => new { eu.BusinessId, eu.Year, eu.Month })
                 .IsUnique(); // Ensure uniqueness for each Business per month
         
+            // Add indexes for performance
+            modelBuilder.Entity<NotAvailableTime>()
+                .HasIndex(nat => nat.StaffId)
+                .HasDatabaseName("IX_NotAvailableTime_StaffId");
+
+            modelBuilder.Entity<NotAvailableTime>()
+                .HasIndex(nat => nat.BusinessId)
+                .HasDatabaseName("IX_NotAvailableTime_BusinessId");
+
+            modelBuilder.Entity<NotAvailableTime>()
+                .HasIndex(nat => new { nat.Date, nat.From, nat.To })
+                .HasDatabaseName("IX_NotAvailableTime_DateRange");
         }
     }
 }

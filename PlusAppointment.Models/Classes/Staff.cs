@@ -14,6 +14,7 @@ namespace PlusAppointment.Models.Classes
         public ICollection<AppointmentServiceStaffMapping>? AppointmentServicesStaffs { get; set; }
 
         public ICollection<NotAvailableDate>? NotAvailableDates { get; set; }
+        public ICollection<NotAvailableTime> NotAvailableTimes { get; set; }
         int IUserIdentity.Id => StaffId;
         string? IUserIdentity.Username => Name;
         string IUserIdentity.Role => "Staff"; // Assuming Staff has a fixed role

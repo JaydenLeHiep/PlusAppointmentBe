@@ -98,6 +98,7 @@ namespace PlusAppointment.Repositories.Implementation.NotAvailableDateRepository
                 _context.NotAvailableDates.Remove(notAvailableDate);
                 await _context.SaveChangesAsync();
                 await InvalidateNotAvailableDateCacheAsync(notAvailableDate);
+                await RefreshRelatedCachesAsync(notAvailableDate);
             }
         }
 

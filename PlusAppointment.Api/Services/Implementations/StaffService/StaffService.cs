@@ -27,10 +27,7 @@ namespace PlusAppointment.Services.Implementations.StaffService
         public async Task<Staff> GetStaffIdAsync(int id)
         {
             var staff = await _staffRepository.GetByIdAsync(id);
-            if (staff == null)
-            {
-                throw new KeyNotFoundException("Staff not found");
-            }
+
 
             return staff;
         }

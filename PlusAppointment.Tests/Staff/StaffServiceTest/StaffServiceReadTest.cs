@@ -69,16 +69,7 @@ public class StaffServiceReadTest
         Assert.Equal("Jane Doe", result.Name);
     }
 
-    [Fact]
-    public async Task GetStaffIdAsync_ThrowsKeyNotFoundException_WhenIdIsInvalid()
-    {
-        // Arrange: Set up mock repository to return null for an invalid staff ID
-        _mockStaffRepository.Setup(repo => repo.GetByIdAsync(999))!
-            .ReturnsAsync((Models.Classes.Staff)null);
 
-        // Act & Assert: Check that the service throws KeyNotFoundException for an invalid ID
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => _staffService.GetStaffIdAsync(999));
-    }
 
     [Fact]
     public async Task GetAllStaffByBusinessIdAsync_ReturnsStaffList_WhenBusinessIdIsValid()

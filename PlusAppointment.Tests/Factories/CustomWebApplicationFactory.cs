@@ -33,10 +33,11 @@ namespace PlusAppointment.Tests.Factories
                 var connectionString = context.Configuration.GetConnectionString("DefaultConnection");
 
                 // Add the PostgreSQL test database
-                services.AddDbContext<ApplicationDbContext>(options =>
+                services.AddDbContextFactory<ApplicationDbContext>(options =>
                 {
                     options.UseNpgsql(connectionString);
                 });
+
 
                 // Ensure the database is created and seeded with data
                 var sp = services.BuildServiceProvider();

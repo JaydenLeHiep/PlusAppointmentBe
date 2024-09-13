@@ -37,7 +37,7 @@ namespace PlusAppointment.Controllers.StaffController
             return Ok(staffs);
         }
         
-        [Authorize] 
+        [Authorize]
         [HttpGet("staff_id={staffId}")]
         public async Task<IActionResult> GetById(int staffId)
         {
@@ -47,9 +47,17 @@ namespace PlusAppointment.Controllers.StaffController
                 return NotFound(new { message = "You are not authorized to view this staff." });
             }
 
-            var staff = await _staffService.GetStaffIdAsync(staffId);
-            return Ok(staff);
+            try
+            {
+                var staff = await _staffService.GetStaffIdAsync(staffId);
+                return Ok(staff);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
         }
+
 
         // Get all staff by business ID
         [HttpGet("business_id={businessId}")]

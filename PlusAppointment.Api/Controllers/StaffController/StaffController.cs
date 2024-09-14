@@ -70,10 +70,7 @@ namespace PlusAppointment.Controllers.StaffController
             // }
 
             var staff = await _staffService.GetAllStaffByBusinessIdAsync(businessId);
-            if (!staff.Any())
-            {
-                return NotFound(new { message = "No staff found for this business." });
-            }
+
             return Ok(staff);
         }
         

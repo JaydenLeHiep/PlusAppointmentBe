@@ -58,10 +58,21 @@ namespace PlusAppointment.Repositories.Implementation.ServiceCategoryRepo
         {
             _context.ServiceCategories.Add(serviceCategory);
             await _context.SaveChangesAsync();
-        
-            await UpdateServiceCategoryCacheAsync(serviceCategory);
-            // Refresh related caches
-            await RefreshRelatedCachesAsync(serviceCategory);
+
+            // Check if the cache for all service categories exists
+            const string allServiceCategoriesCacheKey = "all_service_categories";
+            var cachedServiceCategories = await _redisHelper.GetCacheAsync<List<ServiceCategory>>(allServiceCategoriesCacheKey);
+
+            if (cachedServiceCategories == null)
+            {
+                // If the cache is empty or expired, refresh the cache from the database
+                await RefreshRelatedCachesAsync(serviceCategory);
+            }
+            else
+            {
+                // If the cache exists, update it with the new service category
+                await UpdateServiceCategoryCacheAsync(serviceCategory);
+            }
         }
 
         public async Task UpdateServiceCategoryAsync(ServiceCategory serviceCategory)
@@ -69,9 +80,20 @@ namespace PlusAppointment.Repositories.Implementation.ServiceCategoryRepo
             _context.ServiceCategories.Update(serviceCategory);
             await _context.SaveChangesAsync();
 
-            await UpdateServiceCategoryCacheAsync(serviceCategory);
-            await RefreshRelatedCachesAsync(serviceCategory);
-            
+            // Check if the cache for all service categories exists
+            const string allServiceCategoriesCacheKey = "all_service_categories";
+            var cachedServiceCategories = await _redisHelper.GetCacheAsync<List<ServiceCategory>>(allServiceCategoriesCacheKey);
+
+            if (cachedServiceCategories == null)
+            {
+                // If the cache is empty or expired, refresh the cache from the database
+                await RefreshRelatedCachesAsync(serviceCategory);
+            }
+            else
+            {
+                // If the cache exists, update it with the modified service category
+                await UpdateServiceCategoryCacheAsync(serviceCategory);
+            }
         }
 
         public async Task DeleteServiceCategoryAsync(int id)

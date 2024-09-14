@@ -9,7 +9,6 @@ using PlusAppointment.Repositories.Interfaces.CustomerRepo;
 using PlusAppointment.Repositories.Interfaces.ServicesRepo;
 using PlusAppointment.Repositories.Interfaces.StaffRepo;
 using PlusAppointment.Utils.Redis;
-
 using PlusAppointment.Repositories.Interfaces.AppointmentRepo.AppointmentRead;
 
 namespace PlusAppointment.Repositories.Implementation.AppointmentRepo.AppointmentWrite
@@ -22,6 +21,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo.Appointmen
         private readonly IServicesRepository _servicesRepository;
         private readonly IStaffRepository _staffRepository;
         private readonly IAppointmentReadRepository _appointmentReadRepository;
+
         public AppointmentWriteRepository(ApplicationDbContext context, RedisHelper redisHelper,
             ICustomerRepository customerRepository, IServicesRepository servicesRepository,
             IStaffRepository staffRepository, IAppointmentReadRepository appointmentReadRepository)
@@ -60,8 +60,6 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo.Appointmen
 
         public async Task AddAppointmentAsync(Appointment appointment)
         {
-            //await CheckAndIncrementAppointmentLimitAsync(appointment.CustomerId);
-
             await using var connection = new NpgsqlConnection(_context.Database.GetConnectionString());
             await connection.OpenAsync();
             await using var transaction = await connection.BeginTransactionAsync();
@@ -69,9 +67,9 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo.Appointmen
             try
             {
                 var appointmentSql = @"
-                    INSERT INTO appointments (customer_id, business_id, appointment_time, duration, status, created_at, updated_at, comment)
-                    VALUES (@CustomerId, @BusinessId, @AppointmentTime, @Duration, @Status, @CreatedAt, @UpdatedAt, @Comment)
-                    RETURNING appointment_id;";
+            INSERT INTO appointments (customer_id, business_id, appointment_time, duration, status, created_at, updated_at, comment)
+            VALUES (@CustomerId, @BusinessId, @AppointmentTime, @Duration, @Status, @CreatedAt, @UpdatedAt, @Comment)
+            RETURNING appointment_id;";
 
                 await using var cmd = new NpgsqlCommand(appointmentSql, connection, transaction);
                 cmd.Parameters.AddWithValue("@CustomerId", appointment.CustomerId);
@@ -89,8 +87,8 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo.Appointmen
                 if (appointment.AppointmentServices != null && appointment.AppointmentServices.Any())
                 {
                     var mappingSql = @"
-                        INSERT INTO appointment_services_staffs (appointment_id, service_id, staff_id)
-                        VALUES (@AppointmentId, @ServiceId, @StaffId)";
+                INSERT INTO appointment_services_staffs (appointment_id, service_id, staff_id)
+                VALUES (@AppointmentId, @ServiceId, @StaffId)";
 
                     await using var mappingCmd = new NpgsqlCommand(mappingSql, connection, transaction);
                     mappingCmd.Parameters.Add("@AppointmentId", NpgsqlDbType.Integer);
@@ -115,9 +113,9 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo.Appointmen
                         .Aggregate(TimeSpan.Zero, (sum, next) => sum.Add(next));
 
                     var updateDurationSql = @"
-                        UPDATE appointments
-                        SET duration = @Duration
-                        WHERE appointment_id = @AppointmentId";
+                UPDATE appointments
+                SET duration = @Duration
+                WHERE appointment_id = @AppointmentId";
 
                     await using var updateCmd = new NpgsqlCommand(updateDurationSql, connection, transaction);
                     updateCmd.Parameters.AddWithValue("@Duration", NpgsqlDbType.Interval, totalDuration);
@@ -128,7 +126,22 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo.Appointmen
                 }
 
                 await transaction.CommitAsync();
-                await RefreshRelatedCachesAsync(appointment);
+
+                // Check if the cache exists
+                string businessCacheKey = $"appointments_business_{appointment.BusinessId}";
+                var cachedBusinessAppointments =
+                    await _redisHelper.GetCacheAsync<List<AppointmentCacheDto>>(businessCacheKey);
+
+                if (cachedBusinessAppointments == null)
+                {
+                    // If the cache is missing or expired, refresh it
+                    await RefreshRelatedCachesAsync(appointment);
+                }
+                else
+                {
+                    // Update the cache directly
+                    await UpdateAppointmentCacheAsync(appointment);
+                }
             }
             catch
             {
@@ -137,7 +150,8 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo.Appointmen
             }
         }
 
-        public async Task UpdateAppointmentWithServicesAsync(int appointmentId, UpdateAppointmentDto updateAppointmentDto)
+        public async Task UpdateAppointmentWithServicesAsync(int appointmentId,
+            UpdateAppointmentDto updateAppointmentDto)
         {
             using var connection = new NpgsqlConnection(_context.Database.GetConnectionString());
             await connection.OpenAsync();
@@ -146,15 +160,16 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo.Appointmen
             try
             {
                 var updateAppointmentSql = @"
-                    UPDATE appointments 
-                    SET appointment_time = @AppointmentTime, 
-                        comment = @Comment, 
-                        updated_at = @UpdatedAt
-                    WHERE appointment_id = @AppointmentId";
+            UPDATE appointments 
+            SET appointment_time = @AppointmentTime, 
+                comment = @Comment, 
+                updated_at = @UpdatedAt
+            WHERE appointment_id = @AppointmentId";
 
                 using var updateAppointmentCmd = new NpgsqlCommand(updateAppointmentSql, connection, transaction);
                 updateAppointmentCmd.Parameters.AddWithValue("AppointmentTime", updateAppointmentDto.AppointmentTime);
-                updateAppointmentCmd.Parameters.AddWithValue("Comment", updateAppointmentDto.Comment ?? (object)DBNull.Value);
+                updateAppointmentCmd.Parameters.AddWithValue("Comment",
+                    updateAppointmentDto.Comment ?? (object)DBNull.Value);
                 updateAppointmentCmd.Parameters.AddWithValue("UpdatedAt", DateTime.UtcNow);
                 updateAppointmentCmd.Parameters.AddWithValue("AppointmentId", appointmentId);
 
@@ -166,8 +181,8 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo.Appointmen
                 await deleteServicesCmd.ExecuteNonQueryAsync();
 
                 var insertServiceSql = @"
-                    INSERT INTO appointment_services_staffs (appointment_id, service_id, staff_id)
-                    VALUES (@AppointmentId, @ServiceId, @StaffId)";
+            INSERT INTO appointment_services_staffs (appointment_id, service_id, staff_id)
+            VALUES (@AppointmentId, @ServiceId, @StaffId)";
 
                 using var insertServiceCmd = new NpgsqlCommand(insertServiceSql, connection, transaction);
                 insertServiceCmd.Parameters.Add("AppointmentId", NpgsqlDbType.Integer);
@@ -196,11 +211,26 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo.Appointmen
                 await updateDurationCmd.ExecuteNonQueryAsync();
 
                 await transaction.CommitAsync();
+
                 // Fetch the updated appointment using the read repository
                 var updatedAppointment = await _appointmentReadRepository.GetAppointmentByIdAsync(appointmentId);
                 if (updatedAppointment != null)
                 {
-                    await RefreshRelatedCachesAsync(updatedAppointment);
+                    // Check if the cache exists
+                    string businessCacheKey = $"appointments_business_{updatedAppointment.BusinessId}";
+                    var cachedBusinessAppointments =
+                        await _redisHelper.GetCacheAsync<List<AppointmentCacheDto>>(businessCacheKey);
+
+                    if (cachedBusinessAppointments == null)
+                    {
+                        // If the cache is missing or expired, refresh it
+                        await RefreshRelatedCachesAsync(updatedAppointment);
+                    }
+                    else
+                    {
+                        // Update the cache directly
+                        await UpdateAppointmentCacheAsync(updatedAppointment);
+                    }
                 }
             }
             catch
@@ -209,6 +239,50 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo.Appointmen
                 throw;
             }
         }
+
+        private async Task UpdateAppointmentCacheAsync(Appointment appointment)
+        {
+            var appointmentCacheKey = $"appointment_{appointment.AppointmentId}";
+            var cacheDto = MapToCacheDto(appointment);
+            await _redisHelper.SetCacheAsync(appointmentCacheKey, cacheDto, TimeSpan.FromMinutes(10));
+
+            await _redisHelper.UpdateListCacheAsync<AppointmentCacheDto>(
+                $"appointments_business_{appointment.BusinessId}",
+                list =>
+                {
+                    list.RemoveAll(a => a.AppointmentId == appointment.AppointmentId);
+                    list.Add(cacheDto);
+                    return list.OrderBy(a => a.AppointmentTime).ToList();
+                },
+                TimeSpan.FromMinutes(10));
+
+            await _redisHelper.UpdateListCacheAsync<AppointmentCacheDto>(
+                $"appointments_customer_{appointment.CustomerId}",
+                list =>
+                {
+                    list.RemoveAll(a => a.AppointmentId == appointment.AppointmentId);
+                    list.Add(cacheDto);
+                    return list.OrderBy(a => a.AppointmentTime).ToList();
+                },
+                TimeSpan.FromMinutes(10));
+
+            if (appointment.AppointmentServices != null)
+            {
+                foreach (var service in appointment.AppointmentServices)
+                {
+                    await _redisHelper.UpdateListCacheAsync<AppointmentCacheDto>(
+                        $"appointments_staff_{service.StaffId}",
+                        list =>
+                        {
+                            list.RemoveAll(a => a.AppointmentId == appointment.AppointmentId);
+                            list.Add(cacheDto);
+                            return list.OrderBy(a => a.AppointmentTime).ToList();
+                        },
+                        TimeSpan.FromMinutes(10));
+                }
+            }
+        }
+
 
         public async Task UpdateAppointmentStatusAsync(Appointment appointment)
         {

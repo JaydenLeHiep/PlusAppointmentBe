@@ -81,15 +81,74 @@ namespace PlusAppointment.Repositories.Implementation.NotAvailableTimeRepo
         {
             await _context.NotAvailableTimes.AddAsync(notAvailableTime);
             await _context.SaveChangesAsync();
-            await RefreshRelatedCachesAsync(notAvailableTime);
+
+            // Check the cache for the staff's not available times
+            string staffCacheKey =
+                $"not_available_times_business_{notAvailableTime.BusinessId}_staff_{notAvailableTime.StaffId}";
+            var cachedStaffTimes = await _redisHelper.GetCacheAsync<List<NotAvailableTime>>(staffCacheKey);
+
+            if (cachedStaffTimes == null)
+            {
+                // If the cache is empty or expired, refresh the cache from the database
+                await RefreshRelatedCachesAsync(notAvailableTime);
+            }
+            else
+            {
+                // If the cache exists, update it with the new time
+                await UpdateNotAvailableTimeCacheAsync(notAvailableTime);
+            }
         }
 
         public async Task UpdateAsync(NotAvailableTime notAvailableTime)
         {
             _context.NotAvailableTimes.Update(notAvailableTime);
             await _context.SaveChangesAsync();
-            await RefreshRelatedCachesAsync(notAvailableTime);
+
+            // Check the cache for the staff's not available times
+            string staffCacheKey =
+                $"not_available_times_business_{notAvailableTime.BusinessId}_staff_{notAvailableTime.StaffId}";
+            var cachedStaffTimes = await _redisHelper.GetCacheAsync<List<NotAvailableTime>>(staffCacheKey);
+
+            if (cachedStaffTimes == null)
+            {
+                // If the cache is empty or expired, refresh the cache from the database
+                await RefreshRelatedCachesAsync(notAvailableTime);
+            }
+            else
+            {
+                // If the cache exists, update it with the modified time
+                await UpdateNotAvailableTimeCacheAsync(notAvailableTime);
+            }
         }
+
+        private async Task UpdateNotAvailableTimeCacheAsync(NotAvailableTime notAvailableTime)
+        {
+            var timeCacheKey =
+                $"not_available_time_{notAvailableTime.BusinessId}_{notAvailableTime.StaffId}_{notAvailableTime.NotAvailableTimeId}";
+            await _redisHelper.SetCacheAsync(timeCacheKey, notAvailableTime, TimeSpan.FromMinutes(10));
+
+            await _redisHelper.UpdateListCacheAsync<NotAvailableTime>(
+                $"not_available_times_business_{notAvailableTime.BusinessId}_staff_{notAvailableTime.StaffId}",
+                list =>
+                {
+                    // Remove the old entry and add the updated one
+                    list.RemoveAll(nat => nat.NotAvailableTimeId == notAvailableTime.NotAvailableTimeId);
+                    list.Add(notAvailableTime);
+                    return list.OrderBy(nat => nat.NotAvailableTimeId).ToList();
+                },
+                TimeSpan.FromMinutes(10));
+
+            await _redisHelper.UpdateListCacheAsync<NotAvailableTime>(
+                $"not_available_times_business_{notAvailableTime.BusinessId}",
+                list =>
+                {
+                    list.RemoveAll(nat => nat.NotAvailableTimeId == notAvailableTime.NotAvailableTimeId);
+                    list.Add(notAvailableTime);
+                    return list.OrderBy(nat => nat.NotAvailableTimeId).ToList();
+                },
+                TimeSpan.FromMinutes(10));
+        }
+
 
         public async Task DeleteAsync(int businessId, int staffId, int id)
         {

@@ -66,7 +66,7 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
 
             var staffs = await _context.Staffs
                 .Where(s => s.BusinessId == businessId)
-                .OrderBy(s => s.StaffId)  // Sort the staff list by StaffId when fetching from the database
+                .OrderBy(s => s.StaffId) // Sort the staff list by StaffId when fetching from the database
                 .ToListAsync();
 
             await _redisHelper.SetCacheAsync(cacheKey, staffs, TimeSpan.FromMinutes(10));
@@ -87,18 +87,29 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
             await _context.Staffs.AddAsync(staff);
             await _context.SaveChangesAsync();
 
-            await UpdateStaffCacheAsync(staff);
-            // Refresh related caches
-            await RefreshRelatedCachesAsync(staff);
+            // Check the cache for the business
+            string cacheKey = $"staff_business_{businessId}";
+            var cachedStaffs = await _redisHelper.GetCacheAsync<List<Staff>>(cacheKey);
+
+            if (cachedStaffs == null)
+            {
+                // If the cache is empty or expired, refresh the cache from the database
+                await RefreshRelatedCachesAsync(staff);
+            }
+            else
+            {
+                // If the cache exists, update it with the new staff
+                await UpdateStaffCacheAsync(staff);
+            }
         }
 
         public async Task AddListStaffsAsync(IEnumerable<Staff>? staffs)
         {
-            
-            if (staffs == null)
+            if (staffs == null || !staffs.Any())
             {
                 throw new Exception("Staffs collection cannot be null or empty");
             }
+
             var staffList = staffs.ToList();
             var businessId = staffList.First().BusinessId;
             var business = await _context.Businesses.FindAsync(businessId);
@@ -110,14 +121,86 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
             await _context.Staffs.AddRangeAsync(staffList);
             await _context.SaveChangesAsync();
 
-            foreach (var staff in staffList)
+            // Check the cache for the business
+            string cacheKey = $"staff_business_{businessId}";
+            var cachedStaffs = await _redisHelper.GetCacheAsync<List<Staff>>(cacheKey);
+
+            if (cachedStaffs == null)
             {
-                if (staff != null)
+                // If the cache is empty or expired, refresh the cache from the database
+                await RefreshRelatedCachesAsync(staffList.First());
+            }
+            else
+            {
+                // If the cache exists, update it with each new staff
+                foreach (var staff in staffList)
                 {
-                    await RefreshRelatedCachesAsync(staff);
+                    if (staff != null)
+                    {
+                        await UpdateStaffCacheAsync(staff);
+                    }
                 }
             }
         }
+
+        public async Task UpdateAsync(Staff staff)
+        {
+            await using var connection = new NpgsqlConnection(_context.Database.GetConnectionString());
+            await connection.OpenAsync();
+            await using var transaction = await connection.BeginTransactionAsync();
+
+            try
+            {
+                // SQL query to update the staff in PostgreSQL
+                var updateQuery = @"
+        UPDATE staffs 
+        SET 
+            name = @Name, 
+            email = @Email, 
+            phone = @Phone, 
+            password = @Password,
+            business_id = @BusinessId
+        WHERE staff_id = @StaffId";
+
+                await using var command = new NpgsqlCommand(updateQuery, connection, transaction);
+
+                // Add parameters to prevent SQL injection
+                command.Parameters.AddWithValue("@Name", staff.Name);
+                command.Parameters.AddWithValue("@Email", staff.Email);
+                command.Parameters.AddWithValue("@Phone", staff.Phone);
+                command.Parameters.AddWithValue("@Password", staff.Password);
+                command.Parameters.AddWithValue("@BusinessId", staff.BusinessId);
+                command.Parameters.AddWithValue("@StaffId", staff.StaffId);
+
+                // Execute the update query
+                await command.ExecuteNonQueryAsync();
+
+                // Commit the transaction after successful update
+                await transaction.CommitAsync();
+
+                // Check the cache for the business
+                string cacheKey = $"staff_business_{staff.BusinessId}";
+                var cachedStaffs = await _redisHelper.GetCacheAsync<List<Staff>>(cacheKey);
+
+                if (cachedStaffs == null)
+                {
+                    // If the cache is empty or expired, refresh the cache from the database
+                    await RefreshRelatedCachesAsync(staff);
+                }
+                else
+                {
+                    // If the cache exists, update it with the modified staff
+                    await UpdateStaffCacheAsync(staff);
+                }
+            }
+            catch
+            {
+                // Rollback transaction in case of any error
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
 
         public async Task<Staff?> GetByBusinessIdServiceIdAsync(int businessId, int staffId)
         {
@@ -139,53 +222,6 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
 
             await _redisHelper.SetCacheAsync(cacheKey, staff, TimeSpan.FromMinutes(10));
             return staff;
-        }
-
-        public async Task UpdateAsync(Staff staff)
-        {
-            await using var connection = new NpgsqlConnection(_context.Database.GetConnectionString());
-            await connection.OpenAsync();
-            await using var transaction = await connection.BeginTransactionAsync();
-
-            try
-            {
-                // SQL query to update the staff in PostgreSQL
-                var updateQuery = @"
-            UPDATE staffs 
-            SET 
-                name = @Name, 
-                email = @Email, 
-                phone = @Phone, 
-                password = @Password,
-                business_id = @BusinessId
-            WHERE staff_id = @StaffId";
-
-                await using var command = new NpgsqlCommand(updateQuery, connection, transaction);
-
-                // Add parameters to prevent SQL injection
-                command.Parameters.AddWithValue("@Name", staff.Name);
-                command.Parameters.AddWithValue("@Email", staff.Email);
-                command.Parameters.AddWithValue("@Phone", staff.Phone);
-                command.Parameters.AddWithValue("@Password", staff.Password);
-                command.Parameters.AddWithValue("@BusinessId", staff.BusinessId);
-                command.Parameters.AddWithValue("@StaffId", staff.StaffId);
-
-                // Execute the update query
-                await command.ExecuteNonQueryAsync();
-
-                // Commit the transaction after successful update
-                await transaction.CommitAsync();
-
-                // After updating the database, refresh the cache
-                await UpdateStaffCacheAsync(staff);
-                await RefreshRelatedCachesAsync(staff);
-            }
-            catch
-            {
-                // Rollback transaction in case of any error
-                await transaction.RollbackAsync();
-                throw;
-            }
         }
 
 
@@ -212,6 +248,7 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
             {
                 throw new KeyNotFoundException($"Staff with email {email} not found");
             }
+
             return staff;
         }
 
@@ -254,7 +291,6 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
         }
 
 
-
         private async Task InvalidateStaffCacheAsync(Staff staff)
         {
             var staffCacheKey = $"staff_{staff.StaffId}";
@@ -269,7 +305,7 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
                 },
                 TimeSpan.FromMinutes(10));
         }
-        
+
         private async Task RefreshRelatedCachesAsync(Staff staff)
         {
             // Refresh individual Staff cache
@@ -289,6 +325,5 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
             var allStaffs = await _context.Staffs.ToListAsync();
             await _redisHelper.SetCacheAsync(allStaffCacheKey, allStaffs, TimeSpan.FromMinutes(10));
         }
-
     }
 }

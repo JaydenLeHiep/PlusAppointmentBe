@@ -84,6 +84,7 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
             {
                 throw new Exception("Business not found");
             }
+
             if (service == null)
             {
                 throw new Exception("Service not found");
@@ -92,9 +93,20 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
             await _context.Services.AddAsync(service);
             await _context.SaveChangesAsync();
 
-            await UpdateServiceCacheAsync(service);
-            // Refresh related caches
-            await RefreshRelatedCachesAsync(service);
+            // Check the cache for the business
+            string cacheKey = $"service_business_{businessId}";
+            var cachedServices = await _redisHelper.GetCacheAsync<List<Service>>(cacheKey);
+
+            if (cachedServices == null)
+            {
+                // If the cache is empty or expired, refresh the cache from the database
+                await RefreshRelatedCachesAsync(service);
+            }
+            else
+            {
+                // If the cache exists, update it with the new service
+                await UpdateServiceCacheAsync(service);
+            }
         }
 
         public async Task AddListServicesAsync(IEnumerable<Service?> services, int businessId)
@@ -108,12 +120,83 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
             await _context.Services.AddRangeAsync(services!);
             await _context.SaveChangesAsync();
 
-            foreach (var service in services)
+            // Check the cache for the business
+            string cacheKey = $"service_business_{businessId}";
+            var cachedServices = await _redisHelper.GetCacheAsync<List<Service>>(cacheKey);
+
+            if (cachedServices == null)
             {
-                if (service != null)
+                // If the cache is empty or expired, refresh the cache from the database
+                await RefreshRelatedCachesAsync(services.First());
+            }
+            else
+            {
+                // If the cache exists, update it with each new service
+                foreach (var service in services)
                 {
+                    if (service != null)
+                    {
+                        await UpdateServiceCacheAsync(service);
+                    }
+                }
+            }
+        }
+
+        public async Task UpdateAsync(Service service)
+        {
+            await using var connection = new NpgsqlConnection(_context.Database.GetConnectionString());
+            await connection.OpenAsync();
+            await using var transaction = await connection.BeginTransactionAsync();
+
+            try
+            {
+                // SQL query to update the service in PostgreSQL
+                var updateQuery = @"
+        UPDATE services 
+        SET 
+            name = @Name, 
+            description = @Description, 
+            duration = @Duration, 
+            price = @Price, 
+            category_id = @CategoryId
+        WHERE service_id = @ServiceId";
+
+                await using var command = new NpgsqlCommand(updateQuery, connection, transaction);
+
+                // Add parameters to prevent SQL injection
+                command.Parameters.AddWithValue("@Name", service.Name);
+                command.Parameters.AddWithValue("@Description", service.Description);
+                command.Parameters.AddWithValue("@Duration", NpgsqlDbType.Interval, service.Duration);
+                command.Parameters.AddWithValue("@Price", service.Price);
+                command.Parameters.AddWithValue("@CategoryId", service.CategoryId ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@ServiceId", service.ServiceId);
+
+                // Execute the update query
+                await command.ExecuteNonQueryAsync();
+
+                // Commit transaction after successful update
+                await transaction.CommitAsync();
+
+                // Check the cache for the business
+                string cacheKey = $"service_business_{service.BusinessId}";
+                var cachedServices = await _redisHelper.GetCacheAsync<List<Service>>(cacheKey);
+
+                if (cachedServices == null)
+                {
+                    // If the cache is empty or expired, refresh the cache from the database
                     await RefreshRelatedCachesAsync(service);
                 }
+                else
+                {
+                    // If the cache exists, update it with the modified service
+                    await UpdateServiceCacheAsync(service);
+                }
+            }
+            catch
+            {
+                // Rollback transaction in case of any error
+                await transaction.RollbackAsync();
+                throw;
             }
         }
 
@@ -138,53 +221,6 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
 
             await _redisHelper.SetCacheAsync(cacheKey, service, TimeSpan.FromMinutes(10));
             return service;
-        }
-
-        public async Task UpdateAsync(Service service)
-        {
-            await using var connection = new NpgsqlConnection(_context.Database.GetConnectionString());
-            await connection.OpenAsync();
-            await using var transaction = await connection.BeginTransactionAsync();
-
-            try
-            {
-                // SQL query to update the service in PostgreSQL
-                var updateQuery = @"
-            UPDATE services 
-            SET 
-                name = @Name, 
-                description = @Description, 
-                duration = @Duration, 
-                price = @Price, 
-                category_id = @CategoryId
-            WHERE service_id = @ServiceId";
-
-                await using var command = new NpgsqlCommand(updateQuery, connection, transaction);
-
-                // Add parameters to prevent SQL injection
-                command.Parameters.AddWithValue("@Name", service.Name);
-                command.Parameters.AddWithValue("@Description", service.Description);
-                command.Parameters.AddWithValue("@Duration", NpgsqlDbType.Interval, service.Duration);
-                command.Parameters.AddWithValue("@Price", service.Price);
-                command.Parameters.AddWithValue("@CategoryId", service.CategoryId ?? (object)DBNull.Value);
-                command.Parameters.AddWithValue("@ServiceId", service.ServiceId);
-
-                // Execute the update query
-                await command.ExecuteNonQueryAsync();
-
-                // Commit transaction after successful update
-                await transaction.CommitAsync();
-
-                // After updating the database, refresh the cache
-                await UpdateServiceCacheAsync(service);
-                await RefreshRelatedCachesAsync(service);
-            }
-            catch
-            {
-                // Rollback transaction in case of any error
-                await transaction.RollbackAsync();
-                throw;
-            }
         }
 
 
@@ -233,7 +269,6 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
         }
 
 
-
         private async Task InvalidateServiceCacheAsync(Service service)
         {
             var serviceCacheKey = $"service_{service.ServiceId}";
@@ -248,7 +283,7 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
                 },
                 TimeSpan.FromMinutes(10));
         }
-        
+
         private async Task RefreshRelatedCachesAsync(Service service)
         {
             // Refresh individual Service cache
@@ -269,6 +304,5 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
             var allServices = await _context.Services.Include(s => s.Category).ToListAsync();
             await _redisHelper.SetCacheAsync(allServicesCacheKey, allServices, TimeSpan.FromMinutes(10));
         }
-
     }
 }

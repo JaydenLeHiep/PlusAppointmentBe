@@ -4,11 +4,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
-using PlusAppointment.Models.Enums; // Adjust namespaces accordingly
+using PlusAppointment.Models.Enums;
 using PlusAppointment.Tests.Factories;
 using PlusAppointment.Utils.Jwt;
+// Adjust namespaces accordingly
 
-namespace PlusAppointment.Tests.Staff.StaffController.StaffControllerRead;
+namespace PlusAppointment.Tests.Staff.StaffController;
 
 public class StaffControllerWriteIntegrationTests : IClassFixture<CustomWebApplicationFactory>
 {

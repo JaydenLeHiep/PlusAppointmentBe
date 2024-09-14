@@ -46,7 +46,7 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
             var staff = await _context.Staffs.FindAsync(id);
             if (staff == null)
             {
-                throw new KeyNotFoundException($"Staff with ID {id} not found");
+                throw new Exception($"Staff with ID {id} not found");
             }
 
             await _redisHelper.SetCacheAsync(cacheKey, staff, TimeSpan.FromMinutes(10));
@@ -92,14 +92,14 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
             await RefreshRelatedCachesAsync(staff);
         }
 
-        public async Task AddListStaffsAsync(IEnumerable<Staff> staffs)
+        public async Task AddListStaffsAsync(IEnumerable<Staff>? staffs)
         {
-            var staffList = staffs.ToList();
-            if (staffs == null || !staffList.Any())
+            
+            if (staffs == null)
             {
-                throw new ArgumentException("Staffs collection cannot be null or empty", nameof(staffs));
+                throw new Exception("Staffs collection cannot be null or empty");
             }
-
+            var staffList = staffs.ToList();
             var businessId = staffList.First().BusinessId;
             var business = await _context.Businesses.FindAsync(businessId);
             if (business == null)

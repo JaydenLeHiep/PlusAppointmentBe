@@ -7,27 +7,27 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace PlusAppointment.Migrations
 {
     /// <inheritdoc />
-    public partial class AddEmailUsage : Migration
+    public partial class UpdateNotificationWithEnum : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "email_usage",
+                name: "notification_table",
                 columns: table => new
                 {
-                    id = table.Column<int>(type: "integer", nullable: false)
+                    notification_id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     business_id = table.Column<int>(type: "integer", nullable: false),
-                    year = table.Column<int>(type: "integer", nullable: false),
-                    month = table.Column<int>(type: "integer", nullable: false),
-                    email_count = table.Column<int>(type: "integer", nullable: false)
+                    message = table.Column<string>(type: "text", nullable: false),
+                    notification_type = table.Column<string>(type: "text", nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_email_usage", x => x.id);
+                    table.PrimaryKey("PK_notification_table", x => x.notification_id);
                     table.ForeignKey(
-                        name: "FK_email_usage_businesses_business_id",
+                        name: "FK_notification_table_businesses_business_id",
                         column: x => x.business_id,
                         principalTable: "businesses",
                         principalColumn: "business_id",
@@ -35,19 +35,21 @@ namespace PlusAppointment.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_email_usage_business_id_year_month",
-                table: "email_usage",
-                columns: new[] { "business_id", "year", "month" },
-                unique: true);
-        }
+                name: "IX_Notification_BusinessId",
+                table: "notification_table",
+                column: "business_id");
 
+            migrationBuilder.CreateIndex(
+                name: "IX_Notification_CreatedAt",
+                table: "notification_table",
+                column: "created_at");
+        }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "email_usage");
+                name: "notification_table");
         }
-
     }
 }

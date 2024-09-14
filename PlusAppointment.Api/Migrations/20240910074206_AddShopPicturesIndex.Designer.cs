@@ -12,8 +12,8 @@ using PlusAppointment.Data;
 namespace PlusAppointment.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240902072921_RenameIdToEmailUsageId")]
-    partial class RenameIdToEmailUsageId
+    [Migration("20240910074206_AddShopPicturesIndex")]
+    partial class AddShopPicturesIndex
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -173,12 +173,12 @@ namespace PlusAppointment.Migrations
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.EmailUsage", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("EmailUsageId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("id");
+                        .HasColumnName("email_usage_id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("EmailUsageId"));
 
                     b.Property<int>("BusinessId")
                         .HasColumnType("integer")
@@ -196,7 +196,7 @@ namespace PlusAppointment.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("year");
 
-                    b.HasKey("Id");
+                    b.HasKey("EmailUsageId");
 
                     b.HasIndex("BusinessId", "Year", "Month")
                         .IsUnique();
@@ -306,6 +306,35 @@ namespace PlusAppointment.Migrations
                     b.ToTable("service_categories", (string)null);
                 });
 
+            modelBuilder.Entity("PlusAppointment.Models.Classes.ShopPicture", b =>
+                {
+                    b.Property<int>("ShopPictureId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("shop_picture_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ShopPictureId"));
+
+                    b.Property<int>("BusinessId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("S3ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("s3_image_url");
+
+                    b.HasKey("ShopPictureId");
+
+                    b.HasIndex("BusinessId")
+                        .HasDatabaseName("IX_ShopPictures_BusinessId");
+
+                    b.ToTable("shop_pictures", (string)null);
+                });
+
             modelBuilder.Entity("PlusAppointment.Models.Classes.Staff", b =>
                 {
                     b.Property<int>("StaffId")
@@ -320,7 +349,6 @@ namespace PlusAppointment.Migrations
                         .HasColumnName("business_id");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("email");
 
@@ -335,7 +363,6 @@ namespace PlusAppointment.Migrations
                         .HasColumnName("password");
 
                     b.Property<string>("Phone")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("phone");
 
@@ -540,6 +567,17 @@ namespace PlusAppointment.Migrations
                     b.Navigation("Category");
                 });
 
+            modelBuilder.Entity("PlusAppointment.Models.Classes.ShopPicture", b =>
+                {
+                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
+                        .WithMany("ShopPictures")
+                        .HasForeignKey("BusinessId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Business");
+                });
+
             modelBuilder.Entity("PlusAppointment.Models.Classes.Staff", b =>
                 {
                     b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
@@ -578,6 +616,8 @@ namespace PlusAppointment.Migrations
                     b.Navigation("NotAvailableDates");
 
                     b.Navigation("Services");
+
+                    b.Navigation("ShopPictures");
 
                     b.Navigation("Staffs");
                 });

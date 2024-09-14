@@ -65,10 +65,7 @@ namespace PlusAppointment.Controllers.ServiceController
             // }
 
             var services = await _servicesService.GetAllServiceByBusinessIdAsync(businessId);
-            if (!services.Any())
-            {
-                return NotFound(new { message = "No service found for this business." });
-            }
+
             return Ok(services);
         }
         [Authorize] 

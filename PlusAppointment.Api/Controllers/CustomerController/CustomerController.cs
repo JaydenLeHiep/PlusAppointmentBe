@@ -47,10 +47,7 @@ namespace PlusAppointment.Controllers.CustomerController
         public async Task<IActionResult> GetCustomersByBusinessId(int businessId)
         {
             var customers = await _customerService.GetCustomersByBusinessIdAsync(businessId);
-            if (!customers.Any())
-            {
-                return NotFound(new { message = "No customers found for this business" });
-            }
+            
 
             return Ok(customers);
         }

@@ -63,15 +63,15 @@ namespace PlusAppointment.Services.Implementations.StaffService
             {
                 ValidateStaffDto(staffDto);
 
-                if (staffDto?.Email != null && await _staffRepository.EmailExistsAsync(staffDto.Email))
-                {
-                    throw new Exception($"Email {staffDto.Email} already exists");
-                }
-
-                if (staffDto?.Phone != null && await _staffRepository.PhoneExistsAsync(staffDto.Phone))
-                {
-                    throw new Exception($"Phone number {staffDto.Phone} already exists");
-                }
+                // if (staffDto?.Email != null && await _staffRepository.EmailExistsAsync(staffDto.Email))
+                // {
+                //     throw new Exception($"Email {staffDto.Email} already exists");
+                // }
+                //
+                // if (staffDto?.Phone != null && await _staffRepository.PhoneExistsAsync(staffDto.Phone))
+                // {
+                //     throw new Exception($"Phone number {staffDto.Phone} already exists");
+                // }
             }
 
             var staffs = staffDtoList.Select(staffDto => CreateStaffFromDto(staffDto, businessId)).ToList();

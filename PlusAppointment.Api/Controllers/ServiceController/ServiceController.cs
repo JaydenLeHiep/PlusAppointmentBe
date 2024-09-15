@@ -95,9 +95,9 @@ namespace PlusAppointment.Controllers.ServiceController
                 return BadRequest(new { message = ex.Message });
             }
         }
-        [Authorize] 
+        [Authorize]
         [HttpPost("business_id={businessId}/addList")]
-        public async Task<IActionResult> AddServices(int businessId, [FromBody] ServicesDto? servicesDto)
+        public async Task<IActionResult> AddServices(int businessId, [FromBody] List<ServiceDto>? servicesDtos)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
             if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
@@ -113,7 +113,7 @@ namespace PlusAppointment.Controllers.ServiceController
 
             try
             {
-                await _servicesService.AddListServicesAsync(servicesDto, businessId, userId, userRole);
+                await _servicesService.AddListServicesAsync(servicesDtos, businessId, userId, userRole);
                 return Ok(new { message = "Services created successfully" });
             }
             catch (Exception ex)
@@ -121,6 +121,7 @@ namespace PlusAppointment.Controllers.ServiceController
                 return BadRequest(new { message = ex.Message });
             }
         }
+
         [Authorize]
         [HttpPut("business_id={businessId}/service_id={serviceId}")]
         public async Task<IActionResult> UpdateService(int businessId, int serviceId, [FromBody] ServiceDto? serviceDto)

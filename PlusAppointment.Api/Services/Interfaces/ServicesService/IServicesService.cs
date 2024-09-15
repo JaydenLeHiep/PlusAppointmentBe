@@ -9,7 +9,7 @@ namespace PlusAppointment.Services.Interfaces.ServicesService
         Task<ServiceDto?> GetServiceByIdAsync(int id); // Change return type to include category name in ServiceDto
         Task<IEnumerable<ServiceDto?>> GetAllServiceByBusinessIdAsync(int businessId); // Change return type to include category name in ServiceDto
         Task AddServiceAsync(ServiceDto? serviceDto, int businessId, string userId, string userRole);
-        Task AddListServicesAsync(ServicesDto? servicesDto, int businessId, string userId, string userRole);
+        Task AddListServicesAsync(List<ServiceDto>? servicesDto, int businessId, string userId, string userRole);
         Task UpdateServiceAsync(int businessId, int serviceId, ServiceDto? serviceDto, string userId);
         Task DeleteServiceAsync(int businessId, int serviceId);
     }

@@ -115,59 +115,59 @@ namespace PlusAppointment.Services.Implementations.ServicesService
             await _servicesRepository.AddServiceAsync(service, businessId);
         }
 
-        public async Task AddListServicesAsync(ServicesDto? servicesDto, int businessId, string userId, string userRole)
+        public async Task AddListServicesAsync(List<ServiceDto>? servicesDtos, int businessId, string userId, string userRole)
         {
             if (string.IsNullOrEmpty(userId) || userRole != Role.Owner.ToString())
             {
                 throw new UnauthorizedAccessException("User not authorized");
             }
 
-            if (servicesDto?.Services != null && (servicesDto == null || !servicesDto.Services.Any()))
+            if (servicesDtos == null || !servicesDtos.Any())
             {
                 throw new ArgumentException("No data provided.");
             }
 
             var services = new List<Service>();
 
-            if (servicesDto != null && servicesDto.Services != null)
-                foreach (var serviceDto in servicesDto.Services)
+            foreach (var serviceDto in servicesDtos)
+            {
+                if (string.IsNullOrEmpty(serviceDto.Name))
                 {
-                    if (string.IsNullOrEmpty(serviceDto.Name))
-                    {
-                        throw new ArgumentException("Service name is required.");
-                    }
-
-                    if (!serviceDto.Duration.HasValue)
-                    {
-                        throw new ArgumentException("Service duration is required.");
-                    }
-
-                    if (!serviceDto.Price.HasValue)
-                    {
-                        throw new ArgumentException("Service price is required.");
-                    }
-
-                    var serviceCategory = await _serviceCategoryRepo.GetServiceCategoryByIdAsync(serviceDto.CategoryId.Value);
-                    if (serviceCategory == null)
-                    {
-                        throw new ArgumentException("Invalid category ID.");
-                    }
-
-                    var service = new Service
-                    {
-                        Name = serviceDto.Name,
-                        Description = serviceDto.Description,
-                        Duration = serviceDto.Duration.Value,
-                        Price = serviceDto.Price.Value,
-                        BusinessId = businessId,
-                        CategoryId = serviceCategory.CategoryId // Set the category ID
-                    };
-
-                    services.Add(service);
+                    throw new ArgumentException("Service name is required.");
                 }
+
+                if (!serviceDto.Duration.HasValue)
+                {
+                    throw new ArgumentException("Service duration is required.");
+                }
+
+                if (!serviceDto.Price.HasValue)
+                {
+                    throw new ArgumentException("Service price is required.");
+                }
+
+                var serviceCategory = await _serviceCategoryRepo.GetServiceCategoryByIdAsync(serviceDto.CategoryId.Value);
+                if (serviceCategory == null)
+                {
+                    throw new ArgumentException("Invalid category ID.");
+                }
+
+                var service = new Service
+                {
+                    Name = serviceDto.Name,
+                    Description = serviceDto.Description,
+                    Duration = serviceDto.Duration.Value,
+                    Price = serviceDto.Price.Value,
+                    BusinessId = businessId,
+                    CategoryId = serviceCategory.CategoryId // Set the category ID
+                };
+
+                services.Add(service);
+            }
 
             await _servicesRepository.AddListServicesAsync(services, businessId);
         }
+
 
         public async Task UpdateServiceAsync(int businessId, int serviceId, ServiceDto? serviceDto, string userId)
         {

@@ -40,26 +40,24 @@ jobs:
           platforms: linux/amd64
           tags: ${{ secrets.DOCKER_IMAGE_NAME_BE }}:latest
 
-      # Step 6: Add SSH key
-      - name: Add SSH key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/github_actions_key_unix
-          chmod 600 ~/.ssh/github_actions_key_unix
-
-      # Step 7: SSH into Frontend (FE) as Jump Host and deploy to Backend (BE)
+      # Step 6: SSH into Frontend (FE) as Jump Host and deploy to Backend (BE)
       - name: Deploy to Backend via Frontend Jumphost
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.FE_SERVER_IP }}
           username: ${{ secrets.FE_SERVER_USER }}
-          key_path: ~/.ssh/github_actions_key_unix
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
+            # Add the SSH key
+            mkdir -p ~/.ssh
+            echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/github_actions_key_unix
+            chmod 600 ~/.ssh/github_actions_key_unix
+
             # SSH into the backend instance using the jumphost
             ssh -o StrictHostKeyChecking=no -i ~/.ssh/github_actions_key_unix ec2-user@${{ secrets.BE_SERVER_IP }} << 'EOF'
               echo "SSH Connection to Backend Successful"
-            
+
               # Docker commands on the BE instance
               docker system prune -a -f
               docker pull ${{ secrets.DOCKER_IMAGE_NAME_BE }}:latest

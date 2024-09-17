@@ -77,7 +77,8 @@ appsettings.*.json
 # Ignore environment-specific settings files
 appsettings.Development.json
 # Do not ignore the main appsettings.json file
-!appsettings.json
+!PlusAppointment.Api/appsettings.json
+
 
 PlusAppointment.Api/appsettings.json
 PlusAppointment.Api/appsetting.txt

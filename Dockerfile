@@ -18,7 +18,7 @@ RUN dotnet publish -c Release -o /app/out
 FROM --platform=$TARGETPLATFORM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 
-COPY --from=build /src/PlusAppointment.Api/appsettings.json /app/
+COPY --from=build /src/PlusAppointment.Api/appsettings.json /app/appsettings.json
 
 COPY --from=build /app/out .
 

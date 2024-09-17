@@ -5,7 +5,7 @@ WORKDIR /src
 # Copy the project files and restore dependencies
 COPY ["PlusAppointment.Api/PlusAppointment.Api.csproj", "PlusAppointment.Api/"]
 COPY ["PlusAppointment.Models/PlusAppointment.Models.csproj", "PlusAppointment.Models/"]
-RUN dotnet restore "PlusAppointment.Api/PlusAppointment.Api.csproj"
+RUN dotnet restore "PlusAppointment.Api/PlusAppointment.Api.csproj" --runtime linux-arm64
 
 # Copy the entire project and build the app
 COPY . .

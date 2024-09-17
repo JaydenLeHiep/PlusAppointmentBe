@@ -40,7 +40,14 @@ jobs:
           platforms: linux/amd64
           tags: ${{ secrets.DOCKER_IMAGE_NAME_BE }}:latest
 
-      # Step 6: SSH into Frontend (FE) as Jump Host and deploy to Backend (BE)
+      # Step 6: Add SSH key
+      - name: Add SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/github_actions_key_unix
+          chmod 600 ~/.ssh/github_actions_key_unix
+
+      # Step 7: SSH into Frontend (FE) as Jump Host and deploy to Backend (BE)
       - name: Deploy to Backend via Frontend Jumphost
         uses: appleboy/ssh-action@master
         with:

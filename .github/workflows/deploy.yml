@@ -53,7 +53,7 @@ jobs:
         with:
           host: ${{ secrets.FE_SERVER_IP }}
           username: ${{ secrets.FE_SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          key_path: ~/.ssh/github_actions_key_unix
           port: 22
           script: |
             # SSH into the backend instance using the jumphost

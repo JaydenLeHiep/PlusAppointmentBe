@@ -80,6 +80,7 @@ namespace PlusAppointment.Controllers.UserController
                 {
                     Token = token,
                     Username = user.Username,
+                    UserId = user.UserId,
                     Role = user.Role.ToString()
                 };
                 

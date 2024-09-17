@@ -2,10 +2,13 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
+# Set environment variable to help with architecture-specific issues
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+
 # Copy the project files and restore dependencies
 COPY ["PlusAppointment.Api/PlusAppointment.Api.csproj", "PlusAppointment.Api/"]
 COPY ["PlusAppointment.Models/PlusAppointment.Models.csproj", "PlusAppointment.Models/"]
-RUN dotnet restore "PlusAppointment.Api/PlusAppointment.Api.csproj" --runtime linux-arm64
+RUN dotnet restore "PlusAppointment.Api/PlusAppointment.Api.csproj"
 
 # Copy the entire project and build the app
 COPY . .

@@ -54,6 +54,10 @@ jobs:
             echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/github_actions_key_unix
             chmod 600 ~/.ssh/github_actions_key_unix
 
+            # Print the bird from the FE server
+            echo "SSH Connection to Frontend Successful"
+            uname -a  # Prints system information (bird) for the FE server
+
             # SSH into the backend instance using the jumphost
             ssh -o StrictHostKeyChecking=no -i ~/.ssh/github_actions_key_unix ec2-user@${{ secrets.BE_SERVER_IP }} << 'EOF'
               echo "SSH Connection to Backend Successful"
@@ -65,3 +69,4 @@ jobs:
               docker rm plus_appointments_web || true
               docker run -d --name plus_appointments_web -p 8080:8080 ${{ secrets.DOCKER_IMAGE_NAME_BE }}:latest
             EOF
+      

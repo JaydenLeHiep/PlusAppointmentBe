@@ -66,8 +66,25 @@ jobs:
               # Docker commands on the BE instance
               docker system prune -a -f
               docker pull ${{ secrets.DOCKER_IMAGE_NAME_BE }}:latest
-              docker stop plus_appointments_web || true
-              docker rm plus_appointments_web || true
+
+              # Stop and remove the old container if it exists
+              if [ "$(docker ps -aq -f name=plus_appointments_web)" ]; then
+                echo "Stopping and removing existing container..."
+                docker stop plus_appointments_web
+                docker rm plus_appointments_web
+              fi
+
+              # Run the new container
+              echo "Running new container..."
               docker run -d --name plus_appointments_web -p 8080:8080 ${{ secrets.DOCKER_IMAGE_NAME_BE }}:latest
+
+              # Verify if the container is running
+              echo "Verifying if the container is running..."
+              docker ps -a
+
+              # Check logs to ensure the application started successfully
+              echo "Fetching container logs..."
+              docker logs plus_appointments_web
+
             EOF
       

@@ -2,7 +2,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copy the csproj file and restore any dependencies
+# Copy the project files and restore dependencies
 COPY ["PlusAppointment.Api/PlusAppointment.Api.csproj", "PlusAppointment.Api/"]
 COPY ["PlusAppointment.Models/PlusAppointment.Models.csproj", "PlusAppointment.Models/"]
 RUN dotnet restore "PlusAppointment.Api/PlusAppointment.Api.csproj"
@@ -10,15 +10,12 @@ RUN dotnet restore "PlusAppointment.Api/PlusAppointment.Api.csproj"
 # Copy the entire project and build the app
 COPY . .
 WORKDIR "/src/PlusAppointment.Api"
-RUN dotnet build "PlusAppointment.Api.csproj" -c Release -o /app/build
-
-# Publish the app
-RUN dotnet publish "PlusAppointment.Api.csproj" -c Release -o /app/publish
+RUN dotnet publish -c Release -o /app/out
 
 # Use the official .NET runtime image to run the app
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
-COPY --from=build /app/publish .
+COPY --from=build /app/out .
 
 # Expose port 80
 EXPOSE 80

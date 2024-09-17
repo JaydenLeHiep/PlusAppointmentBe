@@ -4,6 +4,7 @@ WORKDIR /src
 
 # Copy the csproj file and restore any dependencies
 COPY ["PlusAppointment.Api/PlusAppointment.Api.csproj", "PlusAppointment.Api/"]
+COPY ["PlusAppointment.Models/PlusAppointment.Models.csproj", "PlusAppointment.Models/"]
 RUN dotnet restore "PlusAppointment.Api/PlusAppointment.Api.csproj"
 
 # Copy the entire project and build the app

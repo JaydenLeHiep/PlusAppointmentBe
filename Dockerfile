@@ -1,9 +1,8 @@
-# Use the official .NET SDK image to build and publish the app
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+# Set up the build environment
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Set environment variable to help with architecture-specific issues
-ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+ARG TARGETPLATFORM
 
 # Copy the project files and restore dependencies
 COPY ["PlusAppointment.Api/PlusAppointment.Api.csproj", "PlusAppointment.Api/"]
@@ -15,8 +14,8 @@ COPY . .
 WORKDIR "/src/PlusAppointment.Api"
 RUN dotnet publish -c Release -o /app/out
 
-# Use the official .NET runtime image to run the app
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+# Set up the runtime environment
+FROM --platform=$TARGETPLATFORM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/out .
 

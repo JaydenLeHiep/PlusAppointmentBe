@@ -39,6 +39,7 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: ${{ secrets.DOCKER_IMAGE_NAME_BE }}:latest
+          pull: true
 
       # Step 6: SSH into Frontend (FE) as Jump Host and deploy to Backend (BE)
       - name: Deploy to Backend via Frontend Jumphost

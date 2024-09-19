@@ -52,6 +52,8 @@ namespace PlusAppointment.Repositories.Implementation.UserRepo
             await _redisHelper.SetCacheAsync(cacheKey, user, TimeSpan.FromMinutes(10));
             return user;
         }
+        
+        
 
         public async Task AddAsync(User user)
         {
@@ -63,11 +65,21 @@ namespace PlusAppointment.Repositories.Implementation.UserRepo
 
         public async Task UpdateAsync(User user)
         {
-            _context.Users.Update(user);
-            await _context.SaveChangesAsync();
+            // Retrieve the current entity from the database to ensure it exists
+            var existingUser = await _context.Users.FindAsync(user.UserId);
+            if (existingUser == null)
+            {
+                throw new Exception($"User with ID {user.UserId} not found.");
+            }
 
-            await UpdateUserCacheAsync(user);
+            // Copy the properties you want to update
+            existingUser.Password = user.Password;
+            existingUser.UpdatedAt = user.UpdatedAt;
+
+            await _context.SaveChangesAsync();
+            await UpdateUserCacheAsync(existingUser);
         }
+
 
         public async Task DeleteAsync(int id)
         {
@@ -200,8 +212,19 @@ namespace PlusAppointment.Repositories.Implementation.UserRepo
         private async Task UpdateUserCacheAsync(User user)
         {
             var userCacheKey = $"user_{user.UserId}";
-            await _redisHelper.SetCacheAsync(userCacheKey, user, TimeSpan.FromMinutes(10));
+            var usernameCacheKey = $"user_username_{user.Username}";
+            var usernameOrEmailCacheKey = $"user_usernameOrEmail_{user.Username.ToLowerInvariant()}";
 
+            // Update cache for user ID
+            await _redisHelper.SetCacheAsync(userCacheKey, user, TimeSpan.FromMinutes(10));
+    
+            // Update cache for username
+            await _redisHelper.SetCacheAsync(usernameCacheKey, user, TimeSpan.FromMinutes(10));
+    
+            // Update cache for username or email
+            await _redisHelper.SetCacheAsync(usernameOrEmailCacheKey, user, TimeSpan.FromMinutes(10));
+    
+            // Update the "all_users" list
             await _redisHelper.UpdateListCacheAsync<User>(
                 "all_users",
                 list =>
@@ -213,11 +236,19 @@ namespace PlusAppointment.Repositories.Implementation.UserRepo
                 TimeSpan.FromMinutes(10));
         }
 
+
         private async Task InvalidateUserCacheAsync(User user)
         {
             var userCacheKey = $"user_{user.UserId}";
-            await _redisHelper.DeleteCacheAsync(userCacheKey);
+            var usernameCacheKey = $"user_username_{user.Username}";
+            var usernameOrEmailCacheKey = $"user_usernameOrEmail_{user.Username.ToLowerInvariant()}";
 
+            // Delete the specific user cache entries
+            await _redisHelper.DeleteCacheAsync(userCacheKey);
+            await _redisHelper.DeleteCacheAsync(usernameCacheKey);
+            await _redisHelper.DeleteCacheAsync(usernameOrEmailCacheKey);
+
+            // Remove the user from "all_users" list cache
             await _redisHelper.RemoveFromListCacheAsync<User>(
                 "all_users",
                 list =>

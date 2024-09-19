@@ -37,12 +37,12 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
 
         public async Task<Service?> GetByIdAsync(int id)
         {
-            string cacheKey = $"service_{id}";
-            var cachedService = await _redisHelper.GetCacheAsync<Service>(cacheKey);
-            if (cachedService != null)
-            {
-                return cachedService;
-            }
+            // string cacheKey = $"service_{id}";
+            // var cachedService = await _redisHelper.GetCacheAsync<Service>(cacheKey);
+            // if (cachedService != null)
+            // {
+            //     return cachedService;
+            // }
 
             var service = await _context.Services.Include(s => s.Category).FirstOrDefaultAsync(s => s.ServiceId == id);
             if (service == null)
@@ -50,7 +50,7 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
                 throw new KeyNotFoundException($"Service with ID {id} not found");
             }
 
-            await _redisHelper.SetCacheAsync(cacheKey, service, TimeSpan.FromMinutes(10));
+            // await _redisHelper.SetCacheAsync(cacheKey, service, TimeSpan.FromMinutes(10));
             return service;
         }
 

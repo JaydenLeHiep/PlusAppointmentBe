@@ -36,12 +36,12 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
 
         public async Task<Staff> GetByIdAsync(int id)
         {
-            string cacheKey = $"staff_{id}";
-            var cachedStaff = await _redisHelper.GetCacheAsync<Staff>(cacheKey);
-            if (cachedStaff != null)
-            {
-                return cachedStaff;
-            }
+            // string cacheKey = $"staff_{id}";
+            // var cachedStaff = await _redisHelper.GetCacheAsync<Staff>(cacheKey);
+            // if (cachedStaff != null)
+            // {
+            //     return cachedStaff;
+            // }
 
             var staff = await _context.Staffs.FindAsync(id);
             if (staff == null)
@@ -49,7 +49,7 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
                 throw new Exception($"Staff with ID {id} not found");
             }
 
-            await _redisHelper.SetCacheAsync(cacheKey, staff, TimeSpan.FromMinutes(10));
+            // await _redisHelper.SetCacheAsync(cacheKey, staff, TimeSpan.FromMinutes(10));
             return staff;
         }
 

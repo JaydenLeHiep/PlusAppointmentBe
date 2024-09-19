@@ -70,6 +70,31 @@ namespace PlusAppointment.Services.Implementations.UserService
 
             await _userRepository.AddAsync(user);
         }
+        
+        public async Task ChangePasswordAsync(ChangePasswordDto changePasswordDto)
+        {
+            // Retrieve the user by UserId
+            var user = await _userRepository.GetByIdAsync(changePasswordDto.UserId);
+            if (user == null)
+            {
+                throw new Exception("User not found.");
+            }
+
+            // Check if the old password is correct
+            if (changePasswordDto.OldPassword != null && !_hashUtility.VerifyPassword(user.Password, changePasswordDto.OldPassword))
+            {
+                throw new Exception("Old password is incorrect.");
+            }
+
+            // Hash the new password and update it
+            if (changePasswordDto.NewPassword != null)
+                user.Password = _hashUtility.HashPassword(changePasswordDto.NewPassword);
+            user.UpdatedAt = DateTime.UtcNow;
+
+            // Save the changes
+            await _userRepository.UpdateAsync(user);
+        }
+
 
         public async Task UpdateUserAsync(int userId, UserUpdateDto userUpdateDto)
         {

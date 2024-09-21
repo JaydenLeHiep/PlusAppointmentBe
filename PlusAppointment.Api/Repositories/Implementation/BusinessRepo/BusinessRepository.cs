@@ -8,12 +8,12 @@ namespace PlusAppointment.Repositories.Implementation.BusinessRepo
 {
     public class BusinessRepository : IBusinessRepository
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
         private readonly RedisHelper _redisHelper;
 
-        public BusinessRepository(ApplicationDbContext context, RedisHelper redisHelper)
+        public BusinessRepository(IDbContextFactory<ApplicationDbContext> contextFactory, RedisHelper redisHelper)
         {
-            _context = context;
+            _contextFactory = contextFactory;
             _redisHelper = redisHelper;
         }
 
@@ -27,10 +27,12 @@ namespace PlusAppointment.Repositories.Implementation.BusinessRepo
                 return cachedBusinesses;
             }
 
-            var businesses = await _context.Businesses.ToListAsync();
-            await _redisHelper.SetCacheAsync(cacheKey, businesses, TimeSpan.FromMinutes(10));
-
-            return businesses;
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                var businesses = await context.Businesses.ToListAsync();
+                await _redisHelper.SetCacheAsync(cacheKey, businesses, TimeSpan.FromMinutes(10));
+                return businesses;
+            }
         }
 
         public async Task<Business?> GetByIdAsync(int id)
@@ -42,14 +44,17 @@ namespace PlusAppointment.Repositories.Implementation.BusinessRepo
                 return cachedBusiness;
             }
 
-            var business = await _context.Businesses.FindAsync(id);
-            if (business == null)
+            using (var context = _contextFactory.CreateDbContext())
             {
-                throw new KeyNotFoundException($"Business with ID {id} not found");
-            }
+                var business = await context.Businesses.FindAsync(id);
+                if (business == null)
+                {
+                    throw new KeyNotFoundException($"Business with ID {id} not found");
+                }
 
-            await _redisHelper.SetCacheAsync(cacheKey, business, TimeSpan.FromMinutes(10));
-            return business;
+                await _redisHelper.SetCacheAsync(cacheKey, business, TimeSpan.FromMinutes(10));
+                return business;
+            }
         }
 
         public async Task<Business?> GetByNameAsync(string businessName)
@@ -61,68 +66,52 @@ namespace PlusAppointment.Repositories.Implementation.BusinessRepo
                 return cachedBusiness;
             }
 
-            var business = await _context.Businesses.FirstOrDefaultAsync(b => b.Name.ToLower() == businessName.ToLower());
-            if (business == null)
+            using (var context = _contextFactory.CreateDbContext())
             {
-                throw new KeyNotFoundException($"Business with name {businessName} not found");
-            }
+                var business = await context.Businesses.FirstOrDefaultAsync(b => b.Name.ToLower() == businessName.ToLower());
+                if (business == null)
+                {
+                    throw new KeyNotFoundException($"Business with name {businessName} not found");
+                }
 
-            await _redisHelper.SetCacheAsync(cacheKey, business, TimeSpan.FromMinutes(10));
-            return business;
+                await _redisHelper.SetCacheAsync(cacheKey, business, TimeSpan.FromMinutes(10));
+                return business;
+            }
         }
 
         public async Task AddAsync(Business business)
         {
-            await _context.Businesses.AddAsync(business);
-            await _context.SaveChangesAsync();
-
-            // Check if the business cache exists
-            var businessCacheKey = $"business_{business.BusinessId}";
-            var cachedBusiness = await _redisHelper.GetCacheAsync<Business>(businessCacheKey);
-
-            if (cachedBusiness == null)
+            using (var context = _contextFactory.CreateDbContext())
             {
-                // If the cache is missing or expired, refresh the caches
-                await RefreshRelatedCachesAsync(business);
+                await context.Businesses.AddAsync(business);
+                await context.SaveChangesAsync();
             }
-            else
-            {
-                // Otherwise, just update the existing cache
-                await UpdateBusinessCacheAsync(business);
-            }
+
+            await RefreshRelatedCachesAsync(business);
         }
 
         public async Task UpdateAsync(Business business)
         {
-            _context.Businesses.Update(business);
-            await _context.SaveChangesAsync();
-
-            // Check if the business cache exists
-            var businessCacheKey = $"business_{business.BusinessId}";
-            var cachedBusiness = await _redisHelper.GetCacheAsync<Business>(businessCacheKey);
-
-            if (cachedBusiness == null)
+            using (var context = _contextFactory.CreateDbContext())
             {
-                // If the cache is missing or expired, refresh the caches
-                await RefreshRelatedCachesAsync(business);
+                context.Businesses.Update(business);
+                await context.SaveChangesAsync();
             }
-            else
-            {
-                // Otherwise, just update the existing cache
-                await UpdateBusinessCacheAsync(business);
-            }
+
+            await RefreshRelatedCachesAsync(business);
         }
-
 
         public async Task DeleteAsync(int id)
         {
-            var business = await _context.Businesses.FindAsync(id);
-            if (business != null)
+            using (var context = _contextFactory.CreateDbContext())
             {
-                _context.Businesses.Remove(business);
-                await _context.SaveChangesAsync();
-
-                await InvalidateBusinessCacheAsync(business);
+                var business = await context.Businesses.FindAsync(id);
+                if (business != null)
+                {
+                    context.Businesses.Remove(business);
+                    await context.SaveChangesAsync();
+                    await InvalidateBusinessCacheAsync(business);
+                }
             }
         }
 
@@ -136,12 +125,14 @@ namespace PlusAppointment.Repositories.Implementation.BusinessRepo
                 return cachedServices;
             }
 
-            var services = await _context.Services
-                .Where(s => s.BusinessId == businessId)
-                .ToListAsync();
-            await _redisHelper.SetCacheAsync(cacheKey, services, TimeSpan.FromMinutes(10));
-
-            return services;
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                var services = await context.Services
+                    .Where(s => s.BusinessId == businessId)
+                    .ToListAsync();
+                await _redisHelper.SetCacheAsync(cacheKey, services, TimeSpan.FromMinutes(10));
+                return services;
+            }
         }
 
         public async Task<IEnumerable<Staff?>> GetStaffByBusinessIdAsync(int businessId)
@@ -154,10 +145,12 @@ namespace PlusAppointment.Repositories.Implementation.BusinessRepo
                 return cachedStaff;
             }
 
-            var staff = await _context.Staffs.Where(s => s.BusinessId == businessId).ToListAsync();
-            await _redisHelper.SetCacheAsync(cacheKey, staff, TimeSpan.FromMinutes(10));
-
-            return staff;
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                var staff = await context.Staffs.Where(s => s.BusinessId == businessId).ToListAsync();
+                await _redisHelper.SetCacheAsync(cacheKey, staff, TimeSpan.FromMinutes(10));
+                return staff;
+            }
         }
 
         public async Task<IEnumerable<Business?>> GetAllByUserIdAsync(int userId)
@@ -170,46 +163,34 @@ namespace PlusAppointment.Repositories.Implementation.BusinessRepo
                 return cachedBusinesses;
             }
 
-            var businesses = await _context.Businesses.Where(b => b.UserID == userId).ToListAsync();
-            await _redisHelper.SetCacheAsync(cacheKey, businesses, TimeSpan.FromMinutes(10));
-
-            return businesses;
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                var businesses = await context.Businesses.Where(b => b.UserID == userId).ToListAsync();
+                await _redisHelper.SetCacheAsync(cacheKey, businesses, TimeSpan.FromMinutes(10));
+                return businesses;
+            }
         }
-        
+
         private async Task RefreshRelatedCachesAsync(Business business)
         {
-            // Refresh individual business cache
-            var businessCacheKey = $"business_{business.BusinessId}";
-            await _redisHelper.SetCacheAsync(businessCacheKey, business, TimeSpan.FromMinutes(10));
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                // Refresh individual business cache
+                var businessCacheKey = $"business_{business.BusinessId}";
+                await _redisHelper.SetCacheAsync(businessCacheKey, business, TimeSpan.FromMinutes(10));
 
-            // Refresh the user's business list cache
-            string userBusinessCacheKey = $"business_user_{business.UserID}";
-            var userBusinesses = await _context.Businesses
-                .Where(b => b.UserID == business.UserID)
-                .ToListAsync();
-            await _redisHelper.SetCacheAsync(userBusinessCacheKey, userBusinesses, TimeSpan.FromMinutes(10));
+                // Refresh the user's business list cache
+                string userBusinessCacheKey = $"business_user_{business.UserID}";
+                var userBusinesses = await context.Businesses
+                    .Where(b => b.UserID == business.UserID)
+                    .ToListAsync();
+                await _redisHelper.SetCacheAsync(userBusinessCacheKey, userBusinesses, TimeSpan.FromMinutes(10));
 
-            // Refresh the cache for all businesses
-            const string allBusinessesCacheKey = "all_businesses";
-            var allBusinesses = await _context.Businesses.ToListAsync();
-            await _redisHelper.SetCacheAsync(allBusinessesCacheKey, allBusinesses, TimeSpan.FromMinutes(10));
-        }
-
-
-        private async Task UpdateBusinessCacheAsync(Business business)
-        {
-            var businessCacheKey = $"business_{business.BusinessId}";
-            await _redisHelper.SetCacheAsync(businessCacheKey, business, TimeSpan.FromMinutes(10));
-
-            await _redisHelper.UpdateListCacheAsync<Business>(
-                $"business_user_{business.UserID}",
-                list =>
-                {
-                    list.RemoveAll(b => b.BusinessId == business.BusinessId);
-                    list.Add(business);
-                    return list;
-                },
-                TimeSpan.FromMinutes(10));
+                // Refresh the cache for all businesses
+                const string allBusinessesCacheKey = "all_businesses";
+                var allBusinesses = await context.Businesses.ToListAsync();
+                await _redisHelper.SetCacheAsync(allBusinessesCacheKey, allBusinesses, TimeSpan.FromMinutes(10));
+            }
         }
 
         private async Task InvalidateBusinessCacheAsync(Business business)

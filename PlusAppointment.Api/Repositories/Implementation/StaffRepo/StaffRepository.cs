@@ -9,12 +9,12 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
 {
     public class StaffRepository : IStaffRepository
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
         private readonly RedisHelper _redisHelper;
 
-        public StaffRepository(ApplicationDbContext context, RedisHelper redisHelper)
+        public StaffRepository(IDbContextFactory<ApplicationDbContext> contextFactory, RedisHelper redisHelper)
         {
-            _context = context;
+            _contextFactory = contextFactory;
             _redisHelper = redisHelper;
         }
 
@@ -28,29 +28,26 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
                 return cachedStaffs;
             }
 
-            var staffs = await _context.Staffs.ToListAsync();
-            await _redisHelper.SetCacheAsync(cacheKey, staffs, TimeSpan.FromMinutes(10));
-
-            return staffs;
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                var staffs = await context.Staffs.ToListAsync();
+                await _redisHelper.SetCacheAsync(cacheKey, staffs, TimeSpan.FromMinutes(10));
+                return staffs;
+            }
         }
 
         public async Task<Staff> GetByIdAsync(int id)
         {
-            // string cacheKey = $"staff_{id}";
-            // var cachedStaff = await _redisHelper.GetCacheAsync<Staff>(cacheKey);
-            // if (cachedStaff != null)
-            // {
-            //     return cachedStaff;
-            // }
-
-            var staff = await _context.Staffs.FindAsync(id);
-            if (staff == null)
+            using (var context = _contextFactory.CreateDbContext())
             {
-                throw new Exception($"Staff with ID {id} not found");
-            }
+                var staff = await context.Staffs.FindAsync(id);
+                if (staff == null)
+                {
+                    throw new Exception($"Staff with ID {id} not found");
+                }
 
-            // await _redisHelper.SetCacheAsync(cacheKey, staff, TimeSpan.FromMinutes(10));
-            return staff;
+                return staff;
+            }
         }
 
         public async Task<IEnumerable<Staff?>> GetAllByBusinessIdAsync(int businessId)
@@ -60,47 +57,37 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
 
             if (cachedStaffs != null && cachedStaffs.Any())
             {
-                // Ensure the cached staff list is sorted by StaffId before returning
                 return cachedStaffs.OrderBy(s => s.StaffId);
             }
 
-            var staffs = await _context.Staffs
-                .Where(s => s.BusinessId == businessId)
-                .OrderBy(s => s.StaffId) // Sort the staff list by StaffId when fetching from the database
-                .ToListAsync();
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                var staffs = await context.Staffs
+                    .Where(s => s.BusinessId == businessId)
+                    .OrderBy(s => s.StaffId)
+                    .ToListAsync();
 
-            await _redisHelper.SetCacheAsync(cacheKey, staffs, TimeSpan.FromMinutes(10));
-
-            return staffs;
+                await _redisHelper.SetCacheAsync(cacheKey, staffs, TimeSpan.FromMinutes(10));
+                return staffs;
+            }
         }
-
 
         public async Task AddStaffAsync(Staff staff, int businessId)
         {
-            var business = await _context.Businesses.FindAsync(businessId);
-            if (business == null)
+            using (var context = _contextFactory.CreateDbContext())
             {
-                throw new Exception("Business not found");
+                var business = await context.Businesses.FindAsync(businessId);
+                if (business == null)
+                {
+                    throw new Exception("Business not found");
+                }
+
+                staff.BusinessId = businessId;
+                await context.Staffs.AddAsync(staff);
+                await context.SaveChangesAsync();
             }
 
-            staff.BusinessId = businessId;
-            await _context.Staffs.AddAsync(staff);
-            await _context.SaveChangesAsync();
-
-            // Check the cache for the business
-            string cacheKey = $"staff_business_{businessId}";
-            var cachedStaffs = await _redisHelper.GetCacheAsync<List<Staff>>(cacheKey);
-
-            if (cachedStaffs == null)
-            {
-                // If the cache is empty or expired, refresh the cache from the database
-                await RefreshRelatedCachesAsync(staff);
-            }
-            else
-            {
-                // If the cache exists, update it with the new staff
-                await UpdateStaffCacheAsync(staff);
-            }
+            await RefreshRelatedCachesAsync(staff);
         }
 
         public async Task AddListStaffsAsync(IEnumerable<Staff>? staffs)
@@ -110,61 +97,46 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
                 throw new Exception("Staffs collection cannot be null or empty");
             }
 
-            var staffList = staffs.ToList();
-            var businessId = staffList.First().BusinessId;
-            var business = await _context.Businesses.FindAsync(businessId);
-            if (business == null)
+            using (var context = _contextFactory.CreateDbContext())
             {
-                throw new Exception("Business not found");
-            }
-
-            await _context.Staffs.AddRangeAsync(staffList);
-            await _context.SaveChangesAsync();
-
-            // Check the cache for the business
-            string cacheKey = $"staff_business_{businessId}";
-            var cachedStaffs = await _redisHelper.GetCacheAsync<List<Staff>>(cacheKey);
-
-            if (cachedStaffs == null)
-            {
-                // If the cache is empty or expired, refresh the cache from the database
-                await RefreshRelatedCachesAsync(staffList.First());
-            }
-            else
-            {
-                // If the cache exists, update it with each new staff
-                foreach (var staff in staffList)
+                var staffList = staffs.ToList();
+                var businessId = staffList.First().BusinessId;
+                var business = await context.Businesses.FindAsync(businessId);
+                if (business == null)
                 {
-                    if (staff != null)
-                    {
-                        await UpdateStaffCacheAsync(staff);
-                    }
+                    throw new Exception("Business not found");
                 }
+
+                await context.Staffs.AddRangeAsync(staffList);
+                await context.SaveChangesAsync();
+            }
+
+            foreach (var staff in staffs)
+            {
+                await UpdateStaffCacheAsync(staff);
             }
         }
 
         public async Task UpdateAsync(Staff staff)
         {
-            await using var connection = new NpgsqlConnection(_context.Database.GetConnectionString());
+            await using var connection = new NpgsqlConnection(_contextFactory.CreateDbContext().Database.GetConnectionString());
             await connection.OpenAsync();
             await using var transaction = await connection.BeginTransactionAsync();
 
             try
             {
-                // SQL query to update the staff in PostgreSQL
                 var updateQuery = @"
-        UPDATE staffs 
-        SET 
-            name = @Name, 
-            email = @Email, 
-            phone = @Phone, 
-            password = @Password,
-            business_id = @BusinessId
-        WHERE staff_id = @StaffId";
+                    UPDATE staffs 
+                    SET 
+                        name = @Name, 
+                        email = @Email, 
+                        phone = @Phone, 
+                        password = @Password,
+                        business_id = @BusinessId
+                    WHERE staff_id = @StaffId";
 
                 await using var command = new NpgsqlCommand(updateQuery, connection, transaction);
 
-                // Add parameters to prevent SQL injection
                 command.Parameters.AddWithValue("@Name", staff.Name);
                 command.Parameters.AddWithValue("@Email", staff.Email);
                 command.Parameters.AddWithValue("@Phone", staff.Phone);
@@ -172,35 +144,17 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
                 command.Parameters.AddWithValue("@BusinessId", staff.BusinessId);
                 command.Parameters.AddWithValue("@StaffId", staff.StaffId);
 
-                // Execute the update query
                 await command.ExecuteNonQueryAsync();
-
-                // Commit the transaction after successful update
                 await transaction.CommitAsync();
 
-                // Check the cache for the business
-                string cacheKey = $"staff_business_{staff.BusinessId}";
-                var cachedStaffs = await _redisHelper.GetCacheAsync<List<Staff>>(cacheKey);
-
-                if (cachedStaffs == null)
-                {
-                    // If the cache is empty or expired, refresh the cache from the database
-                    await RefreshRelatedCachesAsync(staff);
-                }
-                else
-                {
-                    // If the cache exists, update it with the modified staff
-                    await UpdateStaffCacheAsync(staff);
-                }
+                await UpdateStaffCacheAsync(staff);
             }
             catch
             {
-                // Rollback transaction in case of any error
                 await transaction.RollbackAsync();
                 throw;
             }
         }
-
 
         public async Task<Staff?> GetByBusinessIdServiceIdAsync(int businessId, int staffId)
         {
@@ -211,55 +165,68 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
                 return cachedStaff;
             }
 
-            var staff = await _context.Staffs
-                .Where(s => s.BusinessId == businessId && s.StaffId == staffId)
-                .FirstOrDefaultAsync();
-
-            if (staff == null)
+            using (var context = _contextFactory.CreateDbContext())
             {
-                throw new KeyNotFoundException($"Staff with ID {staffId} not found for Business ID {businessId}");
+                var staff = await context.Staffs
+                    .Where(s => s.BusinessId == businessId && s.StaffId == staffId)
+                    .FirstOrDefaultAsync();
+
+                if (staff == null)
+                {
+                    throw new KeyNotFoundException($"Staff with ID {staffId} not found for Business ID {businessId}");
+                }
+
+                await _redisHelper.SetCacheAsync(cacheKey, staff, TimeSpan.FromMinutes(10));
+                return staff;
             }
-
-            await _redisHelper.SetCacheAsync(cacheKey, staff, TimeSpan.FromMinutes(10));
-            return staff;
         }
-
 
         public async Task DeleteAsync(int businessId, int staffId)
         {
-            var staff = await _context.Staffs
-                .Where(s => s.BusinessId == businessId && s.StaffId == staffId)
-                .FirstOrDefaultAsync();
-
-            if (staff != null)
+            using (var context = _contextFactory.CreateDbContext())
             {
-                _context.Staffs.Remove(staff);
-                await _context.SaveChangesAsync();
-                await InvalidateStaffCacheAsync(staff);
-                // Refresh related caches
-                await RefreshRelatedCachesAsync(staff);
+                var staff = await context.Staffs
+                    .Where(s => s.BusinessId == businessId && s.StaffId == staffId)
+                    .FirstOrDefaultAsync();
+
+                if (staff != null)
+                {
+                    context.Staffs.Remove(staff);
+                    await context.SaveChangesAsync();
+                    await InvalidateStaffCacheAsync(staff);
+                    await RefreshRelatedCachesAsync(staff);
+                }
             }
         }
 
         public async Task<Staff> GetByEmailAsync(string email)
         {
-            var staff = await _context.Staffs.SingleOrDefaultAsync(s => s.Email == email);
-            if (staff == null)
+            using (var context = _contextFactory.CreateDbContext())
             {
-                throw new KeyNotFoundException($"Staff with email {email} not found");
-            }
+                var staff = await context.Staffs.SingleOrDefaultAsync(s => s.Email == email);
+                if (staff == null)
+                {
+                    throw new KeyNotFoundException($"Staff with email {email} not found");
+                }
 
-            return staff;
+                return staff;
+            }
         }
 
         public async Task<bool> EmailExistsAsync(string email)
         {
-            return await _context.Staffs.AnyAsync(s => s.Email == email);
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                return await context.Staffs.AnyAsync(s => s.Email == email);
+            }
         }
 
         public async Task<bool> PhoneExistsAsync(string phone)
         {
-            return await _context.Staffs.AnyAsync(s => s.Phone == phone);
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                return await context.Staffs.AnyAsync(s => s.Phone == phone);
+            }
         }
 
         private async Task UpdateStaffCacheAsync(Staff staff)
@@ -271,25 +238,20 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
                 $"staff_business_{staff.BusinessId}",
                 list =>
                 {
-                    // Find the index of the existing staff in the list
                     int index = list.FindIndex(s => s.StaffId == staff.StaffId);
                     if (index != -1)
                     {
-                        // Replace the existing staff with the updated one
                         list[index] = staff;
                     }
                     else
                     {
-                        // If the staff is not found in the list, add it to the list
                         list.Add(staff);
                     }
 
-                    // Sort the list by StaffId
                     return list.OrderBy(s => s.StaffId).ToList();
                 },
                 TimeSpan.FromMinutes(10));
         }
-
 
         private async Task InvalidateStaffCacheAsync(Staff staff)
         {
@@ -308,22 +270,22 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
 
         private async Task RefreshRelatedCachesAsync(Staff staff)
         {
-            // Refresh individual Staff cache
-            var staffCacheKey = $"staff_{staff.StaffId}";
-            await _redisHelper.SetCacheAsync(staffCacheKey, staff, TimeSpan.FromMinutes(10));
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                var staffCacheKey = $"staff_{staff.StaffId}";
+                await _redisHelper.SetCacheAsync(staffCacheKey, staff, TimeSpan.FromMinutes(10));
 
-            // Refresh list of all Staff for the Business
-            string businessCacheKey = $"staff_business_{staff.BusinessId}";
-            var businessStaff = await _context.Staffs
-                .Where(s => s.BusinessId == staff.BusinessId)
-                .ToListAsync();
+                string businessCacheKey = $"staff_business_{staff.BusinessId}";
+                var businessStaff = await context.Staffs
+                    .Where(s => s.BusinessId == staff.BusinessId)
+                    .ToListAsync();
 
-            await _redisHelper.SetCacheAsync(businessCacheKey, businessStaff, TimeSpan.FromMinutes(10));
+                await _redisHelper.SetCacheAsync(businessCacheKey, businessStaff, TimeSpan.FromMinutes(10));
 
-            // Optionally refresh the cache for all staff members if required
-            const string allStaffCacheKey = "all_staffs";
-            var allStaffs = await _context.Staffs.ToListAsync();
-            await _redisHelper.SetCacheAsync(allStaffCacheKey, allStaffs, TimeSpan.FromMinutes(10));
+                const string allStaffCacheKey = "all_staffs";
+                var allStaffs = await context.Staffs.ToListAsync();
+                await _redisHelper.SetCacheAsync(allStaffCacheKey, allStaffs, TimeSpan.FromMinutes(10));
+            }
         }
     }
 }

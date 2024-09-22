@@ -241,23 +241,13 @@ namespace PlusAppointment.Migrations
                 });
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.NotAvailableTime", b =>
-            {
-                b.Property<int>("NotAvailableTimeId")
-                    .ValueGeneratedOnAdd()
-                    .HasColumnType("integer")
-                    .HasColumnName("not_available_time_id");
-
-                NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("NotAvailableTimeId"));
-
-                modelBuilder.Entity("PlusAppointment.Models.Classes.Notification", b =>
                 {
-                    b.Property<int>("NotificationId")
+                    b.Property<int>("NotAvailableTimeId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("notification_id");
+                        .HasColumnName("not_available_time_id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("NotificationId"));
-
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("NotAvailableTimeId"));
 
                     b.Property<int>("BusinessId")
                         .HasColumnType("integer")
@@ -296,6 +286,20 @@ namespace PlusAppointment.Migrations
                         .HasDatabaseName("IX_NotAvailableTime_DateRange");
 
                     b.ToTable("not_available_times", (string)null);
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Notification", b =>
+                {
+                    b.Property<int>("NotificationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("notification_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("NotificationId"));
+
+                    b.Property<int>("BusinessId")
+                        .HasColumnType("integer")
+                        .HasColumnName("business_id");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -320,10 +324,90 @@ namespace PlusAppointment.Migrations
                         .HasDatabaseName("IX_Notification_CreatedAt");
 
                     b.ToTable("notification_table", (string)null);
-
                 });
 
-                modelBuilder.Entity("PlusAppointment.Models.Classes.Service", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.OpeningHours", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BusinessId")
+                        .HasColumnType("integer")
+                        .HasColumnName("business_id");
+
+                    b.Property<TimeSpan>("FridayClosingTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("friday_closing_time");
+
+                    b.Property<TimeSpan>("FridayOpeningTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("friday_opening_time");
+
+                    b.Property<int>("MinimumAdvanceBookingHours")
+                        .HasColumnType("integer")
+                        .HasColumnName("minimum_advance_booking_hours");
+
+                    b.Property<TimeSpan>("MondayClosingTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("monday_closing_time");
+
+                    b.Property<TimeSpan>("MondayOpeningTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("monday_opening_time");
+
+                    b.Property<TimeSpan>("SaturdayClosingTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("saturday_closing_time");
+
+                    b.Property<TimeSpan>("SaturdayOpeningTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("saturday_opening_time");
+
+                    b.Property<TimeSpan>("SundayClosingTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("sunday_closing_time");
+
+                    b.Property<TimeSpan>("SundayOpeningTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("sunday_opening_time");
+
+                    b.Property<TimeSpan>("ThursdayClosingTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("thursday_closing_time");
+
+                    b.Property<TimeSpan>("ThursdayOpeningTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("thursday_opening_time");
+
+                    b.Property<TimeSpan>("TuesdayClosingTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("tuesday_closing_time");
+
+                    b.Property<TimeSpan>("TuesdayOpeningTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("tuesday_opening_time");
+
+                    b.Property<TimeSpan>("WednesdayClosingTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("wednesday_closing_time");
+
+                    b.Property<TimeSpan>("WednesdayOpeningTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("wednesday_opening_time");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BusinessId")
+                        .HasDatabaseName("IX_OpeningHours_BusinessId");
+
+                    b.ToTable("opening_hours", (string)null);
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Service", b =>
                 {
                     b.Property<int>("ServiceId")
                         .ValueGeneratedOnAdd()
@@ -367,7 +451,7 @@ namespace PlusAppointment.Migrations
                     b.ToTable("services", (string)null);
                 });
 
-                modelBuilder.Entity("PlusAppointment.Models.Classes.ServiceCategory", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.ServiceCategory", b =>
                 {
                     b.Property<int>("CategoryId")
                         .ValueGeneratedOnAdd()
@@ -386,7 +470,7 @@ namespace PlusAppointment.Migrations
                     b.ToTable("service_categories", (string)null);
                 });
 
-                modelBuilder.Entity("PlusAppointment.Models.Classes.ShopPicture", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.ShopPicture", b =>
                 {
                     b.Property<int>("ShopPictureId")
                         .ValueGeneratedOnAdd()
@@ -416,7 +500,7 @@ namespace PlusAppointment.Migrations
                     b.ToTable("shop_pictures", (string)null);
                 });
 
-                modelBuilder.Entity("PlusAppointment.Models.Classes.Staff", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Staff", b =>
                 {
                     b.Property<int>("StaffId")
                         .ValueGeneratedOnAdd()
@@ -454,7 +538,7 @@ namespace PlusAppointment.Migrations
                     b.ToTable("staffs", (string)null);
                 });
 
-                modelBuilder.Entity("PlusAppointment.Models.Classes.User", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.User", b =>
                 {
                     b.Property<int>("UserId")
                         .ValueGeneratedOnAdd()
@@ -500,7 +584,7 @@ namespace PlusAppointment.Migrations
                     b.ToTable("users", (string)null);
                 });
 
-                modelBuilder.Entity("PlusAppointment.Models.Classes.UserRefreshToken", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.UserRefreshToken", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -532,7 +616,7 @@ namespace PlusAppointment.Migrations
                     b.ToTable("user_refresh_tokens", (string)null);
                 });
 
-                modelBuilder.Entity("PlusAppointment.Models.Classes.Appointment", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Appointment", b =>
                 {
                     b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
                         .WithMany("Appointments")
@@ -551,7 +635,7 @@ namespace PlusAppointment.Migrations
                     b.Navigation("Customer");
                 });
 
-                modelBuilder.Entity("PlusAppointment.Models.Classes.AppointmentServiceStaffMapping", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.AppointmentServiceStaffMapping", b =>
                 {
                     b.HasOne("PlusAppointment.Models.Classes.Appointment", "Appointment")
                         .WithMany("AppointmentServices")
@@ -578,7 +662,7 @@ namespace PlusAppointment.Migrations
                     b.Navigation("Staff");
                 });
 
-                modelBuilder.Entity("PlusAppointment.Models.Classes.Business", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Business", b =>
                 {
                     b.HasOne("PlusAppointment.Models.Classes.User", "User")
                         .WithMany("Businesses")
@@ -589,7 +673,7 @@ namespace PlusAppointment.Migrations
                     b.Navigation("User");
                 });
 
-                modelBuilder.Entity("PlusAppointment.Models.Classes.Customer", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Customer", b =>
                 {
                     b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
                         .WithMany("Customers")
@@ -600,7 +684,7 @@ namespace PlusAppointment.Migrations
                     b.Navigation("Business");
                 });
 
-                modelBuilder.Entity("PlusAppointment.Models.Classes.EmailUsage", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.EmailUsage", b =>
                 {
                     b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
                         .WithMany("EmailUsages")
@@ -611,7 +695,7 @@ namespace PlusAppointment.Migrations
                     b.Navigation("Business");
                 });
 
-                modelBuilder.Entity("PlusAppointment.Models.Classes.NotAvailableDate", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.NotAvailableDate", b =>
                 {
                     b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
                         .WithMany("NotAvailableDates")
@@ -630,148 +714,155 @@ namespace PlusAppointment.Migrations
                     b.Navigation("Staff");
                 });
 
-
-                modelBuilder.Entity("PlusAppointment.Models.Classes.NotAvailableTime", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.NotAvailableTime", b =>
                 {
                     b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
-                        .WithMany("NotAvailableTimes");
+                        .WithMany("NotAvailableTimes")
+                        .HasForeignKey("BusinessId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    modelBuilder.Entity("PlusAppointment.Models.Classes.Notification", b =>
-                    {
-                        b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
-                            .WithMany("Notifications")
+                    b.HasOne("PlusAppointment.Models.Classes.Staff", "Staff")
+                        .WithMany("NotAvailableTimes")
+                        .HasForeignKey("StaffId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                            .HasForeignKey("BusinessId")
-                            .OnDelete(DeleteBehavior.Cascade)
-                            .IsRequired();
+                    b.Navigation("Business");
 
-
-                        b.HasOne("PlusAppointment.Models.Classes.Staff", "Staff")
-                            .WithMany("NotAvailableTimes")
-                            .HasForeignKey("StaffId")
-                            .OnDelete(DeleteBehavior.Cascade)
-                            .IsRequired();
-
-                        b.Navigation("Business");
-
-                        b.Navigation("Staff");
-
-                        b.Navigation("Business");
-
-                    });
-
-                    modelBuilder.Entity("PlusAppointment.Models.Classes.Service", b =>
-                    {
-                        b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
-                            .WithMany("Services")
-                            .HasForeignKey("BusinessId")
-                            .OnDelete(DeleteBehavior.Cascade)
-                            .IsRequired();
-
-                        b.HasOne("PlusAppointment.Models.Classes.ServiceCategory", "Category")
-                            .WithMany("Services")
-                            .HasForeignKey("CategoryId")
-                            .OnDelete(DeleteBehavior.SetNull);
-
-                        b.Navigation("Business");
-
-                        b.Navigation("Category");
-                    });
-
-                    modelBuilder.Entity("PlusAppointment.Models.Classes.ShopPicture", b =>
-                    {
-                        b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
-                            .WithMany("ShopPictures")
-                            .HasForeignKey("BusinessId")
-                            .OnDelete(DeleteBehavior.Cascade)
-                            .IsRequired();
-
-                        b.Navigation("Business");
-                    });
-
-                    modelBuilder.Entity("PlusAppointment.Models.Classes.Staff", b =>
-                    {
-                        b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
-                            .WithMany("Staffs")
-                            .HasForeignKey("BusinessId")
-                            .OnDelete(DeleteBehavior.Cascade)
-                            .IsRequired();
-
-                        b.Navigation("Business");
-                    });
-
-                    modelBuilder.Entity("PlusAppointment.Models.Classes.UserRefreshToken", b =>
-                    {
-                        b.HasOne("PlusAppointment.Models.Classes.User", "User")
-                            .WithMany("RefreshTokens")
-                            .HasForeignKey("UserId")
-                            .OnDelete(DeleteBehavior.Cascade)
-                            .IsRequired();
-
-                        b.Navigation("User");
-                    });
-
-                    modelBuilder.Entity("PlusAppointment.Models.Classes.Appointment", b =>
-                    {
-                        b.Navigation("AppointmentServices");
-                    });
-
-                    modelBuilder.Entity("PlusAppointment.Models.Classes.Business", b =>
-                    {
-                        b.Navigation("Appointments");
-
-                        b.Navigation("Customers");
-
-                        b.Navigation("EmailUsages");
-
-                        b.Navigation("NotAvailableDates");
-
-
-                        b.Navigation("NotAvailableTimes");
-
-                        b.Navigation("Notifications");
-
-
-                        b.Navigation("Services");
-
-                        b.Navigation("ShopPictures");
-
-                        b.Navigation("Staffs");
-                    });
-
-                    modelBuilder.Entity("PlusAppointment.Models.Classes.Customer", b =>
-                    {
-                        b.Navigation("Appointments");
-                    });
-
-                    modelBuilder.Entity("PlusAppointment.Models.Classes.Service", b =>
-                    {
-                        b.Navigation("AppointmentServicesStaffs");
-                    });
-
-                    modelBuilder.Entity("PlusAppointment.Models.Classes.ServiceCategory", b =>
-                    {
-                        b.Navigation("Services");
-                    });
-
-                    modelBuilder.Entity("PlusAppointment.Models.Classes.Staff", b =>
-                    {
-                        b.Navigation("AppointmentServicesStaffs");
-
-                        b.Navigation("NotAvailableDates");
-
-                        b.Navigation("NotAvailableTimes");
-                    });
-
-                    modelBuilder.Entity("PlusAppointment.Models.Classes.User", b =>
-                    {
-                        b.Navigation("Businesses");
-
-                        b.Navigation("RefreshTokens");
-                    });
-
+                    b.Navigation("Staff");
                 });
-            });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Notification", b =>
+                {
+                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
+                        .WithMany("Notifications")
+                        .HasForeignKey("BusinessId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Business");
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.OpeningHours", b =>
+                {
+                    b.HasOne("PlusAppointment.Models.Classes.Business", null)
+                        .WithMany("OpeningHours")
+                        .HasForeignKey("BusinessId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Service", b =>
+                {
+                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
+                        .WithMany("Services")
+                        .HasForeignKey("BusinessId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PlusAppointment.Models.Classes.ServiceCategory", "Category")
+                        .WithMany("Services")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Business");
+
+                    b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.ShopPicture", b =>
+                {
+                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
+                        .WithMany("ShopPictures")
+                        .HasForeignKey("BusinessId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Business");
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Staff", b =>
+                {
+                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
+                        .WithMany("Staffs")
+                        .HasForeignKey("BusinessId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Business");
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.UserRefreshToken", b =>
+                {
+                    b.HasOne("PlusAppointment.Models.Classes.User", "User")
+                        .WithMany("RefreshTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Appointment", b =>
+                {
+                    b.Navigation("AppointmentServices");
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Business", b =>
+                {
+                    b.Navigation("Appointments");
+
+                    b.Navigation("Customers");
+
+                    b.Navigation("EmailUsages");
+
+                    b.Navigation("NotAvailableDates");
+
+                    b.Navigation("NotAvailableTimes");
+
+                    b.Navigation("Notifications");
+
+                    b.Navigation("OpeningHours");
+
+                    b.Navigation("Services");
+
+                    b.Navigation("ShopPictures");
+
+                    b.Navigation("Staffs");
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Customer", b =>
+                {
+                    b.Navigation("Appointments");
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Service", b =>
+                {
+                    b.Navigation("AppointmentServicesStaffs");
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.ServiceCategory", b =>
+                {
+                    b.Navigation("Services");
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Staff", b =>
+                {
+                    b.Navigation("AppointmentServicesStaffs");
+
+                    b.Navigation("NotAvailableDates");
+
+                    b.Navigation("NotAvailableTimes");
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.User", b =>
+                {
+                    b.Navigation("Businesses");
+
+                    b.Navigation("RefreshTokens");
+                });
+#pragma warning restore 612, 618
         }
     }
 }

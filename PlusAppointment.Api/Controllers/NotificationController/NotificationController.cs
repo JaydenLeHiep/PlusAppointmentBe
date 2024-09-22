@@ -60,4 +60,19 @@ public class NotificationController : ControllerBase
                 new { message = $"An error occurred while creating the notification: {ex.Message}" });
         }
     }
+    
+    // POST: api/notification/mark-as-seen
+    [HttpPost("mark-as-seen")]
+    public async Task<IActionResult> MarkNotificationsAsSeen([FromBody] MarkNotificationsAsSeenDto request)
+    {
+        try
+        {
+            await _notificationService.MarkNotificationsAsSeenAsync(request.BusinessId, request.NotificationIds);
+            return Ok(new { message = "Notifications marked as seen successfully." });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = $"An error occurred while marking notifications: {ex.Message}" });
+        }
+    }
 }

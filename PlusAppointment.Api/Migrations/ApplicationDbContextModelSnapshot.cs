@@ -305,6 +305,12 @@ namespace PlusAppointment.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<bool>("IsSeen")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_seen");
+
                     b.Property<string>("Message")
                         .IsRequired()
                         .HasColumnType("text")

@@ -9,7 +9,7 @@ public class Notification
     public string Message { get; set; } = string.Empty; // Message for the notification
     public NotificationType NotificationType { get; set; } // Type: Add, Cancel, Update
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow; // Timestamp of creation
-    
+    public bool IsSeen { get; set; } = false;
 }
 
 public enum NotificationType

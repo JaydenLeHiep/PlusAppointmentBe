@@ -56,6 +56,26 @@ namespace PlusAppointment.Repositories.Implementation.NotificationRepo
             await RefreshRelatedCachesAsync(businessId);
             return await _redisHelper.GetCacheAsync<List<Notification>>(cacheKey) ?? new List<Notification>();
         }
+        
+        public async Task MarkNotificationsAsSeenAsync(int businessId, List<int> notificationIds)
+        {
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                var notifications = await context.Notifications
+                    .Where(n => n.BusinessId == businessId && notificationIds.Contains(n.NotificationId))
+                    .ToListAsync();
+
+                foreach (var notification in notifications)
+                {
+                    notification.IsSeen = true;
+                }
+
+                context.Notifications.UpdateRange(notifications);
+                await context.SaveChangesAsync();
+            }
+
+            await InvalidateNotificationCacheAsync(businessId);
+        }
 
         private async Task UpdateNotificationCacheAsync(Notification notification)
         {
@@ -71,6 +91,7 @@ namespace PlusAppointment.Repositories.Implementation.NotificationRepo
                 },
                 TimeSpan.FromMinutes(10));
         }
+        
 
         private async Task RefreshRelatedCachesAsync(int businessId)
         {

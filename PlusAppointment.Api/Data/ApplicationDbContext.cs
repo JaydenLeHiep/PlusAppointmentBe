@@ -174,6 +174,7 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<Notification>().Property(n => n.NotificationId).HasColumnName("notification_id");
             modelBuilder.Entity<Notification>().Property(n => n.BusinessId).HasColumnName("business_id");
             modelBuilder.Entity<Notification>().Property(n => n.Message).HasColumnName("message");
+            modelBuilder.Entity<Notification>().Property(n => n.IsSeen).HasColumnName("is_seen").HasDefaultValue(false);
 
             modelBuilder.Entity<Notification>().Property(n => n.NotificationType)
                 .HasColumnName("notification_type")

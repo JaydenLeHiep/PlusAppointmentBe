@@ -12,8 +12,8 @@ using PlusAppointment.Data;
 namespace PlusAppointment.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240922125847_RenameMinimumAdvanceBookingColumn")]
-    partial class RenameMinimumAdvanceBookingColumn
+    [Migration("20240922181501_AddIsSeenToNotification")]
+    partial class AddIsSeenToNotification
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -307,6 +307,12 @@ namespace PlusAppointment.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
+
+                    b.Property<bool>("IsSeen")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_seen");
 
                     b.Property<string>("Message")
                         .IsRequired()

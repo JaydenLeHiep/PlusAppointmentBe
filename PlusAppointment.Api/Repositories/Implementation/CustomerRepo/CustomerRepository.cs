@@ -10,12 +10,12 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
 {
     public class CustomerRepository : ICustomerRepository
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
         private readonly RedisHelper _redisHelper;
 
-        public CustomerRepository(ApplicationDbContext context, RedisHelper redisHelper)
+        public CustomerRepository(IDbContextFactory<ApplicationDbContext> contextFactory, RedisHelper redisHelper)
         {
-            _context = context;
+            _contextFactory = contextFactory;
             _redisHelper = redisHelper;
         }
 
@@ -29,10 +29,12 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 return cachedCustomers;
             }
 
-            var customers = await _context.Customers.ToListAsync();
-            await _redisHelper.SetCacheAsync(cacheKey, customers, TimeSpan.FromMinutes(10));
-
-            return customers;
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                var customers = await context.Customers.ToListAsync();
+                await _redisHelper.SetCacheAsync(cacheKey, customers, TimeSpan.FromMinutes(10));
+                return customers;
+            }
         }
 
         public async Task<Customer?> GetCustomerByIdAsync(int customerId)
@@ -44,14 +46,17 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 return cachedCustomer;
             }
 
-            var customer = await _context.Customers.FindAsync(customerId);
-            if (customer == null)
+            using (var context = _contextFactory.CreateDbContext())
             {
-                throw new KeyNotFoundException($"Customer with ID {customerId} not found");
-            }
+                var customer = await context.Customers.FindAsync(customerId);
+                if (customer == null)
+                {
+                    throw new KeyNotFoundException($"Customer with ID {customerId} not found");
+                }
 
-            await _redisHelper.SetCacheAsync(cacheKey, customer, TimeSpan.FromMinutes(10));
-            return customer;
+                await _redisHelper.SetCacheAsync(cacheKey, customer, TimeSpan.FromMinutes(10));
+                return customer;
+            }
         }
 
         public async Task<Customer?> GetCustomerByEmailOrPhoneAsync(string emailOrPhone)
@@ -63,15 +68,18 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 return cachedCustomer;
             }
 
-            var customer = await _context.Customers
-                .FirstOrDefaultAsync(c => c.Email == emailOrPhone || c.Phone == emailOrPhone);
-            if (customer == null)
+            using (var context = _contextFactory.CreateDbContext())
             {
-                return null;
-            }
+                var customer = await context.Customers
+                    .FirstOrDefaultAsync(c => c.Email == emailOrPhone || c.Phone == emailOrPhone);
+                if (customer == null)
+                {
+                    return null;
+                }
 
-            await _redisHelper.SetCacheAsync(cacheKey, customer, TimeSpan.FromMinutes(10));
-            return customer;
+                await _redisHelper.SetCacheAsync(cacheKey, customer, TimeSpan.FromMinutes(10));
+                return customer;
+            }
         }
 
         public async Task<Customer?> GetCustomerByEmailOrPhoneAndBusinessIdAsync(string emailOrPhone, int businessId)
@@ -83,18 +91,20 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 return cachedCustomer;
             }
 
-            var customer = await _context.Customers
-                .FirstOrDefaultAsync(c =>
-                    (c.Email == emailOrPhone || c.Phone == emailOrPhone) && c.BusinessId == businessId);
-
-            if (customer != null)
+            using (var context = _contextFactory.CreateDbContext())
             {
-                await _redisHelper.SetCacheAsync(cacheKey, customer, TimeSpan.FromMinutes(10));
+                var customer = await context.Customers
+                    .FirstOrDefaultAsync(c =>
+                        (c.Email == emailOrPhone || c.Phone == emailOrPhone) && c.BusinessId == businessId);
+
+                if (customer != null)
+                {
+                    await _redisHelper.SetCacheAsync(cacheKey, customer, TimeSpan.FromMinutes(10));
+                }
+
+                return customer;
             }
-
-            return customer;
         }
-
 
         public async Task AddCustomerAsync(Customer? customer)
         {
@@ -103,23 +113,13 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 throw new ArgumentNullException(nameof(customer));
             }
 
-            _context.Customers.Add(customer);
-            await _context.SaveChangesAsync();
-
-            // Check if the cache for customers of this business exists
-            string businessCacheKey = $"customers_business_{customer.BusinessId}";
-            var cachedCustomers = await _redisHelper.GetCacheAsync<List<Customer>>(businessCacheKey);
-
-            if (cachedCustomers == null)
+            using (var context = _contextFactory.CreateDbContext())
             {
-                // If the cache is empty or expired, refresh the cache from the database
-                await RefreshRelatedCachesAsync(customer);
+                context.Customers.Add(customer);
+                await context.SaveChangesAsync();
             }
-            else
-            {
-                // If the cache exists, update it with the new customer
-                await UpdateCustomerCacheAsync(customer);
-            }
+
+            await RefreshRelatedCachesAsync(customer);
         }
 
         public async Task UpdateCustomerAsync(Customer? customer)
@@ -129,7 +129,7 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 throw new ArgumentNullException(nameof(customer));
             }
 
-            await using var connection = new NpgsqlConnection(_context.Database.GetConnectionString());
+            await using var connection = new NpgsqlConnection(_contextFactory.CreateDbContext().Database.GetConnectionString());
             await connection.OpenAsync();
             await using var transaction = await connection.BeginTransactionAsync();
 
@@ -137,13 +137,13 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
             {
                 // SQL query to update the customer in PostgreSQL
                 var updateQuery = @"
-        UPDATE customers
-        SET 
-            name = @Name, 
-            email = @Email, 
-            phone = @Phone,
-            business_id = @BusinessId
-        WHERE customer_id = @CustomerId";
+                    UPDATE customers
+                    SET 
+                        name = @Name, 
+                        email = @Email, 
+                        phone = @Phone,
+                        business_id = @BusinessId
+                    WHERE customer_id = @CustomerId";
 
                 await using var command = new NpgsqlCommand(updateQuery, connection, transaction);
 
@@ -160,20 +160,7 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 // Commit the transaction after a successful update
                 await transaction.CommitAsync();
 
-                // Check if the cache for customers of this business exists
-                string businessCacheKey = $"customers_business_{customer.BusinessId}";
-                var cachedCustomers = await _redisHelper.GetCacheAsync<List<Customer>>(businessCacheKey);
-
-                if (cachedCustomers == null)
-                {
-                    // If the cache is empty or expired, refresh the cache from the database
-                    await RefreshRelatedCachesAsync(customer);
-                }
-                else
-                {
-                    // If the cache exists, update it with the modified customer
-                    await UpdateCustomerCacheAsync(customer);
-                }
+                await RefreshRelatedCachesAsync(customer);
             }
             catch
             {
@@ -183,28 +170,36 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
             }
         }
 
-
         public async Task DeleteCustomerAsync(int customerId)
         {
-            var customer = await _context.Customers.FindAsync(customerId);
-            if (customer != null)
+            using (var context = _contextFactory.CreateDbContext())
             {
-                _context.Customers.Remove(customer);
-                await _context.SaveChangesAsync();
+                var customer = await context.Customers.FindAsync(customerId);
+                if (customer != null)
+                {
+                    context.Customers.Remove(customer);
+                    await context.SaveChangesAsync();
 
-                await InvalidateCustomerCacheAsync(customer);
-                await RefreshRelatedCachesAsync(customer);
+                    await InvalidateCustomerCacheAsync(customer);
+                    await RefreshRelatedCachesAsync(customer);
+                }
             }
         }
 
         public async Task<bool> IsEmailUniqueAsync(string email)
         {
-            return !await _context.Customers.AnyAsync(c => c.Email.ToLower() == email.ToLower());
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                return !await context.Customers.AnyAsync(c => c.Email.ToLower() == email.ToLower());
+            }
         }
 
         public async Task<bool> IsPhoneUniqueAsync(string phone)
         {
-            return !await _context.Customers.AnyAsync(c => c.Phone.ToLower() == phone.ToLower());
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                return !await context.Customers.AnyAsync(c => c.Phone.ToLower() == phone.ToLower());
+            }
         }
 
         public async Task<IEnumerable<AppointmentHistoryDto>> GetAppointmentsByCustomerIdAsync(int customerId)
@@ -217,22 +212,24 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 return cachedAppointments;
             }
 
-            var appointments = await _context.Appointments
-                .Where(a => a.CustomerId == customerId)
-                .Select(a => new AppointmentHistoryDto
-                {
-                    AppointmentTime = a.AppointmentTime,
-                    StaffServices = a.AppointmentServices!.Select(ass => new StaffServiceDto
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                var appointments = await context.Appointments
+                    .Where(a => a.CustomerId == customerId)
+                    .Select(a => new AppointmentHistoryDto
                     {
-                        StaffName = ass.Staff!.Name,
-                        ServiceName = ass.Service!.Name
-                    }).ToList()
-                })
-                .ToListAsync();
+                        AppointmentTime = a.AppointmentTime,
+                        StaffServices = a.AppointmentServices!.Select(ass => new StaffServiceDto
+                        {
+                            StaffName = ass.Staff!.Name,
+                            ServiceName = ass.Service!.Name
+                        }).ToList()
+                    })
+                    .ToListAsync();
 
-            await _redisHelper.SetCacheAsync(cacheKey, appointments, TimeSpan.FromMinutes(10));
-
-            return appointments;
+                await _redisHelper.SetCacheAsync(cacheKey, appointments, TimeSpan.FromMinutes(10));
+                return appointments;
+            }
         }
 
         public async Task<IEnumerable<Customer?>> GetCustomersByBusinessIdAsync(int businessId)
@@ -245,13 +242,15 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 return cachedCustomers.OrderBy(c => c.CustomerId);
             }
 
-            var customers = await _context.Customers
-                .Where(c => c.BusinessId == businessId)
-                .ToListAsync();
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                var customers = await context.Customers
+                    .Where(c => c.BusinessId == businessId)
+                    .ToListAsync();
 
-            await _redisHelper.SetCacheAsync(cacheKey, customers, TimeSpan.FromMinutes(10));
-
-            return customers;
+                await _redisHelper.SetCacheAsync(cacheKey, customers, TimeSpan.FromMinutes(10));
+                return customers;
+            }
         }
 
         public async Task<IEnumerable<Customer?>> SearchCustomersByNameOrPhoneAsync(string searchTerm)
@@ -264,15 +263,17 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 return cachedCustomers;
             }
 
-            var customers = await _context.Customers
-                .Where(c => c != null &&
-                            (c.Name != null && c.Name.ToLower().Contains(searchTerm.ToLower()) ||
-                             c.Phone != null && c.Phone.Contains(searchTerm)))
-                .ToListAsync();
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                var customers = await context.Customers
+                    .Where(c => c != null &&
+                                (c.Name != null && c.Name.ToLower().Contains(searchTerm.ToLower()) ||
+                                 c.Phone != null && c.Phone.Contains(searchTerm)))
+                    .ToListAsync();
 
-            await _redisHelper.SetCacheAsync(cacheKey, customers, TimeSpan.FromMinutes(10));
-
-            return customers;
+                await _redisHelper.SetCacheAsync(cacheKey, customers, TimeSpan.FromMinutes(10));
+                return customers;
+            }
         }
 
         public async Task<Customer?> GetCustomerByNameOrPhoneAsync(string nameOrPhone)
@@ -284,11 +285,14 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 return cachedCustomer;
             }
 
-            var customer = await _context.Customers
-                .FirstOrDefaultAsync(c => c.Name == nameOrPhone || c.Phone == nameOrPhone);
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                var customer = await context.Customers
+                    .FirstOrDefaultAsync(c => c.Name == nameOrPhone || c.Phone == nameOrPhone);
 
-            await _redisHelper.SetCacheAsync(cacheKey, customer, TimeSpan.FromMinutes(10));
-            return customer;
+                await _redisHelper.SetCacheAsync(cacheKey, customer, TimeSpan.FromMinutes(10));
+                return customer;
+            }
         }
 
         private async Task UpdateCustomerCacheAsync(Customer customer)
@@ -300,25 +304,20 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 $"customers_business_{customer.BusinessId}",
                 list =>
                 {
-                    // Find the index of the existing customer in the list
                     int index = list.FindIndex(c => c.CustomerId == customer.CustomerId);
                     if (index != -1)
                     {
-                        // Replace the existing customer with the updated one
                         list[index] = customer;
                     }
                     else
                     {
-                        // If the customer is not found in the list, add them to the list
                         list.Add(customer);
                     }
 
-                    // Ensure the list is sorted by CustomerId (or any other relevant field)
                     return list.OrderBy(c => c.CustomerId).ToList();
                 },
                 TimeSpan.FromMinutes(10));
         }
-
 
         private async Task InvalidateCustomerCacheAsync(Customer customer)
         {
@@ -337,22 +336,22 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
 
         private async Task RefreshRelatedCachesAsync(Customer customer)
         {
-            // Refresh individual Customer cache
-            var customerCacheKey = $"customer_{customer.CustomerId}";
-            await _redisHelper.SetCacheAsync(customerCacheKey, customer, TimeSpan.FromMinutes(10));
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                var customerCacheKey = $"customer_{customer.CustomerId}";
+                await _redisHelper.SetCacheAsync(customerCacheKey, customer, TimeSpan.FromMinutes(10));
 
-            // Refresh list of all Customers for the Business
-            string businessCacheKey = $"customers_business_{customer.BusinessId}";
-            var businessCustomers = await _context.Customers
-                .Where(c => c.BusinessId == customer.BusinessId)
-                .ToListAsync();
+                string businessCacheKey = $"customers_business_{customer.BusinessId}";
+                var businessCustomers = await context.Customers
+                    .Where(c => c.BusinessId == customer.BusinessId)
+                    .ToListAsync();
 
-            await _redisHelper.SetCacheAsync(businessCacheKey, businessCustomers, TimeSpan.FromMinutes(10));
+                await _redisHelper.SetCacheAsync(businessCacheKey, businessCustomers, TimeSpan.FromMinutes(10));
 
-            // Optionally refresh the cache for all customers if required
-            const string allCustomersCacheKey = "all_customers";
-            var allCustomers = await _context.Customers.ToListAsync();
-            await _redisHelper.SetCacheAsync(allCustomersCacheKey, allCustomers, TimeSpan.FromMinutes(10));
+                const string allCustomersCacheKey = "all_customers";
+                var allCustomers = await context.Customers.ToListAsync();
+                await _redisHelper.SetCacheAsync(allCustomersCacheKey, allCustomers, TimeSpan.FromMinutes(10));
+            }
         }
     }
 }

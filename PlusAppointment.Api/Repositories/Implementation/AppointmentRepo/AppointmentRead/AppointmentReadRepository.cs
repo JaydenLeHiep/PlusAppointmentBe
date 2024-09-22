@@ -49,12 +49,12 @@ public class AppointmentReadRepository : IAppointmentReadRepository
 
     public async Task<Appointment?> GetAppointmentByIdAsync(int appointmentId)
     {
-        string cacheKey = $"appointment_{appointmentId}";
-        var appointmentCacheDto = await _redisHelper.GetCacheAsync<AppointmentCacheDto>(cacheKey);
-        if (appointmentCacheDto != null)
-        {
-            return MapFromCacheDto(appointmentCacheDto);
-        }
+        // string cacheKey = $"appointment_{appointmentId}";
+        // var appointmentCacheDto = await _redisHelper.GetCacheAsync<AppointmentCacheDto>(cacheKey);
+        // if (appointmentCacheDto != null)
+        // {
+        //     return MapFromCacheDto(appointmentCacheDto);
+        // }
 
         var appointment = await _context.Appointments
             .Include(a => a.Customer)

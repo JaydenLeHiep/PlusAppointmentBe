@@ -63,6 +63,21 @@ namespace PlusAppointment.Controllers.UserController
                 return BadRequest(new { message = $"Registration failed: {ex.Message}" });
             }
         }
+        
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto changePasswordDto)
+        {
+            try
+            {
+                await _userService.ChangePasswordAsync(changePasswordDto);
+                return Ok(new { message = "Password changed successfully!" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = $"Password change failed: {ex.Message}" });
+            }
+        }
+
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)

@@ -1,4 +1,5 @@
 using PlusAppointment.Models.Classes;
+using PlusAppointment.Models.DTOs;
 
 namespace PlusAppointment.Repositories.Interfaces.UserRepo;
 
@@ -17,5 +18,7 @@ public interface IUserRepository: IRepository<User>
     Task AddRefreshTokenAsync(UserRefreshToken refreshToken);
     Task DeleteRefreshTokenAsync(UserRefreshToken refreshToken);
     Task DeleteAllRefreshTokensForUserAsync(int userId);
+
     
+
 }

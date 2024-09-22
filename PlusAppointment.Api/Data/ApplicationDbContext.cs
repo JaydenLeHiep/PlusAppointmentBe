@@ -238,7 +238,7 @@ namespace PlusAppointment.Data
                 .Property(oh => oh.SundayClosingTime).HasColumnName("sunday_closing_time");
 
             modelBuilder.Entity<OpeningHours>()
-                .Property(oh => oh.MinimumAdvanceBookingHours).HasColumnName("minimum_advance_booking_hours");
+                .Property(oh => oh.MinimumAdvanceBookingMinutes).HasColumnName("minimum_advance_booking_minutes");
 
             // Configure relationships
             modelBuilder.Entity<Business>()

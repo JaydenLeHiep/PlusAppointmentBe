@@ -347,9 +347,9 @@ namespace PlusAppointment.Migrations
                         .HasColumnType("interval")
                         .HasColumnName("friday_opening_time");
 
-                    b.Property<int>("MinimumAdvanceBookingHours")
+                    b.Property<int>("MinimumAdvanceBookingMinutes")
                         .HasColumnType("integer")
-                        .HasColumnName("minimum_advance_booking_hours");
+                        .HasColumnName("minimum_advance_booking_minutes");
 
                     b.Property<TimeSpan>("MondayClosingTime")
                         .HasColumnType("interval")

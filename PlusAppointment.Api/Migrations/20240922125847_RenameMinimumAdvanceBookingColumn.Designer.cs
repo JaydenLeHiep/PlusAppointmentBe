@@ -12,8 +12,8 @@ using PlusAppointment.Data;
 namespace PlusAppointment.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240922103627_AddOpeningHoursTable")]
-    partial class AddOpeningHoursTable
+    [Migration("20240922125847_RenameMinimumAdvanceBookingColumn")]
+    partial class RenameMinimumAdvanceBookingColumn
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -350,9 +350,9 @@ namespace PlusAppointment.Migrations
                         .HasColumnType("interval")
                         .HasColumnName("friday_opening_time");
 
-                    b.Property<int>("MinimumAdvanceBookingHours")
+                    b.Property<int>("MinimumAdvanceBookingMinutes")
                         .HasColumnType("integer")
-                        .HasColumnName("minimum_advance_booking_hours");
+                        .HasColumnName("minimum_advance_booking_minutes");
 
                     b.Property<TimeSpan>("MondayClosingTime")
                         .HasColumnType("interval")

@@ -44,7 +44,7 @@ namespace PlusAppointment.Services.Implementations.OpeningHoursService
             existingOpeningHours.SaturdayClosingTime = openingHours.SaturdayClosingTime;
             existingOpeningHours.SundayOpeningTime = openingHours.SundayOpeningTime;
             existingOpeningHours.SundayClosingTime = openingHours.SundayClosingTime;
-            existingOpeningHours.MinimumAdvanceBookingHours = openingHours.MinimumAdvanceBookingHours;
+            existingOpeningHours.MinimumAdvanceBookingMinutes = openingHours.MinimumAdvanceBookingMinutes;
 
             await openingHoursRepository.UpdateAsync(existingOpeningHours);
         }

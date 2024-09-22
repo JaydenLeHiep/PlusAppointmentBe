@@ -27,6 +27,6 @@ namespace PlusAppointment.Models.Classes
         public TimeSpan SundayOpeningTime { get; set; }
         public TimeSpan SundayClosingTime { get; set; }
 
-        public int MinimumAdvanceBookingHours { get; set; } // Number of hours required in advance for same-day booking
+        public int MinimumAdvanceBookingMinutes { get; set; } // Number of hours required in advance for same-day booking
     }
 }

@@ -12,8 +12,8 @@ using PlusAppointment.Data;
 namespace PlusAppointment.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240910074206_AddShopPicturesIndex")]
-    partial class AddShopPicturesIndex
+    [Migration("20240922125847_RenameMinimumAdvanceBookingColumn")]
+    partial class RenameMinimumAdvanceBookingColumn
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -243,6 +243,173 @@ namespace PlusAppointment.Migrations
                     b.ToTable("not_available_dates", (string)null);
                 });
 
+            modelBuilder.Entity("PlusAppointment.Models.Classes.NotAvailableTime", b =>
+                {
+                    b.Property<int>("NotAvailableTimeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("not_available_time_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("NotAvailableTimeId"));
+
+                    b.Property<int>("BusinessId")
+                        .HasColumnType("integer")
+                        .HasColumnName("business_id");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("date");
+
+                    b.Property<DateTime>("From")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("from");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("reason");
+
+                    b.Property<int>("StaffId")
+                        .HasColumnType("integer")
+                        .HasColumnName("staff_id");
+
+                    b.Property<DateTime>("To")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("to");
+
+                    b.HasKey("NotAvailableTimeId");
+
+                    b.HasIndex("BusinessId")
+                        .HasDatabaseName("IX_NotAvailableTime_BusinessId");
+
+                    b.HasIndex("StaffId")
+                        .HasDatabaseName("IX_NotAvailableTime_StaffId");
+
+                    b.HasIndex("Date", "From", "To")
+                        .HasDatabaseName("IX_NotAvailableTime_DateRange");
+
+                    b.ToTable("not_available_times", (string)null);
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Notification", b =>
+                {
+                    b.Property<int>("NotificationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("notification_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("NotificationId"));
+
+                    b.Property<int>("BusinessId")
+                        .HasColumnType("integer")
+                        .HasColumnName("business_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("message");
+
+                    b.Property<string>("NotificationType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("notification_type");
+
+                    b.HasKey("NotificationId");
+
+                    b.HasIndex("BusinessId")
+                        .HasDatabaseName("IX_Notification_BusinessId");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("IX_Notification_CreatedAt");
+
+                    b.ToTable("notification_table", (string)null);
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.OpeningHours", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BusinessId")
+                        .HasColumnType("integer")
+                        .HasColumnName("business_id");
+
+                    b.Property<TimeSpan>("FridayClosingTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("friday_closing_time");
+
+                    b.Property<TimeSpan>("FridayOpeningTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("friday_opening_time");
+
+                    b.Property<int>("MinimumAdvanceBookingMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("minimum_advance_booking_minutes");
+
+                    b.Property<TimeSpan>("MondayClosingTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("monday_closing_time");
+
+                    b.Property<TimeSpan>("MondayOpeningTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("monday_opening_time");
+
+                    b.Property<TimeSpan>("SaturdayClosingTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("saturday_closing_time");
+
+                    b.Property<TimeSpan>("SaturdayOpeningTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("saturday_opening_time");
+
+                    b.Property<TimeSpan>("SundayClosingTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("sunday_closing_time");
+
+                    b.Property<TimeSpan>("SundayOpeningTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("sunday_opening_time");
+
+                    b.Property<TimeSpan>("ThursdayClosingTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("thursday_closing_time");
+
+                    b.Property<TimeSpan>("ThursdayOpeningTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("thursday_opening_time");
+
+                    b.Property<TimeSpan>("TuesdayClosingTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("tuesday_closing_time");
+
+                    b.Property<TimeSpan>("TuesdayOpeningTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("tuesday_opening_time");
+
+                    b.Property<TimeSpan>("WednesdayClosingTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("wednesday_closing_time");
+
+                    b.Property<TimeSpan>("WednesdayOpeningTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("wednesday_opening_time");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BusinessId")
+                        .HasDatabaseName("IX_OpeningHours_BusinessId");
+
+                    b.ToTable("opening_hours", (string)null);
+                });
+
             modelBuilder.Entity("PlusAppointment.Models.Classes.Service", b =>
                 {
                     b.Property<int>("ServiceId")
@@ -316,7 +483,8 @@ namespace PlusAppointment.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ShopPictureId"));
 
                     b.Property<int>("BusinessId")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasColumnName("business_id");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -549,6 +717,45 @@ namespace PlusAppointment.Migrations
                     b.Navigation("Staff");
                 });
 
+            modelBuilder.Entity("PlusAppointment.Models.Classes.NotAvailableTime", b =>
+                {
+                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
+                        .WithMany("NotAvailableTimes")
+                        .HasForeignKey("BusinessId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PlusAppointment.Models.Classes.Staff", "Staff")
+                        .WithMany("NotAvailableTimes")
+                        .HasForeignKey("StaffId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Business");
+
+                    b.Navigation("Staff");
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Notification", b =>
+                {
+                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
+                        .WithMany("Notifications")
+                        .HasForeignKey("BusinessId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Business");
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.OpeningHours", b =>
+                {
+                    b.HasOne("PlusAppointment.Models.Classes.Business", null)
+                        .WithMany("OpeningHours")
+                        .HasForeignKey("BusinessId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("PlusAppointment.Models.Classes.Service", b =>
                 {
                     b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
@@ -615,6 +822,12 @@ namespace PlusAppointment.Migrations
 
                     b.Navigation("NotAvailableDates");
 
+                    b.Navigation("NotAvailableTimes");
+
+                    b.Navigation("Notifications");
+
+                    b.Navigation("OpeningHours");
+
                     b.Navigation("Services");
 
                     b.Navigation("ShopPictures");
@@ -642,6 +855,8 @@ namespace PlusAppointment.Migrations
                     b.Navigation("AppointmentServicesStaffs");
 
                     b.Navigation("NotAvailableDates");
+
+                    b.Navigation("NotAvailableTimes");
                 });
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.User", b =>

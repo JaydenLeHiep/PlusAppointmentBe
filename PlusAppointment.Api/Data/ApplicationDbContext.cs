@@ -14,20 +14,18 @@ namespace PlusAppointment.Data
         public DbSet<Business> Businesses { get; set; }
         public DbSet<Appointment> Appointments { get; set; }
         public DbSet<Service> Services { get; set; }
-        public DbSet<ServiceCategory> ServiceCategories { get; set; } 
+        public DbSet<ServiceCategory> ServiceCategories { get; set; }
         public DbSet<Staff> Staffs { get; set; }
         public DbSet<Customer> Customers { get; set; }
         public DbSet<AppointmentServiceStaffMapping> AppointmentServiceStaffs { get; set; }
         public DbSet<UserRefreshToken> UserRefreshTokens { get; set; }
-        
         public DbSet<NotAvailableDate> NotAvailableDates { get; set; }
         public DbSet<EmailUsage> EmailUsages { get; set; }
-        
         public DbSet<NotAvailableTime> NotAvailableTimes { get; set; }
-        
         public DbSet<ShopPicture> ShopPictures { get; set; }
-        
         public DbSet<Notification> Notifications { get; set; }
+
+        public DbSet<OpeningHours> OpeningHours { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -86,24 +84,21 @@ namespace PlusAppointment.Data
 
             // Configure NotAvailableDate entity
             modelBuilder.Entity<NotAvailableDate>().ToTable("not_available_dates");
-            modelBuilder.Entity<NotAvailableDate>().Property(nad => nad.NotAvailableDateId).HasColumnName("not_available_date_id");
+            modelBuilder.Entity<NotAvailableDate>().Property(nad => nad.NotAvailableDateId)
+                .HasColumnName("not_available_date_id");
             modelBuilder.Entity<NotAvailableDate>().Property(nad => nad.BusinessId).HasColumnName("business_id");
             modelBuilder.Entity<NotAvailableDate>().Property(nad => nad.StaffId).HasColumnName("staff_id");
             modelBuilder.Entity<NotAvailableDate>().Property(nad => nad.StartDate).HasColumnName("start_date");
             modelBuilder.Entity<NotAvailableDate>().Property(nad => nad.EndDate).HasColumnName("end_date");
             modelBuilder.Entity<NotAvailableDate>().Property(nad => nad.Reason).HasColumnName("reason");
-            
+
             modelBuilder.Entity<ShopPicture>().ToTable("shop_pictures");
             modelBuilder.Entity<ShopPicture>().Property(sp => sp.ShopPictureId).HasColumnName("shop_picture_id");
             modelBuilder.Entity<ShopPicture>().Property(sp => sp.S3ImageUrl).HasColumnName("s3_image_url");
             modelBuilder.Entity<ShopPicture>().Property(sp => sp.CreatedAt).HasColumnName("created_at");
-            modelBuilder.Entity<ShopPicture>().Property(sp => sp.BusinessId).HasColumnName("business_id"); // Rename to business_id
+            modelBuilder.Entity<ShopPicture>().Property(sp => sp.BusinessId)
+                .HasColumnName("business_id"); // Rename to business_id
 
-
-           
-            
-
-            
             modelBuilder.Entity<Service>()
                 .HasOne(s => s.Category)
                 .WithMany(sc => sc.Services)
@@ -121,7 +116,7 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<Customer>().Property(c => c.Name).HasColumnName("name");
             modelBuilder.Entity<Customer>().Property(c => c.Email).HasColumnName("email");
             modelBuilder.Entity<Customer>().Property(c => c.Phone).HasColumnName("phone");
-            
+
             // Configure the relationship between Customer and Business
             modelBuilder.Entity<Customer>().Property(c => c.BusinessId).HasColumnName("business_id");
             modelBuilder.Entity<Customer>()
@@ -129,9 +124,12 @@ namespace PlusAppointment.Data
                 .WithMany(b => b.Customers)
                 .HasForeignKey(c => c.BusinessId);
 
-            modelBuilder.Entity<AppointmentServiceStaffMapping>().Property(assm => assm.AppointmentId).HasColumnName("appointment_id");
-            modelBuilder.Entity<AppointmentServiceStaffMapping>().Property(assm => assm.ServiceId).HasColumnName("service_id");
-            modelBuilder.Entity<AppointmentServiceStaffMapping>().Property(assm => assm.StaffId).HasColumnName("staff_id");
+            modelBuilder.Entity<AppointmentServiceStaffMapping>().Property(assm => assm.AppointmentId)
+                .HasColumnName("appointment_id");
+            modelBuilder.Entity<AppointmentServiceStaffMapping>().Property(assm => assm.ServiceId)
+                .HasColumnName("service_id");
+            modelBuilder.Entity<AppointmentServiceStaffMapping>().Property(assm => assm.StaffId)
+                .HasColumnName("staff_id");
 
             // Add configuration for UserRefreshToken table
             modelBuilder.Entity<UserRefreshToken>().ToTable("user_refresh_tokens");
@@ -139,7 +137,7 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<UserRefreshToken>().Property(urt => urt.UserId).HasColumnName("user_id");
             modelBuilder.Entity<UserRefreshToken>().Property(urt => urt.Token).HasColumnName("token");
             modelBuilder.Entity<UserRefreshToken>().Property(urt => urt.ExpiryTime).HasColumnName("expiry_time");
-            
+
             // Configure EmailUsage table
             modelBuilder.Entity<EmailUsage>().ToTable("email_usage");
             modelBuilder.Entity<EmailUsage>().Property(eu => eu.EmailUsageId).HasColumnName("email_usage_id");
@@ -150,19 +148,27 @@ namespace PlusAppointment.Data
 
             // Configuration for NotAvailableTime entity
             modelBuilder.Entity<NotAvailableTime>().ToTable("not_available_times");
-            modelBuilder.Entity<NotAvailableTime>().Property(nat => nat.NotAvailableTimeId).HasColumnName("not_available_time_id");
+            modelBuilder.Entity<NotAvailableTime>().Property(nat => nat.NotAvailableTimeId)
+                .HasColumnName("not_available_time_id");
             modelBuilder.Entity<NotAvailableTime>().Property(nat => nat.StaffId).HasColumnName("staff_id");
             modelBuilder.Entity<NotAvailableTime>().Property(nat => nat.BusinessId).HasColumnName("business_id");
             modelBuilder.Entity<NotAvailableTime>().Property(nat => nat.Date).HasColumnName("date");
             modelBuilder.Entity<NotAvailableTime>().Property(nat => nat.From).HasColumnName("from");
             modelBuilder.Entity<NotAvailableTime>().Property(nat => nat.To).HasColumnName("to");
             modelBuilder.Entity<NotAvailableTime>().Property(nat => nat.Reason).HasColumnName("reason");
-            
+
             // Configure relationships
             modelBuilder.Entity<NotAvailableTime>()
                 .HasOne(nat => nat.Business)
                 .WithMany(b => b.NotAvailableTimes)
                 .HasForeignKey(nat => nat.BusinessId);
+
+            modelBuilder.Entity<NotAvailableTime>()
+                .HasOne(nat => nat.Staff)
+                .WithMany(s => s.NotAvailableTimes)
+                .HasForeignKey(nat => nat.StaffId);
+
+
             // Configure Notification entity
             modelBuilder.Entity<Notification>().ToTable("notification_table");
             modelBuilder.Entity<Notification>().Property(n => n.NotificationId).HasColumnName("notification_id");
@@ -173,15 +179,67 @@ namespace PlusAppointment.Data
                 .HasColumnName("notification_type")
                 .HasConversion(
                     v => v.ToString(), // Convert Enum to string when saving
-                    v => (NotificationType)Enum.Parse(typeof(NotificationType), v) // Convert string to Enum when reading
+                    v => (NotificationType)Enum.Parse(typeof(NotificationType),
+                        v) // Convert string to Enum when reading
                 );
-
             modelBuilder.Entity<Notification>().Property(n => n.CreatedAt).HasColumnName("created_at");
-            modelBuilder.Entity<NotAvailableTime>()
-                .HasOne(nat => nat.Staff)
-                .WithMany(s => s.NotAvailableTimes)
-                .HasForeignKey(nat => nat.StaffId);
-            
+
+
+            // Configure the OpeningHours table
+            modelBuilder.Entity<OpeningHours>().ToTable("opening_hours"); // Specify the table name in lowercase
+
+            modelBuilder.Entity<OpeningHours>()
+                .Property(oh => oh.Id).HasColumnName("id");
+
+            modelBuilder.Entity<OpeningHours>()
+                .Property(oh => oh.BusinessId).HasColumnName("business_id");
+
+            // Map the TimeSpan properties to their corresponding columns
+            modelBuilder.Entity<OpeningHours>()
+                .Property(oh => oh.MondayOpeningTime).HasColumnName("monday_opening_time");
+
+            modelBuilder.Entity<OpeningHours>()
+                .Property(oh => oh.MondayClosingTime).HasColumnName("monday_closing_time");
+
+            modelBuilder.Entity<OpeningHours>()
+                .Property(oh => oh.TuesdayOpeningTime).HasColumnName("tuesday_opening_time");
+
+            modelBuilder.Entity<OpeningHours>()
+                .Property(oh => oh.TuesdayClosingTime).HasColumnName("tuesday_closing_time");
+
+            modelBuilder.Entity<OpeningHours>()
+                .Property(oh => oh.WednesdayOpeningTime).HasColumnName("wednesday_opening_time");
+
+            modelBuilder.Entity<OpeningHours>()
+                .Property(oh => oh.WednesdayClosingTime).HasColumnName("wednesday_closing_time");
+
+            modelBuilder.Entity<OpeningHours>()
+                .Property(oh => oh.ThursdayOpeningTime).HasColumnName("thursday_opening_time");
+
+            modelBuilder.Entity<OpeningHours>()
+                .Property(oh => oh.ThursdayClosingTime).HasColumnName("thursday_closing_time");
+
+            modelBuilder.Entity<OpeningHours>()
+                .Property(oh => oh.FridayOpeningTime).HasColumnName("friday_opening_time");
+
+            modelBuilder.Entity<OpeningHours>()
+                .Property(oh => oh.FridayClosingTime).HasColumnName("friday_closing_time");
+
+            modelBuilder.Entity<OpeningHours>()
+                .Property(oh => oh.SaturdayOpeningTime).HasColumnName("saturday_opening_time");
+
+            modelBuilder.Entity<OpeningHours>()
+                .Property(oh => oh.SaturdayClosingTime).HasColumnName("saturday_closing_time");
+
+            modelBuilder.Entity<OpeningHours>()
+                .Property(oh => oh.SundayOpeningTime).HasColumnName("sunday_opening_time");
+
+            modelBuilder.Entity<OpeningHours>()
+                .Property(oh => oh.SundayClosingTime).HasColumnName("sunday_closing_time");
+
+            modelBuilder.Entity<OpeningHours>()
+                .Property(oh => oh.MinimumAdvanceBookingMinutes).HasColumnName("minimum_advance_booking_minutes");
+
             // Configure relationships
             modelBuilder.Entity<Business>()
                 .HasOne(b => b.User)
@@ -235,25 +293,30 @@ namespace PlusAppointment.Data
                 .HasOne(nad => nad.Staff)
                 .WithMany(s => s.NotAvailableDates)
                 .HasForeignKey(nad => nad.StaffId);
-            
+
             modelBuilder.Entity<EmailUsage>()
                 .HasOne(eu => eu.Business)
                 .WithMany(b => b.EmailUsages) // Assuming you want to navigate from Business to EmailUsage
                 .HasForeignKey(eu => eu.BusinessId)
                 .OnDelete(DeleteBehavior.Cascade);
-            
+
             modelBuilder.Entity<ShopPicture>()
                 .HasOne(sp => sp.Business)
                 .WithMany(b => b.ShopPictures)
                 .HasForeignKey(sp => sp.BusinessId)
                 .OnDelete(DeleteBehavior.Cascade); // Optional: delete pictures when a business is deleted
-            
-             
+
+
             modelBuilder.Entity<Notification>()
                 .HasOne(n => n.Business)
                 .WithMany(b => b.Notifications)
                 .HasForeignKey(n => n.BusinessId);
-            
+
+            modelBuilder.Entity<OpeningHours>()
+                .HasOne<Business>()
+                .WithMany(b => b.OpeningHours)
+                .HasForeignKey(oh => oh.BusinessId);
+
             // Add indexes to improve performance
             modelBuilder.Entity<Business>()
                 .HasIndex(b => b.UserID);
@@ -278,7 +341,7 @@ namespace PlusAppointment.Data
 
             modelBuilder.Entity<NotAvailableDate>()
                 .HasIndex(nad => nad.StaffId);
-            
+
             modelBuilder.Entity<Business>()
                 .HasIndex(b => b.UserID);
 
@@ -296,7 +359,7 @@ namespace PlusAppointment.Data
 
             modelBuilder.Entity<Customer>()
                 .HasIndex(c => c.BusinessId);
-            
+
             // Indexes
             modelBuilder.Entity<UserRefreshToken>()
                 .HasIndex(urt => urt.Token)
@@ -304,7 +367,7 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<EmailUsage>()
                 .HasIndex(eu => new { eu.BusinessId, eu.Year, eu.Month })
                 .IsUnique(); // Ensure uniqueness for each Business per month
-            
+
             modelBuilder.Entity<ShopPicture>()
                 .HasIndex(sp => sp.BusinessId)
                 .HasDatabaseName("IX_ShopPictures_BusinessId");
@@ -323,7 +386,7 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<Notification>()
                 .HasIndex(n => n.CreatedAt)
                 .HasDatabaseName("IX_Notification_CreatedAt");
-        
+
             // Add indexes for performance
             modelBuilder.Entity<NotAvailableTime>()
                 .HasIndex(nat => nat.StaffId)
@@ -336,6 +399,9 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<NotAvailableTime>()
                 .HasIndex(nat => new { nat.Date, nat.From, nat.To })
                 .HasDatabaseName("IX_NotAvailableTime_DateRange");
+
+            modelBuilder.Entity<OpeningHours>()
+                .HasIndex(oh => oh.BusinessId).HasDatabaseName("IX_OpeningHours_BusinessId");
         }
     }
 }

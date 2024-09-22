@@ -22,6 +22,8 @@ namespace PlusAppointment.Models.Classes
 
         public ICollection<EmailUsage>? EmailUsages { get; set; } = new List<EmailUsage>();
 
+        public ICollection<OpeningHours> OpeningHours { get; set; } = new List<OpeningHours>();
+        
         public Business( string name, string address, string phone, string email, int userID)
         {
             

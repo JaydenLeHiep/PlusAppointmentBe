@@ -72,6 +72,12 @@ using PlusAppointment.Services.Implementations.NotAvailableTimeService;
 using PlusAppointment.Repositories.Implementation.NotAvailableTimeRepo;
 using PlusAppointment.Services.Interfaces.NotificationService;
 using PlusAppointment.Services.Interfaces.ShopPictureService;
+
+using PlusAppointment.Services.Implementations.OpeningHoursService;
+using PlusAppointment.Repositories.Implementation.OpeningHoursRepository;
+using PlusAppointment.Services.Interfaces.IOpeningHoursService;
+using PlusAppointment.Repositories.Interfaces.IOpeningHoursRepository;
+
 using PlusAppointment.Utils.Hash;
 using PlusAppointment.Utils.Hub;
 using PlusAppointment.Utils.SQS;
@@ -163,6 +169,9 @@ builder.Services.AddScoped<IHashUtility, HashUtility>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 
+// Register the OpeningHours repository and service
+builder.Services.AddScoped<IOpeningHoursRepository, OpeningHoursRepository>();
+builder.Services.AddScoped<IOpeningHoursService, OpeningHoursService>();
 
 builder.Services.AddSingleton<SmsService>();
 builder.Services.AddSingleton<RedisHelper>();

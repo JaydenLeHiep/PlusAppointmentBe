@@ -162,11 +162,11 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             if (!string.IsNullOrWhiteSpace(business.Email))
             {
                 var businessEmailBody =
-                    $"<p>Customer {customer.Name} booked an appointment for <strong>{appointmentTimeFormatted}</strong>. Please review and confirm the details.</p>";
+                    $"<p>Khách hàng {customer.Name} đã đặt lịch hẹn vào lúc <strong>{appointmentTimeFormatted}</strong>. Vui lòng kiểm tra và xác nhận chi tiết.</p>";
 
-                emailTasks.Add(_emailService.SendEmailAsync(business.Email, "New Appointment Request",
-                    businessEmailBody));
+                emailTasks.Add(_emailService.SendEmailAsync(business.Email, "Yêu cầu đặt lịch hẹn mới", businessEmailBody));
             }
+
 
             // Schedule a reminder email if necessary
             if (!string.IsNullOrWhiteSpace(customer.Email))

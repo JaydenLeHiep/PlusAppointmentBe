@@ -10,7 +10,7 @@ using PlusAppointment.Services.Interfaces.AppointmentService;
 using PlusAppointment.Services.Interfaces.EmailUsageService;
 using PlusAppointment.Services.Interfaces.NotificationService;
 using PlusAppointment.Utils.SendingEmail;
-using PlusAppointment.Utils.SendingSms;
+
 
 
 namespace PlusAppointment.Services.Implementations.AppointmentService
@@ -144,12 +144,15 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             var emailTasks = new List<Task>();
 
             // Send customer confirmation email
+            // Send customer confirmation email
             if (!string.IsNullOrWhiteSpace(customer.Email))
             {
                 var customerEmailBody =
-                    $"Hi {customer.Name},\n\nThank you for choosing {business.Name}. Your appointment for {appointmentTimeFormatted} has been received.\n\nBest regards,\n{business.Name}" +
-                    $"\n\n---\n\n" +
-                    $"Hallo {customer.Name},\n\nVielen Dank, dass Sie {business.Name} gewählt haben. Ihr Termin für {appointmentTimeFormatted} wurde empfangen.\n\nMit freundlichen Grüßen,\n{business.Name}";
+                    $"<p>Hi {customer.Name},</p>" +
+                    $"<p>Your appointment at <strong>{business.Name}</strong> for <strong>{appointmentTimeFormatted}</strong> is confirmed.</p>" +
+                    $"<hr>" +
+                    $"<p>Hallo {customer.Name},</p>" +
+                    $"<p>Ihr Termin bei <strong>{business.Name}</strong> für <strong>{appointmentTimeFormatted}</strong> ist bestätigt.</p>";
 
                 emailTasks.Add(_emailService.SendEmailAsync(customer.Email, "Appointment Confirmation",
                     customerEmailBody));
@@ -159,17 +162,17 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             if (!string.IsNullOrWhiteSpace(business.Email))
             {
                 var businessEmailBody =
-                    $"Customer {customer.Name} booked an appointment for {appointmentTimeFormatted}. Please review and confirm the details.";
+                    $"<p>Khách hàng {customer.Name} đã đặt lịch hẹn vào lúc <strong>{appointmentTimeFormatted}</strong>. Vui lòng kiểm tra và xác nhận chi tiết.</p>";
 
-                emailTasks.Add(_emailService.SendEmailAsync(business.Email, "New Appointment Request",
-                    businessEmailBody));
+                emailTasks.Add(_emailService.SendEmailAsync(business.Email, "Yêu cầu đặt lịch hẹn mới", businessEmailBody));
             }
+
 
             // Schedule a reminder email if necessary
             if (!string.IsNullOrWhiteSpace(customer.Email))
             {
                 var reminderBody =
-                    $"This is a friendly reminder of your upcoming appointment at {business.Name} scheduled for {appointmentTimeFormatted}.\n\nBest regards,\n{business.Name}";
+                    $"<p>Reminder: Your appointment at <strong>{business.Name}</strong> is on <strong>{appointmentTimeFormatted}</strong>.</p>";
 
                 var reminderTime = appointmentDto.AppointmentTime.AddDays(-2);
                 if (reminderTime > DateTime.UtcNow)
@@ -183,6 +186,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                     emailTasks.Add(_emailService.SendEmailAsync(customer.Email, "Appointment Reminder", reminderBody));
                 }
             }
+
 
             // Run all email tasks in parallel
             await Task.WhenAll(emailTasks);
@@ -246,15 +250,14 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             // Prepare the email in both English and German
             var subject = "Appointment Updated - Terminänderung";
             var bodyEmail =
-                $"Hi {customer.Name},\n\n" +
-                $"Just letting you know that your appointment at {business.Name} has been updated. The new time is {appointmentTimeFormatted}.\n\n" +
-                $"If you have any questions, feel free to reach out at {business.Phone}. Looking forward to seeing you soon!\n\n" +
-                $"Best,\n{business.Name} Team\n\n" +
-                $"---\n\n" +
-                $"Hallo {customer.Name},\n\n" +
-                $"wir möchten Ihnen mitteilen, dass Ihr Termin bei {business.Name} geändert wurde. Die neue Uhrzeit ist {appointmentTimeFormatted}.\n\n" +
-                $"Falls Sie Fragen haben, können Sie sich gerne telefonisch unter {business.Phone} bei uns melden.\n\n" +
-                $"Wir freuen uns auf Ihren Besuch!\nIhr {business.Name} Team";
+                $"<p>Hi {customer.Name},</p>" +
+                $"<p>Your appointment at <strong>{business.Name}</strong> has been updated. The new time is <strong>{appointmentTimeFormatted}</strong>.</p>" +
+                $"<p>If you have any questions, reach us at <strong>{business.Phone}</strong>. See you soon!</p>" +
+                $"<hr>" +
+                $"<p>Hallo {customer.Name},</p>" +
+                $"<p>Ihr Termin bei <strong>{business.Name}</strong> wurde geändert. Die neue Uhrzeit ist <strong>{appointmentTimeFormatted}</strong>.</p>" +
+                $"<p>Falls Sie Fragen haben, erreichen Sie uns unter <strong>{business.Phone}</strong>. Wir freuen uns auf Ihren Besuch!</p>";
+
 
             var emailMessage = new EmailMessage
             {
@@ -322,9 +325,10 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
             var subject = "Appointment Confirmation - Terminbestätigung";
             var bodySms =
-                $"Dear Customer, \n\nThank you for choosing {business.Name}. We are pleased to confirm your appointment at {appointmentTimeFormatted}. We look forward to serving you! \n\nBest regards,\n{business.Name}" +
-                $"\n\n---\n\n" +
-                $"Hallo, \n\nVielen Dank, dass Sie {business.Name} gewählt haben. Wir freuen uns, Ihren Termin für {appointmentTimeFormatted} bestätigen zu können. Wir freuen uns darauf, Ihnen zu dienen! \n\nLiebe Grüße,\n{business.Name}";
+                $"Dear Customer, your appointment at {business.Name} is confirmed for {appointmentTimeFormatted}. We look forward to serving you!" +
+                $"<hr>" +
+                $"Hallo, Ihr Termin bei {business.Name} ist für {appointmentTimeFormatted} bestätigt. Wir freuen uns auf Sie!";
+
 
             var emailMessage = new EmailMessage
             {

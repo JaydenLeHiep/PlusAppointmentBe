@@ -12,7 +12,6 @@ using PlusAppointment.Services.Interfaces.NotificationService;
 using PlusAppointment.Utils.SendingEmail;
 
 
-
 namespace PlusAppointment.Services.Implementations.AppointmentService
 {
     public class AppointmentService : IAppointmentService
@@ -142,8 +141,8 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
             // Email and notification sending tasks (non-blocking)
             var emailTasks = new List<Task>();
+            var emailCount = 0; // Track how many emails are being sent
 
-            // Send customer confirmation email
             // Send customer confirmation email
             if (!string.IsNullOrWhiteSpace(customer.Email))
             {
@@ -156,6 +155,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
                 emailTasks.Add(_emailService.SendEmailAsync(customer.Email, "Appointment Confirmation",
                     customerEmailBody));
+                emailCount++; // Increment email count for this customer email
             }
 
             // Send notification email to the business
@@ -164,14 +164,14 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 var businessEmailBody =
                     $"<p>Khách hàng {customer.Name} đã đặt lịch hẹn vào lúc <strong>{appointmentTimeFormatted}</strong>. Vui lòng kiểm tra và xác nhận chi tiết.</p>";
 
-                emailTasks.Add(_emailService.SendEmailAsync(business.Email, "Yêu cầu đặt lịch hẹn mới", businessEmailBody));
+                emailTasks.Add(_emailService.SendEmailAsync(business.Email, "Yêu cầu đặt lịch hẹn mới",
+                    businessEmailBody));
+                emailCount++; // Increment email count for this business email
             }
-
 
             // Schedule a reminder email if necessary
             if (!string.IsNullOrWhiteSpace(customer.Email))
             {
-                // Reminder email body in English and German
                 var reminderBody =
                     $"<p>Hi {customer.Name},</p>" +
                     $"<p>Reminder: Your appointment at <strong>{business.Name}</strong> is on <strong>{appointmentTimeFormatted}</strong>.</p>" +
@@ -179,39 +179,54 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                     $"<p>Hallo {customer.Name},</p>" +
                     $"<p>Erinnerung: Ihr Termin bei <strong>{business.Name}</strong> ist am <strong>{appointmentTimeFormatted}</strong>.</p>";
 
-                // Calculate the reminder times
-                var reminderTime24Hours = appointmentDto.AppointmentTime.AddHours(-24);  // 24-hour reminder
-                var reminderTime2Hours = appointmentDto.AppointmentTime.AddHours(-2);    // 2-hour reminder
+                var reminderTime24Hours = appointmentDto.AppointmentTime.AddHours(-24);
+                var reminderTime2Hours = appointmentDto.AppointmentTime.AddHours(-2);
 
                 // Send the 24-hour reminder
                 if (reminderTime24Hours > DateTime.UtcNow)
                 {
                     BackgroundJob.Schedule(() =>
-                            _emailService.SendEmailAsync(customer.Email, "Appointment Reminder / Termin-Erinnerung", reminderBody),
+                            _emailService.SendEmailAsync(customer.Email, "Appointment Reminder / Termin-Erinnerung",
+                                reminderBody),
                         new DateTimeOffset(reminderTime24Hours));
+                    emailCount++; // Increment email count for 24-hour reminder
                 }
                 else
                 {
-                    emailTasks.Add(_emailService.SendEmailAsync(customer.Email, "Appointment Reminder / Termin-Erinnerung", reminderBody));
+                    emailTasks.Add(_emailService.SendEmailAsync(customer.Email,
+                        "Appointment Reminder / Termin-Erinnerung", reminderBody));
+                    emailCount++; // Increment email count for immediate 24-hour reminder
                 }
 
                 // Send the 2-hour reminder
                 if (reminderTime2Hours > DateTime.UtcNow)
                 {
                     BackgroundJob.Schedule(() =>
-                            _emailService.SendEmailAsync(customer.Email, "Appointment Reminder / Termin-Erinnerung", reminderBody),
+                            _emailService.SendEmailAsync(customer.Email, "Appointment Reminder / Termin-Erinnerung",
+                                reminderBody),
                         new DateTimeOffset(reminderTime2Hours));
+                    emailCount++; // Increment email count for 2-hour reminder
                 }
                 else
                 {
-                    emailTasks.Add(_emailService.SendEmailAsync(customer.Email, "Appointment Reminder / Termin-Erinnerung", reminderBody));
+                    emailTasks.Add(_emailService.SendEmailAsync(customer.Email,
+                        "Appointment Reminder / Termin-Erinnerung", reminderBody));
+                    emailCount++; // Increment email count for immediate 2-hour reminder
                 }
             }
 
+            // Track email usage by BusinessId
+            var emailUsageTask = _emailUsageService.AddEmailUsageAsync(new EmailUsage
+            {
+                BusinessId = appointmentDto.BusinessId,
+                Year = DateTime.UtcNow.Year,
+                Month = DateTime.UtcNow.Month,
+                EmailCount = emailCount // Use the calculated email count
+            });
 
-
-            // Run all email tasks in parallel
+            // Run all email and email usage tasks in parallel
             await Task.WhenAll(emailTasks);
+            await emailUsageTask;
 
             return true;
         }
@@ -280,7 +295,6 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 $"<p>Ihr Termin bei <strong>{business.Name}</strong> wurde geändert. Die neue Uhrzeit ist <strong>{appointmentTimeFormatted}</strong>.</p>" +
                 $"<p>Falls Sie Fragen haben, erreichen Sie uns unter <strong>{business.Phone}</strong>. Wir freuen uns auf Ihren Besuch!</p>";
 
-
             var emailMessage = new EmailMessage
             {
                 ToEmail = customer.Email ?? string.Empty,
@@ -288,12 +302,17 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 Body = bodyEmail
             };
 
+            var emailTasks = new List<Task>(); // To run email tasks concurrently
+            var emailCount = 0; // Track how many emails are sent
+
             try
             {
-                // Send email asynchronously
+                // Send email asynchronously to the customer
                 if (!string.IsNullOrWhiteSpace(emailMessage.ToEmail))
                 {
-                    await _emailService.SendEmailAsync(emailMessage.ToEmail, emailMessage.Subject, emailMessage.Body);
+                    emailTasks.Add(_emailService.SendEmailAsync(emailMessage.ToEmail, emailMessage.Subject,
+                        emailMessage.Body));
+                    emailCount++; // Increment email count when email task is added
                 }
                 else
                 {
@@ -304,6 +323,18 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             {
                 Console.WriteLine($"Error while sending the email: {ex.Message}");
             }
+
+            // Track email usage by BusinessId
+            var emailUsageTask = _emailUsageService.AddEmailUsageAsync(new EmailUsage
+            {
+                BusinessId = appointment.BusinessId,
+                Year = DateTime.UtcNow.Year,
+                Month = DateTime.UtcNow.Month,
+                EmailCount = emailCount // Use the calculated email count
+            });
+
+            // Run all email tasks and email usage update concurrently in a single Task.WhenAll call
+            await Task.WhenAll(emailTasks.Append(emailUsageTask));
         }
 
 
@@ -351,7 +382,6 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 $"<hr>" +
                 $"Hallo, Ihr Termin bei {business.Name} ist für {appointmentTimeFormatted} bestätigt. Wir freuen uns auf Sie!";
 
-
             var emailMessage = new EmailMessage
             {
                 ToEmail = customer.Email ?? string.Empty,
@@ -359,15 +389,17 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 Body = bodySms
             };
 
-            var emailSendingTask = Task.CompletedTask;
+            var emailTasks = new List<Task>(); // List to handle email tasks
+            var emailCount = 0; // Track how many emails are sent
 
             try
             {
                 // Send email directly using _emailService in parallel if the customer email is provided
                 if (!string.IsNullOrWhiteSpace(emailMessage.ToEmail))
                 {
-                    emailSendingTask =
-                        _emailService.SendEmailAsync(emailMessage.ToEmail, emailMessage.Subject, emailMessage.Body);
+                    emailTasks.Add(_emailService.SendEmailAsync(emailMessage.ToEmail, emailMessage.Subject,
+                        emailMessage.Body));
+                    emailCount++; // Increment email count for this email
                 }
                 else
                 {
@@ -379,11 +411,20 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 Console.WriteLine($"Error while sending the email: {ex.Message}");
             }
 
-            // Update the appointment status in the database in parallel with email sending
+            // Track email usage by BusinessId
+            var emailUsageTask = _emailUsageService.AddEmailUsageAsync(new EmailUsage
+            {
+                BusinessId = appointment.BusinessId,
+                Year = DateTime.UtcNow.Year,
+                Month = DateTime.UtcNow.Month,
+                EmailCount = emailCount // Use the calculated email count
+            });
+
+            // Update the appointment status in the database
             var updateStatusTask = _appointmentWriteRepository.UpdateAppointmentStatusAsync(appointment);
 
-            // Wait for both tasks to complete
-            await Task.WhenAll(emailSendingTask, updateStatusTask);
+            // Wait for all tasks (email sending, email usage, and status update) to complete
+            await Task.WhenAll(emailTasks.Append(emailUsageTask).Append(updateStatusTask));
         }
 
 

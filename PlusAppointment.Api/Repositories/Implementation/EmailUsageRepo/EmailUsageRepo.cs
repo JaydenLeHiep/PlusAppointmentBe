@@ -4,122 +4,123 @@ using PlusAppointment.Models.Classes;
 using PlusAppointment.Repositories.Interfaces.EmailUsageRepo;
 using PlusAppointment.Utils.Redis;
 
-namespace PlusAppointment.Repositories.Implementation.EmailUsageRepo;
-
-public class EmailUsageRepo : IEmailUsageRepo
+namespace PlusAppointment.Repositories.Implementation.EmailUsageRepo
 {
-    private readonly ApplicationDbContext _context;
+    public class EmailUsageRepo : IEmailUsageRepo
+    {
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
         private readonly RedisHelper _redisHelper;
 
-        public EmailUsageRepo(ApplicationDbContext context, RedisHelper redisHelper)
+        public EmailUsageRepo(IDbContextFactory<ApplicationDbContext> contextFactory, RedisHelper redisHelper)
         {
-            _context = context;
+            _contextFactory = contextFactory;
             _redisHelper = redisHelper;
         }
 
         public async Task<EmailUsage?> GetByIdAsync(int emailUsageId)
         {
-            string cacheKey = $"email_usage_{emailUsageId}";
-            var emailUsage = await _redisHelper.GetCacheAsync<EmailUsage>(cacheKey);
-
-            if (emailUsage != null)
+            using (var context = _contextFactory.CreateDbContext())
             {
+                var emailUsage = await context.EmailUsages.FindAsync(emailUsageId);
+                if (emailUsage == null)
+                {
+                    throw new KeyNotFoundException($"EmailUsage with ID {emailUsageId} not found");
+                }
                 return emailUsage;
             }
-
-            emailUsage = await _context.EmailUsages.FindAsync(emailUsageId);
-            if (emailUsage == null)
-            {
-                throw new KeyNotFoundException($"EmailUsage with ID {emailUsageId} not found");
-            }
-
-            await _redisHelper.SetCacheAsync(cacheKey, emailUsage, TimeSpan.FromMinutes(10));
-            return emailUsage;
         }
+
 
         public async Task<IEnumerable<EmailUsage>> GetAllAsync()
         {
-            const string cacheKey = "all_email_usages";
-            var cachedEmailUsages = await _redisHelper.GetCacheAsync<List<EmailUsage>>(cacheKey);
+            // const string cacheKey = "all_email_usages";
+            // var cachedEmailUsages = await _redisHelper.GetCacheAsync<List<EmailUsage>>(cacheKey);
+            //
+            // if (cachedEmailUsages != null && cachedEmailUsages.Any())
+            // {
+            //     return cachedEmailUsages;
+            // }
 
-            if (cachedEmailUsages != null && cachedEmailUsages.Any())
+            using (var context = _contextFactory.CreateDbContext())
             {
-                return cachedEmailUsages;
+                var emailUsages = await context.EmailUsages.ToListAsync();
+                //await _redisHelper.SetCacheAsync(cacheKey, emailUsages, TimeSpan.FromMinutes(10));
+                return emailUsages;
             }
-
-            var emailUsages = await _context.EmailUsages.ToListAsync();
-            await _redisHelper.SetCacheAsync(cacheKey, emailUsages, TimeSpan.FromMinutes(10));
-
-            return emailUsages;
         }
 
         public async Task<IEnumerable<EmailUsage>> GetByBusinessIdAndMonthAsync(int businessId, int year, int month)
         {
-            string cacheKey = $"email_usages_business_{businessId}_year_{year}_month_{month}";
-            var cachedEmailUsages = await _redisHelper.GetCacheAsync<List<EmailUsage>>(cacheKey);
+            // string cacheKey = $"email_usages_business_{businessId}_year_{year}_month_{month}";
+            // var cachedEmailUsages = await _redisHelper.GetCacheAsync<List<EmailUsage>>(cacheKey);
+            //
+            // if (cachedEmailUsages != null && cachedEmailUsages.Any())
+            // {
+            //     return cachedEmailUsages;
+            // }
 
-            if (cachedEmailUsages != null && cachedEmailUsages.Any())
+            using (var context = _contextFactory.CreateDbContext())
             {
-                return cachedEmailUsages;
+                var emailUsages = await context.EmailUsages
+                    .Where(eu => eu.BusinessId == businessId && eu.Year == year && eu.Month == month)
+                    .ToListAsync();
+
+                //await _redisHelper.SetCacheAsync(cacheKey, emailUsages, TimeSpan.FromMinutes(10));
+                return emailUsages;
             }
-
-            var emailUsages = await _context.EmailUsages
-                .Where(eu => eu.BusinessId == businessId && eu.Year == year && eu.Month == month)
-                .ToListAsync();
-
-            await _redisHelper.SetCacheAsync(cacheKey, emailUsages, TimeSpan.FromMinutes(10));
-            return emailUsages;
         }
-
 
         public async Task AddWithBusinessIdAsync(EmailUsage emailUsage)
         {
-            // Check if the record with the same business_id, year, and month already exists
-            var existingRecord = await _context.EmailUsages
-                .FirstOrDefaultAsync(e => e.BusinessId == emailUsage.BusinessId &&
-                                          e.Year == emailUsage.Year &&
-                                          e.Month == emailUsage.Month);
-
-            if (existingRecord != null)
+            using (var context = _contextFactory.CreateDbContext())
             {
-                // Update the existing record, for example, by incrementing the email count
-                existingRecord.EmailCount += emailUsage.EmailCount;
-                _context.EmailUsages.Update(existingRecord);
-            }
-            else
-            {
-                // Insert a new record if it doesn't exist
-                _context.EmailUsages.Add(emailUsage);
+                var existingRecord = await context.EmailUsages
+                    .FirstOrDefaultAsync(e => e.BusinessId == emailUsage.BusinessId &&
+                                              e.Year == emailUsage.Year &&
+                                              e.Month == emailUsage.Month);
+
+                if (existingRecord != null)
+                {
+                    existingRecord.EmailCount += emailUsage.EmailCount;
+                    context.EmailUsages.Update(existingRecord);
+                }
+                else
+                {
+                    context.EmailUsages.Add(emailUsage);
+                }
+
+                await context.SaveChangesAsync();
             }
 
-            // Save changes to the database
-            await _context.SaveChangesAsync();
-
-            // Update caches
-            await UpdateEmailUsageCacheAsync(emailUsage);
-            await RefreshRelatedCachesAsync(emailUsage);
+            // await UpdateEmailUsageCacheAsync(emailUsage);
+            // await RefreshRelatedCachesAsync(emailUsage);
         }
-
 
         public async Task UpdateWithBusinessIdAsync(EmailUsage emailUsage)
         {
-            _context.EmailUsages.Update(emailUsage);
-            await _context.SaveChangesAsync();
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                context.EmailUsages.Update(emailUsage);
+                await context.SaveChangesAsync();
+            }
 
-            await UpdateEmailUsageCacheAsync(emailUsage);
-            await RefreshRelatedCachesAsync(emailUsage);
+            // await UpdateEmailUsageCacheAsync(emailUsage);
+            // await RefreshRelatedCachesAsync(emailUsage);
         }
 
         public async Task DeleteWithBusinessIdAsync(int emailUsageId)
         {
-            var emailUsage = await _context.EmailUsages.FindAsync(emailUsageId);
-            if (emailUsage != null)
+            using (var context = _contextFactory.CreateDbContext())
             {
-                _context.EmailUsages.Remove(emailUsage);
-                await _context.SaveChangesAsync();
+                var emailUsage = await context.EmailUsages.FindAsync(emailUsageId);
+                if (emailUsage != null)
+                {
+                    context.EmailUsages.Remove(emailUsage);
+                    await context.SaveChangesAsync();
 
-                await InvalidateEmailUsageCacheAsync(emailUsage);
-                await RefreshRelatedCachesAsync(emailUsage);
+                    await InvalidateEmailUsageCacheAsync(emailUsage);
+                    await RefreshRelatedCachesAsync(emailUsage);
+                }
             }
         }
 
@@ -158,20 +159,21 @@ public class EmailUsageRepo : IEmailUsageRepo
 
         private async Task RefreshRelatedCachesAsync(EmailUsage emailUsage)
         {
-            // Refresh individual EmailUsage cache
-            var emailUsageCacheKey = $"email_usage_{emailUsage.EmailUsageId}";
-            await _redisHelper.SetCacheAsync(emailUsageCacheKey, emailUsage, TimeSpan.FromMinutes(10));
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                var emailUsageCacheKey = $"email_usage_{emailUsage.EmailUsageId}";
+                await _redisHelper.SetCacheAsync(emailUsageCacheKey, emailUsage, TimeSpan.FromMinutes(10));
 
-            // Refresh list of all EmailUsages
-            const string allEmailUsagesCacheKey = "all_email_usages";
-            var allEmailUsages = await _context.EmailUsages.ToListAsync();
-            await _redisHelper.SetCacheAsync(allEmailUsagesCacheKey, allEmailUsages, TimeSpan.FromMinutes(10));
+                var emailUsagesByBusinessCacheKey = $"email_usages_business_{emailUsage.BusinessId}";
+                var emailUsagesByBusiness = await context.EmailUsages
+                    .Where(eu => eu.BusinessId == emailUsage.BusinessId)
+                    .ToListAsync();
+                await _redisHelper.SetCacheAsync(emailUsagesByBusinessCacheKey, emailUsagesByBusiness, TimeSpan.FromMinutes(10));
 
-            // Refresh list of EmailUsages by business ID
-            var emailUsagesByBusinessCacheKey = $"email_usages_business_{emailUsage.BusinessId}";
-            var emailUsagesByBusiness = await _context.EmailUsages
-                .Where(eu => eu.BusinessId == emailUsage.BusinessId)
-                .ToListAsync();
-            await _redisHelper.SetCacheAsync(emailUsagesByBusinessCacheKey, emailUsagesByBusiness, TimeSpan.FromMinutes(10));
+                const string allEmailUsagesCacheKey = "all_email_usages";
+                var allEmailUsages = await context.EmailUsages.ToListAsync();
+                await _redisHelper.SetCacheAsync(allEmailUsagesCacheKey, allEmailUsages, TimeSpan.FromMinutes(10));
+            }
         }
+    }
 }

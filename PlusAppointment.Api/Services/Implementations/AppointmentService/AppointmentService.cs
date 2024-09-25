@@ -171,21 +171,43 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             // Schedule a reminder email if necessary
             if (!string.IsNullOrWhiteSpace(customer.Email))
             {
+                // Reminder email body in English and German
                 var reminderBody =
-                    $"<p>Reminder: Your appointment at <strong>{business.Name}</strong> is on <strong>{appointmentTimeFormatted}</strong>.</p>";
+                    $"<p>Hi {customer.Name},</p>" +
+                    $"<p>Reminder: Your appointment at <strong>{business.Name}</strong> is on <strong>{appointmentTimeFormatted}</strong>.</p>" +
+                    $"<hr>" +
+                    $"<p>Hallo {customer.Name},</p>" +
+                    $"<p>Erinnerung: Ihr Termin bei <strong>{business.Name}</strong> ist am <strong>{appointmentTimeFormatted}</strong>.</p>";
 
-                var reminderTime = appointmentDto.AppointmentTime.AddDays(-2);
-                if (reminderTime > DateTime.UtcNow)
+                // Calculate the reminder times
+                var reminderTime24Hours = appointmentDto.AppointmentTime.AddHours(-24);  // 24-hour reminder
+                var reminderTime2Hours = appointmentDto.AppointmentTime.AddHours(-2);    // 2-hour reminder
+
+                // Send the 24-hour reminder
+                if (reminderTime24Hours > DateTime.UtcNow)
                 {
                     BackgroundJob.Schedule(() =>
-                            _emailService.SendEmailAsync(customer.Email, "Appointment Reminder", reminderBody),
-                        new DateTimeOffset(reminderTime));
+                            _emailService.SendEmailAsync(customer.Email, "Appointment Reminder / Termin-Erinnerung", reminderBody),
+                        new DateTimeOffset(reminderTime24Hours));
                 }
                 else
                 {
-                    emailTasks.Add(_emailService.SendEmailAsync(customer.Email, "Appointment Reminder", reminderBody));
+                    emailTasks.Add(_emailService.SendEmailAsync(customer.Email, "Appointment Reminder / Termin-Erinnerung", reminderBody));
+                }
+
+                // Send the 2-hour reminder
+                if (reminderTime2Hours > DateTime.UtcNow)
+                {
+                    BackgroundJob.Schedule(() =>
+                            _emailService.SendEmailAsync(customer.Email, "Appointment Reminder / Termin-Erinnerung", reminderBody),
+                        new DateTimeOffset(reminderTime2Hours));
+                }
+                else
+                {
+                    emailTasks.Add(_emailService.SendEmailAsync(customer.Email, "Appointment Reminder / Termin-Erinnerung", reminderBody));
                 }
             }
+
 
 
             // Run all email tasks in parallel

@@ -69,15 +69,11 @@ public class AppointmentsController : ControllerBase
     [HttpGet("customer/customer_id={customerId}")]
     public async Task<IActionResult> GetByCustomerId(int customerId)
     {
-        var userRole = HttpContext.Items["UserRole"]?.ToString();
-        //var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
-        if (userRole != Role.Admin.ToString() && userRole != Role.Customer.ToString() &&
-            userRole != Role.Owner.ToString())
-        {
-            return NotFound(new { message = "You are not authorized to view this business." });
-        }
-
         var appointments = await _appointmentService.GetAppointmentsByCustomerIdAsync(customerId);
+        if (appointments == null || !appointments.Any())
+        {
+            return Ok(new { message = "No appointments were found for this customer." });
+        }
         return Ok(appointments);
     }
 

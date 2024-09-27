@@ -9,4 +9,5 @@ public interface IAppointmentWriteRepository
     Task UpdateAppointmentWithServicesAsync(int appointmentId, UpdateAppointmentDto updateAppointmentDto);
     Task UpdateAppointmentStatusAsync(Appointment appointment);
     Task DeleteAppointmentAsync(int appointmentId);
+    Task DeleteAppointmentForCustomerAsync(int appointmentId);
 }

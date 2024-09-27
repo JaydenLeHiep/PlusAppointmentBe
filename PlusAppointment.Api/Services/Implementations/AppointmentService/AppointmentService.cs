@@ -574,7 +574,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 Comment = appointment.Comment ?? "No comment",
                 CreatedAt = appointment.CreatedAt,
                 UpdatedAt = appointment.UpdatedAt,
-                Services = services
+                Services = services 
             };
         }
     }

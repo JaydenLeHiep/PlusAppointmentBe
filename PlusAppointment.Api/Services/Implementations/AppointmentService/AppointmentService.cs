@@ -143,7 +143,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
             // Email and notification sending tasks (non-blocking)
             var emailTasks = new List<Task>();
-            var emailCount = 0; // Track how many emails are being sent
+            var emailCount = 0;
 
             var frontendBaseUrl = _appSettings.Value.FrontendBaseUrl;
             var cancelAppointmentLink = $"{frontendBaseUrl}/delete-appointment-customer?business_name={business.Name}";
@@ -159,9 +159,10 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                     $"<p>Hallo {customer.Name},</p>" +
                     $"<p>Ihr Termin bei <strong>{business.Name}</strong> für <strong>{appointmentTimeFormatted}</strong> ist bestätigt.</p>" +
                     $"<p>Wenn Sie Ihren Termin stornieren möchten, klicken Sie bitte <a href='{cancelAppointmentLink}'>hier</a>.</p>";
+                    $"<p>Your appointment at <strong>{business.Name}</strong> for <strong>{appointmentTimeFormatted}</strong> is confirmed.</p>";
                 emailTasks.Add(_emailService.SendEmailAsync(customer.Email, "Appointment Confirmation",
                     customerEmailBody));
-                emailCount++; // Increment email count for this customer email
+                emailCount++;
             }
 
             // Send notification email to the business
@@ -172,65 +173,18 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
                 emailTasks.Add(_emailService.SendEmailAsync(business.Email, "Yêu cầu đặt lịch hẹn mới",
                     businessEmailBody));
-                emailCount++; // Increment email count for this business email
+                emailCount++;
             }
 
-            // Schedule a reminder email if necessary
-            if (!string.IsNullOrWhiteSpace(customer.Email))
-            {
-                var reminderBody =
-                    $"<p>Hi {customer.Name},</p>" +
-                    $"<p>Reminder: Your appointment at <strong>{business.Name}</strong> is on <strong>{appointmentTimeFormatted}</strong>.</p>" +
-                    $"<hr>" +
-                    $"<p>Hallo {customer.Name},</p>" +
-                    $"<p>Erinnerung: Ihr Termin bei <strong>{business.Name}</strong> ist am <strong>{appointmentTimeFormatted}</strong>.</p>";
-
-                var reminderTime24Hours = appointmentDto.AppointmentTime.AddHours(-24);
-                var reminderTime2Hours = appointmentDto.AppointmentTime.AddHours(-2);
-
-                // Send the 24-hour reminder
-                if (reminderTime24Hours > DateTime.UtcNow)
-                {
-                    BackgroundJob.Schedule(() =>
-                            _emailService.SendEmailAsync(customer.Email, "Appointment Reminder / Termin-Erinnerung",
-                                reminderBody),
-                        new DateTimeOffset(reminderTime24Hours));
-                    emailCount++; // Increment email count for 24-hour reminder
-                }
-                else
-                {
-                    emailTasks.Add(_emailService.SendEmailAsync(customer.Email,
-                        "Appointment Reminder / Termin-Erinnerung", reminderBody));
-                    emailCount++; // Increment email count for immediate 24-hour reminder
-                }
-
-                // Send the 2-hour reminder
-                if (reminderTime2Hours > DateTime.UtcNow)
-                {
-                    BackgroundJob.Schedule(() =>
-                            _emailService.SendEmailAsync(customer.Email, "Appointment Reminder / Termin-Erinnerung",
-                                reminderBody),
-                        new DateTimeOffset(reminderTime2Hours));
-                    emailCount++; // Increment email count for 2-hour reminder
-                }
-                else
-                {
-                    emailTasks.Add(_emailService.SendEmailAsync(customer.Email,
-                        "Appointment Reminder / Termin-Erinnerung", reminderBody));
-                    emailCount++; // Increment email count for immediate 2-hour reminder
-                }
-            }
-
-            // Track email usage by BusinessId
+            // Track email usage
             var emailUsageTask = _emailUsageService.AddEmailUsageAsync(new EmailUsage
             {
                 BusinessId = appointmentDto.BusinessId,
                 Year = DateTime.UtcNow.Year,
                 Month = DateTime.UtcNow.Month,
-                EmailCount = emailCount // Use the calculated email count
+                EmailCount = emailCount
             });
 
-            // Run all email and email usage tasks in parallel
             await Task.WhenAll(emailTasks);
             await emailUsageTask;
 

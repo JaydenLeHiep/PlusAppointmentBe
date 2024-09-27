@@ -65,7 +65,8 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             return appointment == null ? null : await MapToDtoAsync(appointment);
         }
 
-        public async Task<bool> AddAppointmentAsync(AppointmentDto appointmentDto)
+        public async Task<(bool IsSuccess, AppointmentRetrieveDto? Appointment)> AddAppointmentAsync(
+            AppointmentDto appointmentDto)
         {
             // Fetch the business and customer details concurrently
             var businessTask = _businessRepository.GetByIdAsync(appointmentDto.BusinessId);
@@ -76,8 +77,11 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             var business = await businessTask;
             var customer = await customerTask;
 
-            if (business == null) throw new ArgumentException("Invalid BusinessId");
-            if (customer == null) throw new ArgumentException("Invalid CustomerId");
+            if (business == null || customer == null)
+            {
+                // Return false with a null AppointmentRetrieveDto if business or customer are invalid
+                return (false, null);
+            }
 
             // Prepare service and staff validation tasks
             var serviceStaffValidationTasks = appointmentDto.Services.Select(async serviceStaffDto =>
@@ -230,7 +234,11 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             await Task.WhenAll(emailTasks);
             await emailUsageTask;
 
-            return true;
+            // Convert the Appointment to AppointmentRetrieveDto
+            var appointmentRetrieveDto = await MapToDtoAsync(appointment);
+
+            // Return true with the mapped AppointmentRetrieveDto
+            return (true, appointmentRetrieveDto);
         }
 
 

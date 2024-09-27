@@ -1,3 +1,4 @@
+using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
 
 namespace PlusAppointment.Services.Interfaces.AppointmentService
@@ -6,7 +7,8 @@ namespace PlusAppointment.Services.Interfaces.AppointmentService
     {
         Task<IEnumerable<AppointmentRetrieveDto?>> GetAllAppointmentsAsync();
         Task<AppointmentRetrieveDto?> GetAppointmentByIdAsync(int id);
-        Task<bool> AddAppointmentAsync(AppointmentDto appointmentDto);
+        Task<(bool IsSuccess, AppointmentRetrieveDto? Appointment)> AddAppointmentAsync(AppointmentDto appointmentDto);
+
         Task UpdateAppointmentAsync(int id, UpdateAppointmentDto updateAppointmentDto);
         Task UpdateAppointmentStatusAsync(int id, string status);
         Task DeleteAppointmentAsync(int id);

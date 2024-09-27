@@ -77,7 +77,7 @@ using PlusAppointment.Services.Implementations.OpeningHoursService;
 using PlusAppointment.Repositories.Implementation.OpeningHoursRepository;
 using PlusAppointment.Services.Interfaces.IOpeningHoursService;
 using PlusAppointment.Repositories.Interfaces.IOpeningHoursRepository;
-
+using PlusAppointment.Models.Classes;
 using PlusAppointment.Utils.Hash;
 using PlusAppointment.Utils.Hub;
 using PlusAppointment.Utils.SQS;
@@ -90,6 +90,9 @@ builder.Configuration
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)  // Load the base config
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)  // Load environment-specific config
     .AddEnvironmentVariables();  // Override with environment variables
+
+// Bind AppSettings from appsettings.json
+builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
 
 // Configure AWS options based on the environment
 var awsOptions = new AWSOptions
@@ -115,13 +118,9 @@ builder.Services.AddControllers()
     });
 builder.Services.AddSignalR(); // Add SignalR services
 
-
-
-
 // Register the DbContext using the factory method
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
 
 // Register repositories and services
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -340,5 +339,15 @@ void EnsureLogsDirectory()
         Directory.CreateDirectory(logsPath);
     }
 }
+
+// Load environment-specific configuration
+builder.Configuration
+    .SetBasePath(Directory.GetCurrentDirectory())  // Set base path for configurations
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)  // Load the base config
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)  // Load environment-specific config
+    .AddEnvironmentVariables();
+
+// Bind AppSettings from appsettings.json
+builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
 
 public partial class Program { } // This is needed for the EF Core CLI tools to function properly

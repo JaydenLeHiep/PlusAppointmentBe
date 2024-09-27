@@ -251,4 +251,21 @@ public class AppointmentsController : ControllerBase
 
         return Ok(response);
     }
+    
+    [HttpDelete("appointment_id={appointmentId}/delete-appointment-customer")]
+    public async Task<IActionResult> DeleteAppointmentForCustomer(int appointmentId)
+    {
+        try
+        {
+            await _appointmentService.DeleteAppointmentForCustomerAsync(appointmentId);
+            // Notify all connected clients about the deletion
+            await _hubContext.Clients.All.SendAsync("ReceiveAppointmentForCustomerDeleted", appointmentId);
+            await _hubContext.Clients.All.SendAsync("ReceiveNotificationUpdate", "A new notification for the appointment!");
+            return Ok(new { message = "Appointment deleted successfully" });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

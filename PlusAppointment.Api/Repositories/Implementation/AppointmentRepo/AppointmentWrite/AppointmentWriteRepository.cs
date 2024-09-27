@@ -310,7 +310,25 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo.Appointmen
             await InvalidateAppointmentCacheAsync(appointment);
             await RefreshRelatedCachesAsync(appointment);
         }
+        
+        public async Task DeleteAppointmentForCustomerAsync(int appointmentId)
+        {
+            var appointment = await _context.Appointments
+                .Include(a => a.AppointmentServices)
+                .FirstOrDefaultAsync(a => a.AppointmentId == appointmentId);
 
+            if (appointment == null)
+            {
+                throw new KeyNotFoundException($"Appointment with ID {appointmentId} not found.");
+            }
+
+            _context.Appointments.Remove(appointment);
+            await _context.SaveChangesAsync();
+
+            await InvalidateAppointmentCacheAsync(appointment);
+            await RefreshRelatedCachesAsync(appointment);
+        }
+        
         private async Task RefreshRelatedCachesAsync(Appointment appointment)
         {
             string businessCacheKey = $"appointments_business_{appointment.BusinessId}";

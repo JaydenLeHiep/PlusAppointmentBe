@@ -16,5 +16,6 @@ public enum NotificationType
 {
     Add,
     Cancel,
-    Update
+    Update,
+    CheckIn
 }

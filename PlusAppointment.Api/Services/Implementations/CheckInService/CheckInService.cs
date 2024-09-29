@@ -1,6 +1,7 @@
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Repositories.Interfaces.CheckInRepo;
 using PlusAppointment.Repositories.Interfaces.CustomerRepo;
+using PlusAppointment.Repositories.Interfaces.NotificationRepo;
 using PlusAppointment.Services.Interfaces.CheckInService;
 
 namespace PlusAppointment.Services.Implementations.CheckInService;
@@ -9,11 +10,13 @@ public class CheckInService : ICheckInService
 {
     private readonly ICheckInRepository _checkInRepository;
     private readonly ICustomerRepository _customerRepository;
+    private readonly INotificationRepository _notificationRepository;
 
-    public CheckInService(ICheckInRepository checkInRepository, ICustomerRepository customerRepository)
+    public CheckInService(ICheckInRepository checkInRepository, ICustomerRepository customerRepository, INotificationRepository notificationRepository)
     {
         _checkInRepository = checkInRepository;
         _customerRepository = customerRepository;
+        _notificationRepository = notificationRepository;
     }
 
     public async Task<IEnumerable<CheckIn?>> GetAllCheckInsAsync()
@@ -46,17 +49,26 @@ public class CheckInService : ICheckInService
 
         // Check if the customer exists
         var customer = await _customerRepository.GetCustomerByIdAsync(checkIn.CustomerId);
-        // Check if the customer exists
-
-
+    
         if (customer == null)
         {
             throw new KeyNotFoundException("Customer with the provided email or phone does not exist.");
         }
 
-        // Add the check-in record
-        await _checkInRepository.AddCheckInAsync(checkIn);
+        // Prepare tasks for adding check-in and notification
+        var checkInTask = _checkInRepository.AddCheckInAsync(checkIn);
+        var notificationTask = _notificationRepository.AddNotificationAsync(new Notification
+        {
+            BusinessId = checkIn.BusinessId,
+            Message = $"Khách hàng {customer.Name} đã đến. Vui lòng lưu ý.", // Vietnamese text
+            NotificationType = NotificationType.CheckIn,
+            CreatedAt = DateTime.UtcNow // Assuming you have this property
+        });
+
+        // Await both tasks to complete
+        await Task.WhenAll(checkInTask, notificationTask);
     }
+
 
     public async Task UpdateCheckInAsync(int checkInId, CheckIn? checkIn)
     {

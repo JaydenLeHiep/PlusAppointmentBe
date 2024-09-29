@@ -78,6 +78,10 @@ using PlusAppointment.Repositories.Implementation.OpeningHoursRepository;
 using PlusAppointment.Services.Interfaces.IOpeningHoursService;
 using PlusAppointment.Repositories.Interfaces.IOpeningHoursRepository;
 using PlusAppointment.Models.Classes;
+using PlusAppointment.Repositories.Implementation.CheckInRepo;
+using PlusAppointment.Repositories.Interfaces.CheckInRepo;
+using PlusAppointment.Services.Implementations.CheckInService;
+using PlusAppointment.Services.Interfaces.CheckInService;
 using PlusAppointment.Utils.Hash;
 using PlusAppointment.Utils.Hub;
 using PlusAppointment.Utils.SQS;
@@ -115,6 +119,11 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve;
         options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+        // Add enum converter to handle enum values as strings
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+
+        // Optional: Ignore case for property names (including enum values)
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     });
 builder.Services.AddSignalR(options =>
 {
@@ -174,6 +183,9 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 // Register the OpeningHours repository and service
 builder.Services.AddScoped<IOpeningHoursRepository, OpeningHoursRepository>();
 builder.Services.AddScoped<IOpeningHoursService, OpeningHoursService>();
+
+builder.Services.AddScoped<ICheckInRepository, CheckInRepository>();
+builder.Services.AddScoped<ICheckInService, CheckInService>();
 
 builder.Services.AddSingleton<SmsService>();
 builder.Services.AddSingleton<RedisHelper>();

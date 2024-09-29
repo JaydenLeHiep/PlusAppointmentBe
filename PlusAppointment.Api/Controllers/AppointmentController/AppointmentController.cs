@@ -69,15 +69,11 @@ public class AppointmentsController : ControllerBase
     [HttpGet("customer/customer_id={customerId}")]
     public async Task<IActionResult> GetByCustomerId(int customerId)
     {
-        var userRole = HttpContext.Items["UserRole"]?.ToString();
-        //var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
-        if (userRole != Role.Admin.ToString() && userRole != Role.Customer.ToString() &&
-            userRole != Role.Owner.ToString())
-        {
-            return NotFound(new { message = "You are not authorized to view this business." });
-        }
-
         var appointments = await _appointmentService.GetAppointmentsByCustomerIdAsync(customerId);
+        if (appointments == null || !appointments.Any())
+        {
+            return Ok(new { message = "No appointments were found for this customer." });
+        }
         return Ok(appointments);
     }
 
@@ -137,27 +133,42 @@ public class AppointmentsController : ControllerBase
     {
         try
         {
-            //appointmentDto.AppointmentTime = DateTime.SpecifyKind(appointmentDto.AppointmentTime, DateTimeKind.Utc);
+            // Add the appointment and get the result (success flag and appointment object)
+            var (isSuccess, appointment) = await _appointmentService.AddAppointmentAsync(appointmentDto);
 
-            // Add the appointment and send the email
-            var appointmentAdded = await _appointmentService.AddAppointmentAsync(appointmentDto);
-
-            if (!appointmentAdded)
+            if (!isSuccess)
             {
-                return BadRequest(new { message = "Appointment could not be added because some errors." });
+                // If the appointment was not added, return a BadRequest with an appropriate message
+                return BadRequest(new { message = "Appointment could not be added due to some errors." });
             }
-            await _hubContext.Clients.All.SendAsync("ReceiveAppointmentUpdate", "A new appointment has been booked.");
 
-            // Send notification update to the frontend (You can customize the notification message)
+            // Send both a message and the appointment details via SignalR
+            // Call the SendAppointmentUpdate method on the Hub
+            // Send both a message and the appointment details via SignalR
+            await _hubContext.Clients.All.SendAsync("ReceiveAppointmentUpdate", new 
+            {
+                message = "A new appointment has been booked.",
+                appointment = appointment
+            });
+
+            // Optionally send a notification update
             await _hubContext.Clients.All.SendAsync("ReceiveNotificationUpdate", "A new notification for the appointment!");
 
-            return Ok(new { message = "Appointment added successfully" });
+            // Return a success response with the added appointment details
+            return Ok(new 
+            { 
+                message = "Appointment added successfully", 
+                appointment = appointment 
+            });
         }
         catch (Exception ex)
         {
+            // Return a BadRequest with the exception message in case of any errors
             return BadRequest(new { message = ex.Message });
         }
     }
+
+
 
     [HttpPut("appointment_id={appointmentId}/update-appointment")]
     public async Task<IActionResult> UpdateAppointment(int appointmentId,
@@ -254,5 +265,22 @@ public class AppointmentsController : ControllerBase
         };
 
         return Ok(response);
+    }
+    
+    [HttpDelete("appointment_id={appointmentId}/delete-appointment-customer")]
+    public async Task<IActionResult> DeleteAppointmentForCustomer(int appointmentId)
+    {
+        try
+        {
+            await _appointmentService.DeleteAppointmentForCustomerAsync(appointmentId);
+            // Notify all connected clients about the deletion
+            await _hubContext.Clients.All.SendAsync("ReceiveAppointmentForCustomerDeleted", appointmentId);
+            await _hubContext.Clients.All.SendAsync("ReceiveNotificationUpdate", "A new notification for the appointment!");
+            return Ok(new { message = "Appointment deleted successfully" });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 }

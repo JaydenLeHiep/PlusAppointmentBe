@@ -6,10 +6,13 @@ namespace PlusAppointment.Utils.Hub;
 public class AppointmentHub: Microsoft.AspNetCore.SignalR.Hub
 {
     // This method can be called by clients
-    public async Task SendAppointmentUpdate(string message)
+    public async Task SendAppointmentUpdate(Appointment appointment)
     {
-        // Send a message to all connected clients
-        await Clients.All.SendAsync("ReceiveAppointmentUpdate", message);
+        await Clients.All.SendAsync("ReceiveAppointmentUpdate", new 
+        {
+            message = "A new appointment has been booked.",
+            appointment = appointment
+        });
     }
     
     public async Task SendAppointmentDelete(int appointmentId)

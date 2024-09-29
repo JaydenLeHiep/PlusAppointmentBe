@@ -77,7 +77,11 @@ using PlusAppointment.Services.Implementations.OpeningHoursService;
 using PlusAppointment.Repositories.Implementation.OpeningHoursRepository;
 using PlusAppointment.Services.Interfaces.IOpeningHoursService;
 using PlusAppointment.Repositories.Interfaces.IOpeningHoursRepository;
-
+using PlusAppointment.Models.Classes;
+using PlusAppointment.Repositories.Implementation.CheckInRepo;
+using PlusAppointment.Repositories.Interfaces.CheckInRepo;
+using PlusAppointment.Services.Implementations.CheckInService;
+using PlusAppointment.Services.Interfaces.CheckInService;
 using PlusAppointment.Utils.Hash;
 using PlusAppointment.Utils.Hub;
 using PlusAppointment.Utils.SQS;
@@ -90,6 +94,9 @@ builder.Configuration
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)  // Load the base config
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)  // Load environment-specific config
     .AddEnvironmentVariables();  // Override with environment variables
+
+// Bind AppSettings from appsettings.json
+builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
 
 // Configure AWS options based on the environment
 var awsOptions = new AWSOptions
@@ -112,16 +119,20 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve;
         options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+        // Add enum converter to handle enum values as strings
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+
+        // Optional: Ignore case for property names (including enum values)
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     });
-builder.Services.AddSignalR(); // Add SignalR services
-
-
-
+builder.Services.AddSignalR(options =>
+{
+    options.MaximumReceiveMessageSize = 102400; // Set to 100KB, adjust based on your object size
+}); // Add SignalR services
 
 // Register the DbContext using the factory method
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
 
 // Register repositories and services
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -172,6 +183,9 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 // Register the OpeningHours repository and service
 builder.Services.AddScoped<IOpeningHoursRepository, OpeningHoursRepository>();
 builder.Services.AddScoped<IOpeningHoursService, OpeningHoursService>();
+
+builder.Services.AddScoped<ICheckInRepository, CheckInRepository>();
+builder.Services.AddScoped<ICheckInService, CheckInService>();
 
 builder.Services.AddSingleton<SmsService>();
 builder.Services.AddSingleton<RedisHelper>();
@@ -273,7 +287,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontendOnly", builder =>
     {
-        builder.WithOrigins("http://localhost:3000", 
+        builder.WithOrigins("http://localhost:3000", "http://10.0.2.2:3000",
                 "http://18.159.214.207", 
                 "http://plus-appointments-alb-1330428496.eu-central-1.elb.amazonaws.com",
                 "https://plus-appointment.com")
@@ -340,5 +354,15 @@ void EnsureLogsDirectory()
         Directory.CreateDirectory(logsPath);
     }
 }
+
+// Load environment-specific configuration
+builder.Configuration
+    .SetBasePath(Directory.GetCurrentDirectory())  // Set base path for configurations
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)  // Load the base config
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)  // Load environment-specific config
+    .AddEnvironmentVariables();
+
+// Bind AppSettings from appsettings.json
+builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
 
 public partial class Program { } // This is needed for the EF Core CLI tools to function properly

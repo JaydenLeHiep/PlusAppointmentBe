@@ -10,43 +10,40 @@ using PlusAppointment.Services.Interfaces.AppointmentService;
 using PlusAppointment.Services.Interfaces.EmailUsageService;
 using PlusAppointment.Services.Interfaces.NotificationService;
 using PlusAppointment.Utils.SendingEmail;
-
-
+using Microsoft.Extensions.Options; 
 
 namespace PlusAppointment.Services.Implementations.AppointmentService
 {
     public class AppointmentService : IAppointmentService
     {
         //private readonly IAppointmentRepository _appointmentRepository;
-
         private readonly IAppointmentWriteRepository _appointmentWriteRepository;
         private readonly IAppointmentReadRepository _appointmentReadRepository;
         private readonly IBusinessRepository _businessRepository;
-
         private readonly IEmailService _emailService;
-
         private readonly IServicesRepository _servicesRepository;
         private readonly IStaffRepository _staffRepository;
         private readonly IEmailUsageService _emailUsageService;
         private readonly IConfiguration _configuration;
         private readonly INotificationService _notificationService;
+        private readonly IOptions<AppSettings> _appSettings;
 
         public AppointmentService(IAppointmentWriteRepository appointmentWriteRepository,
             IAppointmentReadRepository appointmentReadRepository, IBusinessRepository businessRepository,
             IEmailService emailService, IServicesRepository servicesRepository,
             IStaffRepository staffRepository, IEmailUsageService emailUsageService, IConfiguration configuration,
-            INotificationService notificationService)
+            INotificationService notificationService, IOptions<AppSettings> appSettings)
         {
             _appointmentWriteRepository = appointmentWriteRepository;
             _appointmentReadRepository = appointmentReadRepository;
             _businessRepository = businessRepository;
             _emailService = emailService;
-
             _servicesRepository = servicesRepository;
             _staffRepository = staffRepository;
             _emailUsageService = emailUsageService;
             _configuration = configuration;
             _notificationService = notificationService;
+            _appSettings = appSettings;
         }
 
         public async Task<IEnumerable<AppointmentRetrieveDto?>> GetAllAppointmentsAsync()
@@ -68,7 +65,8 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             return appointment == null ? null : await MapToDtoAsync(appointment);
         }
 
-        public async Task<bool> AddAppointmentAsync(AppointmentDto appointmentDto)
+        public async Task<(bool IsSuccess, AppointmentRetrieveDto? Appointment)> AddAppointmentAsync(
+            AppointmentDto appointmentDto)
         {
             // Fetch the business and customer details concurrently
             var businessTask = _businessRepository.GetByIdAsync(appointmentDto.BusinessId);
@@ -79,8 +77,11 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             var business = await businessTask;
             var customer = await customerTask;
 
-            if (business == null) throw new ArgumentException("Invalid BusinessId");
-            if (customer == null) throw new ArgumentException("Invalid CustomerId");
+            if (business == null || customer == null)
+            {
+                // Return false with a null AppointmentRetrieveDto if business or customer are invalid
+                return (false, null);
+            }
 
             // Prepare service and staff validation tasks
             var serviceStaffValidationTasks = appointmentDto.Services.Select(async serviceStaffDto =>
@@ -142,20 +143,25 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
             // Email and notification sending tasks (non-blocking)
             var emailTasks = new List<Task>();
+            var emailCount = 0;
 
-            // Send customer confirmation email
+            var frontendBaseUrl = _appSettings.Value.FrontendBaseUrl;
+            var cancelAppointmentLink = $"{frontendBaseUrl}/delete-appointment-customer?business_name={business.Name}";
+            
             // Send customer confirmation email
             if (!string.IsNullOrWhiteSpace(customer.Email))
             {
                 var customerEmailBody =
                     $"<p>Hi {customer.Name},</p>" +
                     $"<p>Your appointment at <strong>{business.Name}</strong> for <strong>{appointmentTimeFormatted}</strong> is confirmed.</p>" +
+                    $"<p>If you want to cancel your appointment, please click <a href='{cancelAppointmentLink}'>here</a>.</p>" +
                     $"<hr>" +
                     $"<p>Hallo {customer.Name},</p>" +
-                    $"<p>Ihr Termin bei <strong>{business.Name}</strong> für <strong>{appointmentTimeFormatted}</strong> ist bestätigt.</p>";
-
+                    $"<p>Ihr Termin bei <strong>{business.Name}</strong> für <strong>{appointmentTimeFormatted}</strong> ist bestätigt.</p>" +
+                    $"<p>Wenn Sie Ihren Termin stornieren möchten, klicken Sie bitte <a href='{cancelAppointmentLink}'>hier</a>.</p>";
                 emailTasks.Add(_emailService.SendEmailAsync(customer.Email, "Appointment Confirmation",
                     customerEmailBody));
+                emailCount++;
             }
 
             // Send notification email to the business
@@ -164,56 +170,28 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 var businessEmailBody =
                     $"<p>Khách hàng {customer.Name} đã đặt lịch hẹn vào lúc <strong>{appointmentTimeFormatted}</strong>. Vui lòng kiểm tra và xác nhận chi tiết.</p>";
 
-                emailTasks.Add(_emailService.SendEmailAsync(business.Email, "Yêu cầu đặt lịch hẹn mới", businessEmailBody));
+                emailTasks.Add(_emailService.SendEmailAsync(business.Email, "Yêu cầu đặt lịch hẹn mới",
+                    businessEmailBody));
+                emailCount++;
             }
 
-
-            // Schedule a reminder email if necessary
-            if (!string.IsNullOrWhiteSpace(customer.Email))
+            // Track email usage
+            var emailUsageTask = _emailUsageService.AddEmailUsageAsync(new EmailUsage
             {
-                // Reminder email body in English and German
-                var reminderBody =
-                    $"<p>Hi {customer.Name},</p>" +
-                    $"<p>Reminder: Your appointment at <strong>{business.Name}</strong> is on <strong>{appointmentTimeFormatted}</strong>.</p>" +
-                    $"<hr>" +
-                    $"<p>Hallo {customer.Name},</p>" +
-                    $"<p>Erinnerung: Ihr Termin bei <strong>{business.Name}</strong> ist am <strong>{appointmentTimeFormatted}</strong>.</p>";
+                BusinessId = appointmentDto.BusinessId,
+                Year = DateTime.UtcNow.Year,
+                Month = DateTime.UtcNow.Month,
+                EmailCount = emailCount
+            });
 
-                // Calculate the reminder times
-                var reminderTime24Hours = appointmentDto.AppointmentTime.AddHours(-24);  // 24-hour reminder
-                var reminderTime2Hours = appointmentDto.AppointmentTime.AddHours(-2);    // 2-hour reminder
-
-                // Send the 24-hour reminder
-                if (reminderTime24Hours > DateTime.UtcNow)
-                {
-                    BackgroundJob.Schedule(() =>
-                            _emailService.SendEmailAsync(customer.Email, "Appointment Reminder / Termin-Erinnerung", reminderBody),
-                        new DateTimeOffset(reminderTime24Hours));
-                }
-                else
-                {
-                    emailTasks.Add(_emailService.SendEmailAsync(customer.Email, "Appointment Reminder / Termin-Erinnerung", reminderBody));
-                }
-
-                // Send the 2-hour reminder
-                if (reminderTime2Hours > DateTime.UtcNow)
-                {
-                    BackgroundJob.Schedule(() =>
-                            _emailService.SendEmailAsync(customer.Email, "Appointment Reminder / Termin-Erinnerung", reminderBody),
-                        new DateTimeOffset(reminderTime2Hours));
-                }
-                else
-                {
-                    emailTasks.Add(_emailService.SendEmailAsync(customer.Email, "Appointment Reminder / Termin-Erinnerung", reminderBody));
-                }
-            }
-
-
-
-            // Run all email tasks in parallel
             await Task.WhenAll(emailTasks);
+            await emailUsageTask;
 
-            return true;
+            // Convert the Appointment to AppointmentRetrieveDto
+            var appointmentRetrieveDto = await MapToDtoAsync(appointment);
+
+            // Return true with the mapped AppointmentRetrieveDto
+            return (true, appointmentRetrieveDto);
         }
 
 
@@ -280,7 +258,6 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 $"<p>Ihr Termin bei <strong>{business.Name}</strong> wurde geändert. Die neue Uhrzeit ist <strong>{appointmentTimeFormatted}</strong>.</p>" +
                 $"<p>Falls Sie Fragen haben, erreichen Sie uns unter <strong>{business.Phone}</strong>. Wir freuen uns auf Ihren Besuch!</p>";
 
-
             var emailMessage = new EmailMessage
             {
                 ToEmail = customer.Email ?? string.Empty,
@@ -288,12 +265,17 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 Body = bodyEmail
             };
 
+            var emailTasks = new List<Task>(); // To run email tasks concurrently
+            var emailCount = 0; // Track how many emails are sent
+
             try
             {
-                // Send email asynchronously
+                // Send email asynchronously to the customer
                 if (!string.IsNullOrWhiteSpace(emailMessage.ToEmail))
                 {
-                    await _emailService.SendEmailAsync(emailMessage.ToEmail, emailMessage.Subject, emailMessage.Body);
+                    emailTasks.Add(_emailService.SendEmailAsync(emailMessage.ToEmail, emailMessage.Subject,
+                        emailMessage.Body));
+                    emailCount++; // Increment email count when email task is added
                 }
                 else
                 {
@@ -304,6 +286,18 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             {
                 Console.WriteLine($"Error while sending the email: {ex.Message}");
             }
+
+            // Track email usage by BusinessId
+            var emailUsageTask = _emailUsageService.AddEmailUsageAsync(new EmailUsage
+            {
+                BusinessId = appointment.BusinessId,
+                Year = DateTime.UtcNow.Year,
+                Month = DateTime.UtcNow.Month,
+                EmailCount = emailCount // Use the calculated email count
+            });
+
+            // Run all email tasks and email usage update concurrently in a single Task.WhenAll call
+            await Task.WhenAll(emailTasks.Append(emailUsageTask));
         }
 
 
@@ -351,7 +345,6 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 $"<hr>" +
                 $"Hallo, Ihr Termin bei {business.Name} ist für {appointmentTimeFormatted} bestätigt. Wir freuen uns auf Sie!";
 
-
             var emailMessage = new EmailMessage
             {
                 ToEmail = customer.Email ?? string.Empty,
@@ -359,15 +352,17 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 Body = bodySms
             };
 
-            var emailSendingTask = Task.CompletedTask;
+            var emailTasks = new List<Task>(); // List to handle email tasks
+            var emailCount = 0; // Track how many emails are sent
 
             try
             {
                 // Send email directly using _emailService in parallel if the customer email is provided
                 if (!string.IsNullOrWhiteSpace(emailMessage.ToEmail))
                 {
-                    emailSendingTask =
-                        _emailService.SendEmailAsync(emailMessage.ToEmail, emailMessage.Subject, emailMessage.Body);
+                    emailTasks.Add(_emailService.SendEmailAsync(emailMessage.ToEmail, emailMessage.Subject,
+                        emailMessage.Body));
+                    emailCount++; // Increment email count for this email
                 }
                 else
                 {
@@ -379,11 +374,20 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 Console.WriteLine($"Error while sending the email: {ex.Message}");
             }
 
-            // Update the appointment status in the database in parallel with email sending
+            // Track email usage by BusinessId
+            var emailUsageTask = _emailUsageService.AddEmailUsageAsync(new EmailUsage
+            {
+                BusinessId = appointment.BusinessId,
+                Year = DateTime.UtcNow.Year,
+                Month = DateTime.UtcNow.Month,
+                EmailCount = emailCount // Use the calculated email count
+            });
+
+            // Update the appointment status in the database
             var updateStatusTask = _appointmentWriteRepository.UpdateAppointmentStatusAsync(appointment);
 
-            // Wait for both tasks to complete
-            await Task.WhenAll(emailSendingTask, updateStatusTask);
+            // Wait for all tasks (email sending, email usage, and status update) to complete
+            await Task.WhenAll(emailTasks.Append(emailUsageTask).Append(updateStatusTask));
         }
 
 
@@ -392,6 +396,38 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             await _appointmentWriteRepository.DeleteAppointmentAsync(id);
         }
 
+        public async Task DeleteAppointmentForCustomerAsync(int id)
+        {
+            // Fetch the appointment details before deletion to get the customer and business information
+            var appointment = await _appointmentReadRepository.GetAppointmentByIdAsync(id);
+    
+            if (appointment == null)
+            {
+                throw new ArgumentException("Invalid AppointmentId");
+            }
+
+            // Extract the necessary details for the notification
+            var customer = appointment.Customer;
+            var businessId = appointment.BusinessId;
+            var appointmentTime = appointment.AppointmentTime;
+
+            // Convert appointment time to the formatted string
+            var appointmentTimeFormatted = TimeZoneInfo.ConvertTimeFromUtc(appointmentTime,
+                    TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time"))
+                .ToString("HH:mm 'on' dd.MM.yyyy");
+
+            // Delete the appointment
+            await _appointmentWriteRepository.DeleteAppointmentForCustomerAsync(id);
+
+            // Add a notification about the deletion
+            var notificationMessage = $"Customer {customer.Name} cancelled an appointment for {appointmentTimeFormatted}.";
+            await _notificationService.AddNotificationAsync(
+                businessId,
+                notificationMessage,
+                NotificationType.Cancel
+            );
+        }
+        
         public async Task<IEnumerable<AppointmentRetrieveDto>> GetAppointmentsByCustomerIdAsync(int customerId)
         {
             var appointments = await _appointmentReadRepository.GetAppointmentsByCustomerIdAsync(customerId);
@@ -491,7 +527,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 Comment = appointment.Comment ?? "No comment",
                 CreatedAt = appointment.CreatedAt,
                 UpdatedAt = appointment.UpdatedAt,
-                Services = services
+                Services = services 
             };
         }
     }

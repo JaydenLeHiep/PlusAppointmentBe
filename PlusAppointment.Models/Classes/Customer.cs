@@ -10,5 +10,8 @@ namespace PlusAppointment.Models.Classes
         // Add BusinessId and Navigation Property
         public int BusinessId { get; set; }
         public Business Business { get; set; }
+        
+        // Add a collection for check-ins
+        public ICollection<CheckIn> CheckIns { get; set; } = new List<CheckIn>();
     }
 }

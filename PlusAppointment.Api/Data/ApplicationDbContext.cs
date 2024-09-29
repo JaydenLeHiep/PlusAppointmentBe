@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PlusAppointment.Models.Classes;
+using PlusAppointment.Models.Enums;
 
 namespace PlusAppointment.Data
 {
@@ -27,6 +28,8 @@ namespace PlusAppointment.Data
 
         public DbSet<OpeningHours> OpeningHours { get; set; }
 
+        public DbSet<CheckIn?> CheckIns { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -41,6 +44,7 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<Customer>().ToTable("customers");
             modelBuilder.Entity<AppointmentServiceStaffMapping>().ToTable("appointment_services_staffs");
             modelBuilder.Entity<EmailUsage>().ToTable("email_usage");
+            modelBuilder.Entity<CheckIn>().ToTable("check_ins"); // Specify the table name in lowercase
 
             // Configure column names to be lowercase
             modelBuilder.Entity<User>().Property(u => u.UserId).HasColumnName("user_id");
@@ -184,6 +188,17 @@ namespace PlusAppointment.Data
                         v) // Convert string to Enum when reading
                 );
             modelBuilder.Entity<Notification>().Property(n => n.CreatedAt).HasColumnName("created_at");
+            
+            modelBuilder.Entity<CheckIn>().Property(ci => ci.CheckInId).HasColumnName("check_in_id");
+            modelBuilder.Entity<CheckIn>().Property(ci => ci.CustomerId).HasColumnName("customer_id");
+            modelBuilder.Entity<CheckIn>().Property(ci => ci.BusinessId).HasColumnName("business_id");
+            modelBuilder.Entity<CheckIn>().Property(ci => ci.CheckInTime).HasColumnName("check_in_time");
+            modelBuilder.Entity<CheckIn>().Property(ci => ci.CheckInType)
+                .HasColumnName("check_in_type")
+                .HasConversion(
+                    v => v.ToString(),  // Convert Enum to string when saving
+                    v => (CheckInType)Enum.Parse(typeof(CheckInType), v)  // Convert string to Enum when reading
+                );
 
 
             // Configure the OpeningHours table
@@ -317,6 +332,19 @@ namespace PlusAppointment.Data
                 .HasOne<Business>()
                 .WithMany(b => b.OpeningHours)
                 .HasForeignKey(oh => oh.BusinessId);
+            
+            // Configure relationships for CheckIn entity
+            modelBuilder.Entity<CheckIn>()
+                .HasOne(ci => ci.Customer)
+                .WithMany(c => c.CheckIns)
+                .HasForeignKey(ci => ci.CustomerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<CheckIn>()
+                .HasOne(ci => ci.Business)
+                .WithMany(b => b.CheckIns)
+                .HasForeignKey(ci => ci.BusinessId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Add indexes to improve performance
             modelBuilder.Entity<Business>()
@@ -403,6 +431,19 @@ namespace PlusAppointment.Data
 
             modelBuilder.Entity<OpeningHours>()
                 .HasIndex(oh => oh.BusinessId).HasDatabaseName("IX_OpeningHours_BusinessId");
+            
+            // Add indexes for the CheckIn entity
+            modelBuilder.Entity<CheckIn>()
+                .HasIndex(ci => ci.CustomerId)
+                .HasDatabaseName("IX_CheckIn_CustomerId");
+
+            modelBuilder.Entity<CheckIn>()
+                .HasIndex(ci => ci.BusinessId)
+                .HasDatabaseName("IX_CheckIn_BusinessId");
+
+            modelBuilder.Entity<CheckIn>()
+                .HasIndex(ci => ci.CheckInTime)
+                .HasDatabaseName("IX_CheckIn_CheckInTime");
         }
     }
 }

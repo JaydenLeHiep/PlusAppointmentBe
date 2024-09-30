@@ -84,8 +84,9 @@ public class CustomerService : ICustomerService
             Name = customerDto.Name,
             Email = customerDto.Email,
             Phone = customerDto.Phone,
-            BusinessId = customerDto.BusinessId
-            // Assign other properties as necessary
+            BusinessId = customerDto.BusinessId,
+            Birthday = customerDto.Birthday, // Set birthday
+            WantsPromotion = customerDto.WantsPromotion // Set promotion preference
         };
 
         await _customerRepository.AddCustomerAsync(customer);

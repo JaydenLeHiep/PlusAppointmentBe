@@ -137,10 +137,11 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             var addNotificationTask = _notificationRepo.AddNotificationAsync(new Notification
             {
                 BusinessId = appointmentDto.BusinessId,
-                Message = $"Customer {customer.Name} booked an appointment for {appointmentTimeFormatted}.",
+                Message = $"Khách hàng {customer.Name} đã đặt lịch hẹn vào lúc {appointmentTimeFormatted}.", // Vietnamese text
                 NotificationType = NotificationType.Add,
                 CreatedAt = DateTime.UtcNow // Ensure to set the created time
             });
+
 
             await Task.WhenAll(addAppointmentTask, addNotificationTask);
 

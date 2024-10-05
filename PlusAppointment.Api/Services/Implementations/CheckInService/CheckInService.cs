@@ -1,8 +1,12 @@
+using Hangfire;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Repositories.Interfaces.CheckInRepo;
 using PlusAppointment.Repositories.Interfaces.CustomerRepo;
 using PlusAppointment.Repositories.Interfaces.NotificationRepo;
 using PlusAppointment.Services.Interfaces.CheckInService;
+using PlusAppointment.Utils.SendingEmail;
+using Microsoft.Extensions.Options;
+using PlusAppointment.Repositories.Interfaces.BusinessRepo;
 
 namespace PlusAppointment.Services.Implementations.CheckInService;
 
@@ -11,12 +15,20 @@ public class CheckInService : ICheckInService
     private readonly ICheckInRepository _checkInRepository;
     private readonly ICustomerRepository _customerRepository;
     private readonly INotificationRepository _notificationRepository;
+    private readonly IEmailService _emailService;
+    private readonly IOptions<AppSettings> _appSettings;
+    private readonly IBusinessRepository _businessRepository;
 
-    public CheckInService(ICheckInRepository checkInRepository, ICustomerRepository customerRepository, INotificationRepository notificationRepository)
+    public CheckInService(ICheckInRepository checkInRepository, ICustomerRepository customerRepository,
+        INotificationRepository notificationRepository, IEmailService emailService, IOptions<AppSettings> appSettings,
+        IBusinessRepository businessRepository)
     {
         _checkInRepository = checkInRepository;
         _customerRepository = customerRepository;
         _notificationRepository = notificationRepository;
+        _emailService = emailService;
+        _appSettings = appSettings;
+        _businessRepository = businessRepository;
     }
 
     public async Task<IEnumerable<CheckIn?>> GetAllCheckInsAsync()
@@ -47,12 +59,18 @@ public class CheckInService : ICheckInService
             throw new ArgumentNullException(nameof(checkIn), "CheckIn cannot be null.");
         }
 
-        // Check if the customer exists
-        var customer = await _customerRepository.GetCustomerByIdAsync(checkIn.CustomerId);
-    
-        if (customer == null)
+        // Step 1: Fetch customer and business details
+        var customerTask = _customerRepository.GetCustomerByIdAsync(checkIn.CustomerId);
+        var businessTask = _businessRepository.GetByIdAsync(checkIn.BusinessId);
+
+        await Task.WhenAll(customerTask, businessTask);
+
+        var customer = await customerTask;
+        var business = await businessTask;
+
+        if (customer == null || business == null)
         {
-            throw new KeyNotFoundException("Customer with the provided email or phone does not exist.");
+            throw new KeyNotFoundException("Customer or Business not found.");
         }
 
         // Prepare tasks for adding check-in and notification
@@ -67,7 +85,35 @@ public class CheckInService : ICheckInService
 
         // Await both tasks to complete
         await Task.WhenAll(checkInTask, notificationTask);
+        // Step 3: Schedule follow-up email
+        var followUpTime = checkIn.CheckInTime.AddDays(14);
+        if (followUpTime > DateTime.UtcNow)
+        {
+            BackgroundJob.Schedule(() =>
+                    _emailService.SendEmailAsync(customer.Email, $"How was your visit at {business.Name}? Book your next appointment!",
+                        GenerateFollowUpEmailContent(customer, business.Name)),
+                new DateTimeOffset(followUpTime));
+        }
     }
+
+    private string GenerateFollowUpEmailContent(Customer customer, string businessName)
+    {
+        // Access the frontend base URL from appsettings
+        var frontendBaseUrl = _appSettings.Value.FrontendBaseUrl;
+        var bookingLink = $"{frontendBaseUrl}/customer-dashboard?business_name={Uri.EscapeDataString(businessName)}";
+
+        // Shorter email content in both English and German to encourage a new booking
+        return $@"
+        <p>Dear {customer.Name},</p>
+        <p>We hope you enjoyed your recent visit at {businessName}. Book your next appointment now: <a href='{bookingLink}'>Book Now</a></p>
+        <p>Thank you!</p>
+        <hr>
+        <p>Hallo {customer.Name},</p>
+        <p>Wir hoffen, dass Ihnen Ihr letzter Besuch bei {businessName} gefallen hat. Buchen Sie jetzt Ihren nächsten Termin: <a href='{bookingLink}'>Jetzt buchen</a></p>
+        <p>Vielen Dank!</p>
+    ";
+    }
+
 
 
     public async Task UpdateCheckInAsync(int checkInId, CheckIn? checkIn)

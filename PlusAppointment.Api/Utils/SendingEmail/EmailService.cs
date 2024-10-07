@@ -61,12 +61,13 @@ namespace PlusAppointment.Utils.SendingEmail
         // New bulk email sending method
         public async Task<bool> SendBulkEmailAsync(List<string?> toEmails, string? subject, string? body)
         {
-            try
+            bool isAnyEmailSent = false;
+
+            foreach (var toEmail in toEmails)
             {
-                // Loop through each email in the list and send the email individually
-                foreach (var toEmail in toEmails)
+                if (toEmail != null)
                 {
-                    if (toEmail != null)
+                    try
                     {
                         var sendRequest = new SendEmailRequest
                         {
@@ -96,21 +97,25 @@ namespace PlusAppointment.Utils.SendingEmail
 
                         // Send the email using SES client
                         var response = await _client.SendEmailAsync(sendRequest);
-                        if (response.HttpStatusCode != System.Net.HttpStatusCode.OK)
+                        if (response.HttpStatusCode == System.Net.HttpStatusCode.OK)
+                        {
+                            isAnyEmailSent = true;
+                        }
+                        else
                         {
                             Console.WriteLine($"Failed to send email to {toEmail}");
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error sending email to {toEmail}. Error message: {ex.Message}");
+                    }
                 }
+            }
 
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"The bulk email was not sent. Error message: {ex.Message}");
-                return false;
-            }
+            return isAnyEmailSent;
         }
+
 
     }
 }

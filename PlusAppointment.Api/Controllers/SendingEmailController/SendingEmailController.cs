@@ -40,15 +40,15 @@ public class SendingEmailController: ControllerBase
     {
         if (bulkEmail == null || bulkEmail.ToEmails.Count == 0)
         {
-            return BadRequest("Bulk email details are not valid.");
+            return BadRequest(new { message = "Bulk email details are not valid." });
         }
 
         var result = await _emailService.SendBulkEmailAsync(bulkEmail.ToEmails, bulkEmail.Subject, bulkEmail.Body);
         if (result)
         {
-            return Ok("Bulk email sent successfully.");
+            return Ok(new { message = "Bulk email sent successfully." });
         }
 
-        return StatusCode(500, "Failed to send bulk email.");
+        return StatusCode(500, new { message = "Failed to send bulk email." });
     }
 }

@@ -145,7 +145,17 @@ public class CustomerService : ICustomerService
             existingCustomer.Name = customerDto.Name; // Update the name if it's not null
         }
 
-        // Update other properties as necessary
+        // Update birthday only if it's not the minimum value (indicating it should be updated or cleared)
+        if (customerDto.Birthday != default(DateTime))
+        {
+            existingCustomer.Birthday = customerDto.Birthday;
+        }
+
+        // Update wantsPromotion assuming it's non-nullable bool
+        if (customerDto.WantsPromotion != null)
+        {
+            existingCustomer.WantsPromotion = (bool)customerDto.WantsPromotion;
+        }
 
         await _customerRepository.UpdateCustomerAsync(existingCustomer);
     }

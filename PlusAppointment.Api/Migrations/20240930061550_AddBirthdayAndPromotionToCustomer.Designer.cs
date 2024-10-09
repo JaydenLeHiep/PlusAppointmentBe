@@ -12,8 +12,8 @@ using PlusAppointment.Data;
 namespace PlusAppointment.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240928065927_AddCheckInEntity")]
-    partial class AddCheckInEntity
+    [Migration("20240930061550_AddBirthdayAndPromotionToCustomer")]
+    partial class AddBirthdayAndPromotionToCustomer
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -188,6 +188,10 @@ namespace PlusAppointment.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("CustomerId"));
 
+                    b.Property<DateTime?>("Birthday")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("birthday");
+
                     b.Property<int>("BusinessId")
                         .HasColumnType("integer")
                         .HasColumnName("business_id");
@@ -203,6 +207,10 @@ namespace PlusAppointment.Migrations
                     b.Property<string>("Phone")
                         .HasColumnType("text")
                         .HasColumnName("phone");
+
+                    b.Property<bool>("WantsPromotion")
+                        .HasColumnType("boolean")
+                        .HasColumnName("wants_promotion");
 
                     b.HasKey("CustomerId");
 

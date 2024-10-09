@@ -129,7 +129,8 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 throw new ArgumentNullException(nameof(customer));
             }
 
-            await using var connection = new NpgsqlConnection(_contextFactory.CreateDbContext().Database.GetConnectionString());
+            await using var connection =
+                new NpgsqlConnection(_contextFactory.CreateDbContext().Database.GetConnectionString());
             await connection.OpenAsync();
             await using var transaction = await connection.BeginTransactionAsync();
 
@@ -142,6 +143,8 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                         name = @Name, 
                         email = @Email, 
                         phone = @Phone,
+                        birthday = @Birthday, 
+                        wants_promotion = @WantsPromotion,
                         business_id = @BusinessId
                     WHERE customer_id = @CustomerId";
 
@@ -151,6 +154,8 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 command.Parameters.AddWithValue("@Name", (object)customer.Name ?? DBNull.Value);
                 command.Parameters.AddWithValue("@Email", (object)customer.Email ?? DBNull.Value);
                 command.Parameters.AddWithValue("@Phone", (object)customer.Phone ?? DBNull.Value);
+                command.Parameters.AddWithValue("@Birthday", customer.Birthday ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@WantsPromotion", customer.WantsPromotion);
                 command.Parameters.AddWithValue("@BusinessId", customer.BusinessId);
                 command.Parameters.AddWithValue("@CustomerId", customer.CustomerId);
 

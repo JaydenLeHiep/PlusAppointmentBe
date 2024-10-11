@@ -4,9 +4,9 @@ using PlusAppointment.Repositories.Interfaces.CheckInRepo;
 using PlusAppointment.Repositories.Interfaces.CustomerRepo;
 using PlusAppointment.Repositories.Interfaces.NotificationRepo;
 using PlusAppointment.Services.Interfaces.CheckInService;
-using PlusAppointment.Utils.SendingEmail;
 using Microsoft.Extensions.Options;
 using PlusAppointment.Repositories.Interfaces.BusinessRepo;
+using PlusAppointment.Services.Interfaces.EmailSendingService;
 
 namespace PlusAppointment.Services.Implementations.CheckInService;
 

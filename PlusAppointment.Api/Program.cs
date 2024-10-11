@@ -35,7 +35,6 @@ using PlusAppointment.Services.Implementations.ServicesService;
 using PlusAppointment.Services.Implementations.StaffService;
 using PlusAppointment.Services.Implementations.UserService;
 using PlusAppointment.Utils.Redis;
-using PlusAppointment.Utils.SendingEmail;
 using PlusAppointment.Utils.SendingSms;
 using Hangfire;
 using Hangfire.MemoryStorage;
@@ -81,7 +80,10 @@ using PlusAppointment.Models.Classes;
 using PlusAppointment.Repositories.Implementation.CheckInRepo;
 using PlusAppointment.Repositories.Interfaces.CheckInRepo;
 using PlusAppointment.Services.Implementations.CheckInService;
+using PlusAppointment.Services.Implementations.EmailSendingService;
 using PlusAppointment.Services.Interfaces.CheckInService;
+using PlusAppointment.Services.Interfaces.EmailSendingService;
+using PlusAppointment.Utils.EmailJob;
 using PlusAppointment.Utils.Hash;
 using PlusAppointment.Utils.Hub;
 using PlusAppointment.Utils.SQS;
@@ -197,6 +199,8 @@ builder.Services.AddScoped<IShopPictureRepository, ShopPictureRepository>();
 builder.Services.AddScoped<IShopPictureService, ShopPictureService>();
 builder.Services.AddAWSService<Amazon.S3.IAmazonS3>(awsOptions);  // AWS S3 service
 builder.Services.AddSingleton<S3Service>();
+builder.Services.AddScoped<BirthdayEmailJob>();
+
 
 // Configure Redis
 var redisConnectionString = builder.Configuration.GetConnectionString("RedisConnection");
@@ -328,6 +332,15 @@ app.UseHangfireDashboard("/api/hangfire", new DashboardOptions
 {
     Authorization = new[] { new Hangfire.Dashboard.LocalRequestsOnlyAuthorizationFilter() }
 });
+
+// Schedule the BirthdayEmailJob to run daily
+RecurringJob.AddOrUpdate<BirthdayEmailJob>(
+    "SendBirthdayEmails", // The job ID
+    job => job.ExecuteAsync(), // The method to run
+    Cron.Daily // Run the job daily
+);
+// Trigger the BirthdayEmailJob to run immediately for testing
+//BackgroundJob.Enqueue<BirthdayEmailJob>(job => job.ExecuteAsync());
 
 // Schedule the SqsConsumer background job to run periodically
 // RecurringJob.AddOrUpdate<SqsConsumer>(

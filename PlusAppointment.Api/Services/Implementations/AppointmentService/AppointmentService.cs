@@ -8,10 +8,9 @@ using PlusAppointment.Repositories.Interfaces.ServicesRepo;
 using PlusAppointment.Repositories.Interfaces.StaffRepo;
 using PlusAppointment.Services.Interfaces.AppointmentService;
 using PlusAppointment.Services.Interfaces.EmailUsageService;
-
-using PlusAppointment.Utils.SendingEmail;
 using Microsoft.Extensions.Options;
 using PlusAppointment.Repositories.Interfaces.NotificationRepo;
+using PlusAppointment.Services.Interfaces.EmailSendingService;
 
 namespace PlusAppointment.Services.Implementations.AppointmentService
 {

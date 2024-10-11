@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlusAppointment.Models.Classes.Emails;
-using PlusAppointment.Utils.SendingEmail;
+using PlusAppointment.Services.Interfaces.EmailSendingService;
 
 namespace PlusAppointment.Controllers.SendingEmailController;
 

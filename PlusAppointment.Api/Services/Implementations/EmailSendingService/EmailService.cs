@@ -1,8 +1,9 @@
 using Amazon;
 using Amazon.SimpleEmail;
 using Amazon.SimpleEmail.Model;
+using PlusAppointment.Services.Interfaces.EmailSendingService;
 
-namespace PlusAppointment.Utils.SendingEmail
+namespace PlusAppointment.Services.Implementations.EmailSendingService
 {
     public class EmailService : IEmailService
     {
@@ -114,6 +115,16 @@ namespace PlusAppointment.Utils.SendingEmail
             }
 
             return isAnyEmailSent;
+        }
+        public async Task<bool> SendBirthdayEmailAsync(string toEmail, string? name, string businessName)
+        {
+            string subject = "Happy Birthday!";
+            string body = $"<p>Dear {name},</p>" +
+                          $"<p>{businessName} wishes you a fantastic birthday filled with joy and happiness!</p>" +
+                          $"<p>Liebe/r {name},</p>" +
+                          $"<p>{businessName} wünscht Ihnen einen wunderbaren Geburtstag voller Freude und Glück!</p>";
+
+            return await SendEmailAsync(toEmail, subject, body);
         }
 
 

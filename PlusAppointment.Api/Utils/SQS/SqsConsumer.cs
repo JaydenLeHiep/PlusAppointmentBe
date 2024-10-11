@@ -2,7 +2,7 @@ using Amazon.SQS;
 using Amazon.SQS.Model;
 using Newtonsoft.Json;
 using PlusAppointment.Models.Classes;
-using PlusAppointment.Utils.SendingEmail;
+using PlusAppointment.Services.Interfaces.EmailSendingService;
 
 namespace PlusAppointment.Utils.SQS;
 

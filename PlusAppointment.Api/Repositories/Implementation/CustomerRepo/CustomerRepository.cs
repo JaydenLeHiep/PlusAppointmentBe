@@ -299,6 +299,20 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 return customer;
             }
         }
+        
+        public async Task<IEnumerable<Customer?>> GetCustomersWithUpcomingBirthdayAsync(DateTime date)
+        {
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                var today = date.Date;
+                return await context.Customers
+                    .Where(c => c.Birthday.HasValue &&
+                                c.Birthday.Value.Month == today.Month &&
+                                c.Birthday.Value.Day == today.Day &&
+                                c.WantsPromotion)
+                    .ToListAsync();
+            }
+        }
 
         private async Task UpdateCustomerCacheAsync(Customer customer)
         {

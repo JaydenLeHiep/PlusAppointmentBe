@@ -120,7 +120,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 Business = business,
                 AppointmentTime = appointmentDto.AppointmentTime,
                 Duration = TimeSpan.Zero, // Duration should be calculated if needed
-                Status = "Pending",
+                Status = "Confirm",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 Comment = appointmentDto.Comment,
@@ -216,7 +216,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             if (!string.IsNullOrWhiteSpace(business.Email))
             {
                 var businessEmailBody =
-                    $"<p>Khách hàng {customer.Name} đã đặt lịch hẹn vào lúc <strong>{appointmentTimeFormatted}</strong>. Vui lòng kiểm tra và xác nhận chi tiết.</p>";
+                    $"<p>Khách hàng {customer.Name} đã đặt lịch hẹn vào lúc <strong>{appointmentTimeFormatted}</strong>. Vui lòng kiểm tra chi tiết.</p>";
 
                 emailTasks.Add(_emailService.SendEmailAsync(business.Email, "Yêu cầu đặt lịch hẹn mới",
                     businessEmailBody));

@@ -77,6 +77,7 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<ServiceCategory>().HasKey(sc => sc.CategoryId); // Explicitly define the primary key
             modelBuilder.Entity<ServiceCategory>().Property(sc => sc.CategoryId).HasColumnName("category_id");
             modelBuilder.Entity<ServiceCategory>().Property(sc => sc.Name).HasColumnName("name");
+            modelBuilder.Entity<ServiceCategory>().Property(sc => sc.Color).HasColumnName("color");
 
             modelBuilder.Entity<Service>().Property(s => s.ServiceId).HasColumnName("service_id");
             modelBuilder.Entity<Service>().Property(s => s.Name).HasColumnName("name");
@@ -446,6 +447,10 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<CheckIn>()
                 .HasIndex(ci => ci.CheckInTime)
                 .HasDatabaseName("IX_CheckIn_CheckInTime");
+            
+            modelBuilder.Entity<ServiceCategory>()
+                .HasIndex(sc => sc.Color)
+                .HasDatabaseName("IX_ServiceCategory_Color");
         }
     }
 }

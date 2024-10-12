@@ -514,12 +514,20 @@ namespace PlusAppointment.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("CategoryId"));
 
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("color");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("name");
 
                     b.HasKey("CategoryId");
+
+                    b.HasIndex("Color")
+                        .HasDatabaseName("IX_ServiceCategory_Color");
 
                     b.ToTable("service_categories", (string)null);
                 });

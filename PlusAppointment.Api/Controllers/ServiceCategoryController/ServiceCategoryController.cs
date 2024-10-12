@@ -56,7 +56,11 @@ namespace PlusAppointment.Controllers.ServiceCategoryController
 
             try
             {
-                var serviceCategory = new ServiceCategory { Name = serviceCategoryDto.Name };
+                var serviceCategory = new ServiceCategory
+                {
+                    Name = serviceCategoryDto.Name,
+                    Color = serviceCategoryDto.Color // Add color property
+                };
                 await _serviceCategoryService.AddServiceCategoryAsync(serviceCategory);
                 return Ok(new { message = "Service category created successfully" });
             }
@@ -68,7 +72,8 @@ namespace PlusAppointment.Controllers.ServiceCategoryController
 
         [Authorize(Roles = "Admin,Owner")]
         [HttpPut("category_id={categoryId}")]
-        public async Task<IActionResult> UpdateServiceCategory(int categoryId, [FromBody] ServiceCategoryDto serviceCategoryDto)
+        public async Task<IActionResult> UpdateServiceCategory(int categoryId,
+            [FromBody] ServiceCategoryDto serviceCategoryDto)
         {
             if (serviceCategoryDto == null || string.IsNullOrEmpty(serviceCategoryDto.Name))
             {
@@ -83,7 +88,12 @@ namespace PlusAppointment.Controllers.ServiceCategoryController
 
             try
             {
-                var serviceCategory = new ServiceCategory { CategoryId = categoryId, Name = serviceCategoryDto.Name };
+                var serviceCategory = new ServiceCategory
+                {
+                    CategoryId = categoryId,
+                    Name = serviceCategoryDto.Name,
+                    Color = serviceCategoryDto.Color // Include color in update
+                };
                 await _serviceCategoryService.UpdateServiceCategoryAsync(serviceCategory);
                 return Ok(new { message = "Service category updated successfully" });
             }

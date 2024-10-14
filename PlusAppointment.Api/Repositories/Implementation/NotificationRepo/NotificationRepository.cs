@@ -53,8 +53,20 @@ namespace PlusAppointment.Repositories.Implementation.NotificationRepo
             }
 
             // If the cache is not present, fetch from the database and set the cache
-            await RefreshRelatedCachesAsync(businessId);
-            return await _redisHelper.GetCacheAsync<List<Notification>>(cacheKey) ?? new List<Notification>();
+            
+            var startOfToday = DateTime.UtcNow.Date;
+            var endOfToday = startOfToday.AddDays(1).AddTicks(-1);
+
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                var businessNotifications = await context.Notifications
+                    .Where(n => n.BusinessId == businessId && n.CreatedAt >= startOfToday && n.CreatedAt <= endOfToday)
+                    .OrderBy(n => n.CreatedAt)
+                    .ToListAsync();
+
+                await _redisHelper.SetCacheAsync(cacheKey, businessNotifications, TimeSpan.FromMinutes(10));
+                return businessNotifications;
+            }
         }
         
         public async Task MarkNotificationsAsSeenAsync(int businessId, List<int> notificationIds)

@@ -120,7 +120,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 Business = business,
                 AppointmentTime = appointmentDto.AppointmentTime,
                 Duration = TimeSpan.Zero, // Duration should be calculated if needed
-                Status = "Confirm",
+                Status = "Pending",
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 Comment = appointmentDto.Comment,

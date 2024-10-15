@@ -12,8 +12,8 @@ using PlusAppointment.Data;
 namespace PlusAppointment.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241011205320_AddColorToServiceCategory")]
-    partial class AddColorToServiceCategory
+    [Migration("20241015065222_AddRequiresAppointmentConfirmationToBusiness")]
+    partial class AddRequiresAppointmentConfirmationToBusiness
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -127,6 +127,12 @@ namespace PlusAppointment.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("phone");
+
+                    b.Property<bool>("RequiresAppointmentConfirmation")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("requires_appointment_confirmation");
 
                     b.Property<int>("UserID")
                         .HasColumnType("integer")

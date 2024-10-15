@@ -62,6 +62,10 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<Business>().Property(b => b.Phone).HasColumnName("phone");
             modelBuilder.Entity<Business>().Property(b => b.Email).HasColumnName("email");
             modelBuilder.Entity<Business>().Property(b => b.UserID).HasColumnName("user_id");
+            modelBuilder.Entity<Business>().Property(b => b.RequiresAppointmentConfirmation)
+                .HasColumnName("requires_appointment_confirmation")
+                .HasDefaultValue(false);  // Ensure it has a default value
+
 
             modelBuilder.Entity<Appointment>().Property(a => a.AppointmentId).HasColumnName("appointment_id");
             modelBuilder.Entity<Appointment>().Property(a => a.CustomerId).HasColumnName("customer_id");

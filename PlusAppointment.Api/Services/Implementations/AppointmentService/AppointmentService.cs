@@ -111,6 +111,16 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             // Await all service/staff validation tasks
             var mappings = await Task.WhenAll(serviceStaffValidationTasks);
 
+            string status;
+            if (business.RequiresAppointmentConfirmation)
+            {
+                status = "Pending";
+            }
+            else
+            {
+                status = "Confirm";
+            }
+
             // Create the appointment
             var appointment = new Appointment
             {
@@ -120,7 +130,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 Business = business,
                 AppointmentTime = appointmentDto.AppointmentTime,
                 Duration = TimeSpan.Zero, // Duration should be calculated if needed
-                Status = "Pending",
+                Status = status,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 Comment = appointmentDto.Comment,

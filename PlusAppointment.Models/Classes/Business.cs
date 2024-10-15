@@ -25,6 +25,8 @@ namespace PlusAppointment.Models.Classes
         public ICollection<OpeningHours> OpeningHours { get; set; } = new List<OpeningHours>();
         public ICollection<CheckIn> CheckIns { get; set; } = new List<CheckIn>();
         
+        public bool RequiresAppointmentConfirmation { get; set; }
+        
         public Business( string name, string address, string phone, string email, int userID)
         {
             

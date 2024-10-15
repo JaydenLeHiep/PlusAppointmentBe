@@ -125,6 +125,12 @@ namespace PlusAppointment.Migrations
                         .HasColumnType("text")
                         .HasColumnName("phone");
 
+                    b.Property<bool>("RequiresAppointmentConfirmation")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("requires_appointment_confirmation");
+
                     b.Property<int>("UserID")
                         .HasColumnType("integer")
                         .HasColumnName("user_id");

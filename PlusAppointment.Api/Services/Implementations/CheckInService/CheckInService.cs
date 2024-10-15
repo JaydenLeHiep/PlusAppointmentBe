@@ -82,9 +82,20 @@ public class CheckInService : ICheckInService
             NotificationType = NotificationType.CheckIn,
             CreatedAt = DateTime.UtcNow // Assuming you have this property
         });
+    
 
         // Await both tasks to complete
         await Task.WhenAll(checkInTask, notificationTask);
+        
+        var frontendBaseUrl = _appSettings.Value.FrontendBaseUrl;
+        var bookingAppointmentLink = $"{frontendBaseUrl}/customer-dashboard?business_name={business.Name}";
+        
+        // Step 2: Send the email immediately after check-in
+        var emailSubject = "Thanks for checking in!";
+        var emailBody = GenerateImmediateCheckInEmailContent(customer, business.Name, bookingAppointmentLink);
+        
+        // Send email directly
+        await _emailService.SendEmailAsync(customer.Email, emailSubject, emailBody);
         // Step 3: Schedule follow-up email
         var followUpTime = checkIn.CheckInTime.AddDays(14);
         if (followUpTime > DateTime.UtcNow)
@@ -95,6 +106,19 @@ public class CheckInService : ICheckInService
                 new DateTimeOffset(followUpTime));
         }
     }
+    private string GenerateImmediateCheckInEmailContent(Customer customer, string businessName, string bookingAppointmentLink)
+    {
+        return $@"
+        <p>Hello {customer.Name},</p>
+        <p>Thanks for checking in with {businessName}. Next time, you can book online with us: <a href='{bookingAppointmentLink}'>Book Now</a></p>
+        <p>Thank you!</p>
+        <hr>
+        <p>Hallo {customer.Name},</p>
+        <p>Vielen Dank, dass Sie bei {businessName} eingecheckt haben. Nächstes Mal können Sie online bei uns buchen: <a href='{bookingAppointmentLink}'>Jetzt buchen</a></p>
+        <p>Vielen Dank!</p>
+    ";
+    }
+
 
     private string GenerateFollowUpEmailContent(Customer customer, string businessName)
     {

@@ -78,10 +78,14 @@ using PlusAppointment.Services.Interfaces.IOpeningHoursService;
 using PlusAppointment.Repositories.Interfaces.IOpeningHoursRepository;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Repositories.Implementation.CheckInRepo;
+using PlusAppointment.Repositories.Implementation.EmailContentRepo;
 using PlusAppointment.Repositories.Interfaces.CheckInRepo;
+using PlusAppointment.Repositories.Interfaces.EmailContentRepo;
 using PlusAppointment.Services.Implementations.CheckInService;
+using PlusAppointment.Services.Implementations.EmailContentService;
 using PlusAppointment.Services.Implementations.EmailSendingService;
 using PlusAppointment.Services.Interfaces.CheckInService;
+using PlusAppointment.Services.Interfaces.EmailContentService;
 using PlusAppointment.Services.Interfaces.EmailSendingService;
 using PlusAppointment.Utils.EmailJob;
 using PlusAppointment.Utils.Hash;
@@ -188,6 +192,11 @@ builder.Services.AddScoped<IOpeningHoursService, OpeningHoursService>();
 
 builder.Services.AddScoped<ICheckInRepository, CheckInRepository>();
 builder.Services.AddScoped<ICheckInService, CheckInService>();
+
+// email content
+builder.Services.AddScoped<IEmailContentRepo, EmailContentRepo>();
+builder.Services.AddScoped<IEmailContentService, EmailContentService>();
+
 
 builder.Services.AddSingleton<SmsService>();
 builder.Services.AddSingleton<RedisHelper>();

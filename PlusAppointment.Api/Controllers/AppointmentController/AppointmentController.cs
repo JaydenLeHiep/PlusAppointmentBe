@@ -228,6 +228,8 @@ public class AppointmentsController : ControllerBase
             await _appointmentService.DeleteAppointmentAsync(appointmentId);
             // Notify all connected clients about the deletion
             await _hubContext.Clients.All.SendAsync("ReceiveAppointmentDeleted", appointmentId);
+            // Optionally send a notification update
+            await _hubContext.Clients.All.SendAsync("ReceiveNotificationUpdate", "A new notification for the appointment!");
             return Ok(new { message = "Appointment deleted successfully" });
         }
         catch (Exception ex)

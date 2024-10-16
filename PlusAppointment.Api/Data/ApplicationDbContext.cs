@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PlusAppointment.Models.Classes;
+using PlusAppointment.Models.Classes.Emails;
 using PlusAppointment.Models.Enums;
 
 namespace PlusAppointment.Data
@@ -29,6 +30,8 @@ namespace PlusAppointment.Data
         public DbSet<OpeningHours> OpeningHours { get; set; }
 
         public DbSet<CheckIn?> CheckIns { get; set; }
+        
+        public DbSet<EmailContent> EmailContents { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -262,7 +265,22 @@ namespace PlusAppointment.Data
 
             modelBuilder.Entity<OpeningHours>()
                 .Property(oh => oh.MinimumAdvanceBookingMinutes).HasColumnName("minimum_advance_booking_minutes");
+            
+            modelBuilder.Entity<EmailContent>().ToTable("email_contents");
 
+            modelBuilder.Entity<EmailContent>().Property(e => e.EmailContentId)
+                .HasColumnName("email_content_id")
+                .IsRequired();
+
+            modelBuilder.Entity<EmailContent>().Property(e => e.Subject)
+                .HasColumnName("subject")
+                .IsRequired();
+
+            modelBuilder.Entity<EmailContent>().Property(e => e.Body)
+                .HasColumnName("body")
+                .IsRequired();
+            
+            
             // Configure relationships
             modelBuilder.Entity<Business>()
                 .HasOne(b => b.User)
@@ -455,6 +473,15 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<ServiceCategory>()
                 .HasIndex(sc => sc.Color)
                 .HasDatabaseName("IX_ServiceCategory_Color");
+            
+            modelBuilder.Entity<EmailContent>()
+                .HasIndex(e => e.EmailContentId)
+                .HasDatabaseName("IX_email_content_id");
+
+            modelBuilder.Entity<EmailContent>()
+                .HasIndex(e => e.Subject)
+                .HasDatabaseName("IX_email_subject");
+        
         }
     }
 }

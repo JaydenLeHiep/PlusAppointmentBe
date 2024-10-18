@@ -87,6 +87,7 @@ using PlusAppointment.Services.Implementations.EmailSendingService;
 using PlusAppointment.Services.Interfaces.CheckInService;
 using PlusAppointment.Services.Interfaces.EmailContentService;
 using PlusAppointment.Services.Interfaces.EmailSendingService;
+using PlusAppointment.Utils.CustomAuthorizationFilter;
 using PlusAppointment.Utils.EmailJob;
 using PlusAppointment.Utils.Hash;
 using PlusAppointment.Utils.Hub;
@@ -338,12 +339,10 @@ app.UseAuthorization();
 // Use Hangfire dashboard
 // Use Hangfire dashboard
 // Retrieve allowed IPs from appsettings.json before configuring Hangfire dashboard
-var allowedIPs = builder.Configuration.GetSection("AppSettings:AllowedIPs").Get<string[]>();
-if (allowedIPs != null)
-    app.UseHangfireDashboard("/api/hangfire", new DashboardOptions
-    {
-        Authorization = new[] { new IPAddressAuthorizationFilter(allowedIPs) }
-    });
+app.UseHangfireDashboard("/api/hangfire", new DashboardOptions
+{
+    Authorization = new[] { new AllowAllUsersAuthorizationFilter() }
+});
 
 // Schedule the BirthdayEmailJob to run daily
 RecurringJob.AddOrUpdate<BirthdayEmailJob>(

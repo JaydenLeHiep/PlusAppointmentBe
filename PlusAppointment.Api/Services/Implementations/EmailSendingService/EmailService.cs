@@ -118,7 +118,7 @@ namespace PlusAppointment.Services.Implementations.EmailSendingService
         }
         public async Task<bool> SendBirthdayEmailAsync(string toEmail, string? name, string businessName)
         {
-            string subject = "Happy Birthday!";
+            string subject = $"Happy Birthday, {name}!";
             string body = $"<p>Dear {name},</p>" +
                           $"<p>{businessName} wishes you a fantastic birthday filled with joy and happiness!</p>" +
                           $"<p>Liebe/r {name},</p>" +

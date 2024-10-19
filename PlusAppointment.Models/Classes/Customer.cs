@@ -15,5 +15,6 @@ namespace PlusAppointment.Models.Classes
         
         // Add a collection for check-ins
         public ICollection<CheckIn> CheckIns { get; set; } = new List<CheckIn>();
+        public string? Note { get; set; }
     }
 }

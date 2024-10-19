@@ -9,4 +9,5 @@ public class CustomerDto
     public int BusinessId { get; set; } 
     public DateTime? Birthday { get; set; } // New property for birthday
     public bool WantsPromotion { get; set; } // New property for promotion preference
+    public string? Note { get; set; }
 }

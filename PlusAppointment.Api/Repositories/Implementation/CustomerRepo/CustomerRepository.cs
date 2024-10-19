@@ -145,6 +145,7 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                         phone = @Phone,
                         birthday = @Birthday, 
                         wants_promotion = @WantsPromotion,
+                        note = @Note,
                         business_id = @BusinessId
                     WHERE customer_id = @CustomerId";
 
@@ -156,6 +157,7 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
                 command.Parameters.AddWithValue("@Phone", (object)customer.Phone ?? DBNull.Value);
                 command.Parameters.AddWithValue("@Birthday", customer.Birthday ?? (object)DBNull.Value);
                 command.Parameters.AddWithValue("@WantsPromotion", customer.WantsPromotion);
+                command.Parameters.AddWithValue("@Note", (object)customer.Note ?? DBNull.Value);
                 command.Parameters.AddWithValue("@BusinessId", customer.BusinessId);
                 command.Parameters.AddWithValue("@CustomerId", customer.CustomerId);
 

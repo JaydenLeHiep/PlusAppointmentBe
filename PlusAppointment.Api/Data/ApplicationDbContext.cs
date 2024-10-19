@@ -130,7 +130,8 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<Customer>().Property(c => c.Phone).HasColumnName("phone");
             modelBuilder.Entity<Customer>().Property(c => c.Birthday).HasColumnName("birthday"); // New column
             modelBuilder.Entity<Customer>().Property(c => c.WantsPromotion).HasColumnName("wants_promotion"); // New column
-
+            modelBuilder.Entity<Customer>().Property(c => c.Note).HasColumnName("note");
+            
             // Configure the relationship between Customer and Business
             modelBuilder.Entity<Customer>().Property(c => c.BusinessId).HasColumnName("business_id");
             modelBuilder.Entity<Customer>()
@@ -481,7 +482,10 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<EmailContent>()
                 .HasIndex(e => e.Subject)
                 .HasDatabaseName("IX_email_subject");
-        
+            
+            modelBuilder.Entity<Customer>()
+                .HasIndex(c => c.Note)
+                .HasDatabaseName("IX_Customer_Note");
         }
     }
 }

@@ -38,7 +38,7 @@ using PlusAppointment.Utils.Redis;
 using PlusAppointment.Utils.SendingSms;
 using Hangfire;
 using Hangfire.MemoryStorage;
-
+using Hangfire.PostgreSql;
 using PlusAppointment.Repositories.Implementation.AppointmentRepo.AppointmentRead;
 using PlusAppointment.Repositories.Implementation.AppointmentRepo.AppointmentWrite;
 using PlusAppointment.Repositories.Implementation.CalculateMoneyRepo;
@@ -250,9 +250,14 @@ builder.Services.AddSingleton(redis);
 // Configure Hangfire to use In-Memory storage
 builder.Services.AddHangfire(config =>
 {
-    config.UseMemoryStorage();
+    config.UsePostgreSqlStorage(builder.Configuration.GetConnectionString("DefaultConnection"), new Hangfire.PostgreSql.PostgreSqlStorageOptions
+    {
+        InvisibilityTimeout = TimeSpan.FromMinutes(5), // Customize options as needed
+        QueuePollInterval = TimeSpan.FromSeconds(15)   // Default queue polling interval
+    });
 });
 builder.Services.AddHangfireServer();
+
 
 // Add JWT Authentication
 var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"] ?? string.Empty);

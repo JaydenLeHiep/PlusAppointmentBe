@@ -86,7 +86,8 @@ public class CustomerService : ICustomerService
             Phone = customerDto.Phone,
             BusinessId = customerDto.BusinessId,
             Birthday = customerDto.Birthday, // Set birthday
-            WantsPromotion = customerDto.WantsPromotion // Set promotion preference
+            WantsPromotion = customerDto.WantsPromotion, // Set promotion preference
+            Note = customerDto.Note
         };
 
         await _customerRepository.AddCustomerAsync(customer);
@@ -157,6 +158,12 @@ public class CustomerService : ICustomerService
             existingCustomer.WantsPromotion = (bool)customerDto.WantsPromotion;
         }
 
+        // Update Note if provided, or keep the existing Note
+        if (customerDto.Note != null)
+        {
+            existingCustomer.Note = customerDto.Note; // Update the note
+        }
+        
         await _customerRepository.UpdateCustomerAsync(existingCustomer);
     }
 

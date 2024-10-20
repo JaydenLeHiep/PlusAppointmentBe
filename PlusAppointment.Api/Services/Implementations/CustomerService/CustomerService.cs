@@ -59,7 +59,7 @@ public class CustomerService : ICustomerService
             throw new ArgumentException("Name cannot be null or empty.", nameof(customerDto.Name));
         }
 
-        // if (string.IsNullOrWhiteSpace(customerDto.Email))
+        //if (string.IsNullOrWhiteSpace(customerDto.Email))
         // {
         //     throw new ArgumentException("Email cannot be null or empty.", nameof(customerDto.Email));
         // }
@@ -69,15 +69,16 @@ public class CustomerService : ICustomerService
         //     throw new ArgumentException("Phone cannot be null or empty.", nameof(customerDto.Phone));
         // }
         //
-        // if (!await _customerRepository.IsEmailUniqueAsync(customerDto.Email))
-        // {
-        //     throw new ArgumentException("Email is already in use.");
-        // }
-        //
-        // if (!await _customerRepository.IsPhoneUniqueAsync(customerDto.Phone))
-        // {
-        //      throw new ArgumentException("Phone is already in use.");
-        // }
+        
+        if (!await _customerRepository.IsEmailUniqueAsync(customerDto.Email))
+        {
+            throw new ArgumentException("Email is already in use.");
+        }
+        
+        if (!await _customerRepository.IsPhoneUniqueAsync(customerDto.Phone))
+        {
+            throw new ArgumentException("Phone is already in use.");
+        }
 
         var customer = new Customer
         {

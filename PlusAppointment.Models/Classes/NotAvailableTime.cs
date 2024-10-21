@@ -11,6 +11,6 @@ namespace PlusAppointment.Models.Classes
         public DateTime From { get; set; } 
         public DateTime To { get; set; } 
 
-        public string Reason { get; set; }
+        public string? Reason { get; set; }
     }
 }

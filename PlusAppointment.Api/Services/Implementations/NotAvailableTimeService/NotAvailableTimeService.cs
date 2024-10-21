@@ -63,7 +63,7 @@ namespace PlusAppointment.Services.Implementations.NotAvailableTimeService
                 Date = notAvailableTimeDto.Date,
                 From = notAvailableTimeDto.From,
                 To = notAvailableTimeDto.To,
-                Reason = notAvailableTimeDto.Reason
+                Reason = string.IsNullOrWhiteSpace(notAvailableTimeDto.Reason) ? null : notAvailableTimeDto.Reason // Allow null if reason is empty
             };
             await notAvailableTimeRepository.AddAsync(time);
         }
@@ -75,10 +75,11 @@ namespace PlusAppointment.Services.Implementations.NotAvailableTimeService
             {
                 throw new KeyNotFoundException("Not available time not found");
             }
+
             time.Date = notAvailableTimeDto.Date;
             time.From = notAvailableTimeDto.From;
             time.To = notAvailableTimeDto.To;
-            time.Reason = notAvailableTimeDto.Reason;
+            time.Reason = string.IsNullOrWhiteSpace(notAvailableTimeDto.Reason) ? null : notAvailableTimeDto.Reason; // Allow null if reason is empty
 
             await notAvailableTimeRepository.UpdateAsync(time);
         }

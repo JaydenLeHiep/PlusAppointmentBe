@@ -221,7 +221,7 @@ public class AppointmentsController : ControllerBase
 
 
     [HttpDelete("{appointmentId}")]
-    [Authorize]
+    [AllowAnonymous]
     public async Task<IActionResult> DeleteAppointment(int appointmentId)
     {
         try

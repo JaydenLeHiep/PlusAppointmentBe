@@ -1,6 +1,5 @@
 using Hangfire;
 using PlusAppointment.Models.Classes;
-using PlusAppointment.Models.DTOs;
 using PlusAppointment.Repositories.Interfaces.AppointmentRepo.AppointmentRead;
 using PlusAppointment.Repositories.Interfaces.AppointmentRepo.AppointmentWrite;
 using PlusAppointment.Repositories.Interfaces.BusinessRepo;
@@ -9,6 +8,7 @@ using PlusAppointment.Repositories.Interfaces.StaffRepo;
 using PlusAppointment.Services.Interfaces.AppointmentService;
 using PlusAppointment.Services.Interfaces.EmailUsageService;
 using Microsoft.Extensions.Options;
+using PlusAppointment.Models.DTOs.Appointment;
 using PlusAppointment.Repositories.Interfaces.NotificationRepo;
 using PlusAppointment.Services.Interfaces.EmailSendingService;
 
@@ -252,30 +252,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             return (true, appointmentRetrieveDto);
         }
 
-
-        // Separate method for sending the reminder email and updating the email usage
-        public async Task SendReminderEmail(string email, string subject, string bodyEmail, int businessId)
-        {
-            var emailMessage = new EmailMessage
-            {
-                ToEmail = email,
-                Subject = subject,
-                Body = bodyEmail
-            };
-
-            try
-            {
-                // Send the email directly using _emailService
-                await _emailService.SendEmailAsync(emailMessage.ToEmail, emailMessage.Subject, emailMessage.Body);
-
-                // Optionally update the email usage stats after sending the email
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error while sending the reminder email: {ex.Message}");
-            }
-        }
-
+        
 
         public async Task UpdateAppointmentAsync(int id, UpdateAppointmentDto updateAppointmentDto)
         {

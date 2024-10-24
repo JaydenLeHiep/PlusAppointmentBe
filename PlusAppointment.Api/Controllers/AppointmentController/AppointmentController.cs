@@ -240,33 +240,35 @@ public class AppointmentsController : ControllerBase
     }
 
     [AllowAnonymous]
-    [HttpGet("not-available-timeslots")]
-    public async Task<IActionResult> GetNotAvailableTimeSlots(int staffId, DateTime date)
+    [HttpGet("staff/{staffId}/not-available-timeslots")]
+    public async Task<IActionResult> GetNotAvailableTimeSlots(int staffId, [FromQuery] DateTime date)
     {
         if (staffId <= 0)
         {
             return BadRequest("Invalid staff ID.");
         }
 
+        // Call the service to get the not-available time slots
         var notAvailableTimeSlots = await _appointmentService.GetNotAvailableTimeSlotsAsync(staffId, date);
 
-        // Return an empty array if no time slots are found, but still return 200 OK
+        // Check if the time slots exist, return empty if none found
         if (notAvailableTimeSlots == null || !notAvailableTimeSlots.Any())
         {
             return Ok(new AvailableTimeSlotsDto
             {
                 StaffId = staffId,
-                AvailableTimeSlots = new List<DateTime>() // Returning an empty list
+                AvailableTimeSlots = new List<DateTime>() // Return an empty list if no slots are found
             });
         }
 
-        // Prepare the response DTO
+        // Prepare the response DTO with the available slots
         var response = new AvailableTimeSlotsDto
         {
             StaffId = staffId,
-            AvailableTimeSlots = notAvailableTimeSlots.ToList() // Renamed to "NotAvailableTimeSlots" in the DTO
+            AvailableTimeSlots = notAvailableTimeSlots.ToList() // Convert to list for the DTO
         };
 
+        // Return the 200 OK response with the populated response DTO
         return Ok(response);
     }
     

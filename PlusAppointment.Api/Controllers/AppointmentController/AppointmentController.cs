@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using PlusAppointment.Models.DTOs;
+using PlusAppointment.Models.DTOs.Appointment;
 using PlusAppointment.Models.Enums;
 using PlusAppointment.Services.Interfaces.AppointmentService;
 using PlusAppointment.Utils.Hub;
@@ -46,7 +47,7 @@ public class AppointmentsController : ControllerBase
         return Ok(appointments);
     }
 
-    [HttpGet("appointment_id={appointmentId}")]
+    [HttpGet("{appointmentId}")]
     [Authorize]
     public async Task<IActionResult> GetById(int appointmentId)
     {
@@ -66,7 +67,7 @@ public class AppointmentsController : ControllerBase
         return Ok(appointment);
     }
 
-    [HttpGet("customer/customer_id={customerId}")]
+    [HttpGet("customers/{customerId}/appointments")]
     public async Task<IActionResult> GetByCustomerId(int customerId)
     {
         var appointments = await _appointmentService.GetAppointmentsByCustomerIdAsync(customerId);
@@ -77,7 +78,7 @@ public class AppointmentsController : ControllerBase
         return Ok(appointments);
     }
 
-    [HttpGet("customer/history/customer_id={customerId}")]
+    [HttpGet("customers/{customerId}/appointment-history")]
     public async Task<IActionResult> GetCustomerAppointmentHistory(int customerId)
     {
         var userRole = HttpContext.Items["UserRole"]?.ToString();
@@ -98,7 +99,7 @@ public class AppointmentsController : ControllerBase
     }
 
 
-    [HttpGet("business/business_id={businessId}")]
+    [HttpGet("businesses/{businessId}/appointments")]
     
     public async Task<IActionResult> GetByBusinessId(int businessId)
     {
@@ -113,7 +114,7 @@ public class AppointmentsController : ControllerBase
         return Ok(appointments);
     }
 
-    [HttpGet("staff/staff_id={staffId}")]
+    [HttpGet("staff/{staffId}/appointments")]
     
     public async Task<IActionResult> GetByStaffId(int staffId)
     {
@@ -128,7 +129,7 @@ public class AppointmentsController : ControllerBase
         return Ok(appointments);
     }
 
-    [HttpPost("add-appointment")]
+    [HttpPost]
     public async Task<IActionResult> AddAppointment([FromBody] AppointmentDto appointmentDto)
     {
         try
@@ -170,7 +171,7 @@ public class AppointmentsController : ControllerBase
 
 
 
-    [HttpPut("appointment_id={appointmentId}/update-appointment")]
+    [HttpPut("{appointmentId}")]
     public async Task<IActionResult> UpdateAppointment(int appointmentId,
         [FromBody] UpdateAppointmentDto updateAppointmentDto)
     {
@@ -196,7 +197,7 @@ public class AppointmentsController : ControllerBase
     }
 
 
-    [HttpPut("appointment_id={appointmentId}/status-appointment")]
+    [HttpPut("{appointmentId}/status")]
     [Authorize]
     public async Task<IActionResult> UpdateAppointmentStatus(int appointmentId,
         [FromBody] UpdateStatusDto updateStatusDto)
@@ -219,7 +220,7 @@ public class AppointmentsController : ControllerBase
     }
 
 
-    [HttpDelete("appointment_id={appointmentId}/delete-appointment")]
+    [HttpDelete("{appointmentId}")]
     [Authorize]
     public async Task<IActionResult> DeleteAppointment(int appointmentId)
     {
@@ -269,7 +270,7 @@ public class AppointmentsController : ControllerBase
         return Ok(response);
     }
     
-    [HttpDelete("appointment_id={appointmentId}/delete-appointment-customer")]
+    [HttpDelete("{appointmentId}/customer")]
     public async Task<IActionResult> DeleteAppointmentForCustomer(int appointmentId)
     {
         try

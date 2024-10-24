@@ -3,6 +3,7 @@ using Npgsql;
 using PlusAppointment.Data;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
+using PlusAppointment.Models.DTOs.Appointment;
 using PlusAppointment.Repositories.Interfaces.CustomerRepo;
 using PlusAppointment.Utils.Redis;
 

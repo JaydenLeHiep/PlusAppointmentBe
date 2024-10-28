@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlusAppointment.Models.Classes;
-using PlusAppointment.Models.DTOs;
+
+using PlusAppointment.Models.DTOs.Notifications;
 using PlusAppointment.Models.Enums;
 using PlusAppointment.Services.Interfaces.NotificationService;
 
@@ -19,9 +20,9 @@ public class NotificationController : ControllerBase
     }
 
     // GET: api/notification/{businessId}
-    // GET: api/notification/business_id{businessId}/get-notifications
+    // GET: api/notification/business/{businessId}
     [Authorize]
-    [HttpGet("business_id={businessId}/get-notifications")]
+    [HttpGet("business/{businessId}")]
     public async Task<IActionResult> GetNotifications(int businessId)
     {
         var userRole = HttpContext.Items["UserRole"]?.ToString();

@@ -1,6 +1,6 @@
 using PlusAppointment.Models.Classes;
 
-namespace PlusAppointment.Models.DTOs;
+namespace PlusAppointment.Models.DTOs.Notifications;
 
 public class CreateNotificationRequestDto
 {

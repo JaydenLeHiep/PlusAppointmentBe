@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
+using PlusAppointment.Models.DTOs.Staff;
 using PlusAppointment.Models.Enums;
 using PlusAppointment.Tests.Factories;
 using PlusAppointment.Utils.Jwt;

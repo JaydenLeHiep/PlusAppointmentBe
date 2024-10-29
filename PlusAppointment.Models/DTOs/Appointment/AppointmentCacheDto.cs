@@ -1,3 +1,5 @@
+namespace PlusAppointment.Models.DTOs.Appointment;
+
 public class AppointmentCacheDto
 {
     public int AppointmentId { get; set; }

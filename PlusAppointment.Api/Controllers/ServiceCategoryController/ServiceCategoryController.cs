@@ -19,7 +19,7 @@ namespace PlusAppointment.Controllers.ServiceCategoryController
         }
 
         [AllowAnonymous]
-        [HttpGet("category_id={categoryId}")]
+        [HttpGet("{categoryId}")]
         public async Task<IActionResult> GetById(int categoryId)
         {
             var serviceCategory = await _serviceCategoryService.GetServiceCategoryByIdAsync(categoryId);
@@ -71,7 +71,7 @@ namespace PlusAppointment.Controllers.ServiceCategoryController
         }
 
         [Authorize(Roles = "Admin,Owner")]
-        [HttpPut("category_id={categoryId}")]
+        [HttpPut("{categoryId}")]
         public async Task<IActionResult> UpdateServiceCategory(int categoryId,
             [FromBody] ServiceCategoryDto serviceCategoryDto)
         {
@@ -104,7 +104,7 @@ namespace PlusAppointment.Controllers.ServiceCategoryController
         }
 
         [Authorize(Roles = "Admin,Owner")]
-        [HttpDelete("category_id={categoryId}")]
+        [HttpDelete("{categoryId}")]
         public async Task<IActionResult> DeleteServiceCategory(int categoryId)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

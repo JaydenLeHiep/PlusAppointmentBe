@@ -35,21 +35,21 @@ public class ShopPicturesController: ControllerBase
         return Ok(pictures);
     }
 
-    [HttpGet("business/business_id={businessId}")]
+    [HttpGet("business/{businessId}")]
     public async Task<ActionResult<IEnumerable<ShopPicture>>> GetByBusiness(int businessId)
     {
         var pictures = await _shopPictureService.GetPicturesByBusinessIdAsync(businessId);
         return Ok(pictures);
     }
 
-    [HttpPost("business/business_id={businessId}")]
+    [HttpPost("business/{businessId}")]
     public async Task<ActionResult<ShopPicture>> Post(int businessId, IFormFile image)
     {
         var picture = await _shopPictureService.AddPictureAsync(businessId, image);
         return CreatedAtAction(nameof(Get), new { id = picture.ShopPictureId }, picture);
     }
 
-    [HttpPost("business/business_id={businessId}/bulk")]
+    [HttpPost("business/{businessId}/bulk")]
     public async Task<IActionResult> PostBulk(int businessId, List<IFormFile> images)
     {
         var result = await _shopPictureService.AddPicturesAsync(businessId, images);
@@ -60,7 +60,7 @@ public class ShopPicturesController: ControllerBase
         return BadRequest();
     }
 
-    [HttpDelete("picture_id={id}")]
+    [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
         var result = await _shopPictureService.DeletePictureAsync(id);
@@ -71,7 +71,7 @@ public class ShopPicturesController: ControllerBase
         return NotFound();
     }
 
-    [HttpPut("picture_id={id}")]
+    [HttpPut("{id}")]
     public async Task<IActionResult> Put(int id, IFormFile image)
     {
         var updatedPicture = await _shopPictureService.UpdatePictureAsync(id, image);

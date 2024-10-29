@@ -30,7 +30,7 @@ public class CheckInController : ControllerBase
     }
 
     // GET: api/checkin/checkin_id={checkInId}
-    [HttpGet("checkin_id={checkInId}")]
+    [HttpGet("{checkInId}")]
     [Authorize]
     public async Task<IActionResult> GetById(int checkInId)
     {
@@ -44,7 +44,7 @@ public class CheckInController : ControllerBase
     }
 
     // GET: api/checkin/business_id={businessId}
-    [HttpGet("business_id={businessId}/checkins")]
+    [HttpGet("business/{businessId}")]
     [Authorize]
     public async Task<IActionResult> GetCheckInsByBusinessId(int businessId)
     {
@@ -58,7 +58,7 @@ public class CheckInController : ControllerBase
     }
 
     // POST: api/checkin/add
-    [HttpPost("add")]
+    [HttpPost]
     public async Task<IActionResult> AddCheckIn([FromBody] CheckIn? checkIn)
     {
         if (checkIn == null)
@@ -80,7 +80,7 @@ public class CheckInController : ControllerBase
     }
 
     // PUT: api/checkin/checkin_id={checkInId}
-    [HttpPut("checkin_id={checkInId}")]
+    [HttpPut("{checkInId}")]
     [Authorize]
     public async Task<IActionResult> UpdateCheckIn(int checkInId, [FromBody] CheckIn? checkIn)
     {
@@ -105,7 +105,7 @@ public class CheckInController : ControllerBase
     }
 
     // DELETE: api/checkin/checkin_id={checkInId}
-    [HttpDelete("checkin_id={checkInId}")]
+    [HttpDelete("{checkInId}")]
     [Authorize]
     public async Task<IActionResult> DeleteCheckIn(int checkInId)
     {

@@ -213,21 +213,7 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
             }
         }
 
-        public async Task<bool> EmailExistsAsync(string email)
-        {
-            using (var context = _contextFactory.CreateDbContext())
-            {
-                return await context.Staffs.AnyAsync(s => s.Email == email);
-            }
-        }
 
-        public async Task<bool> PhoneExistsAsync(string phone)
-        {
-            using (var context = _contextFactory.CreateDbContext())
-            {
-                return await context.Staffs.AnyAsync(s => s.Phone == phone);
-            }
-        }
 
         private async Task UpdateStaffCacheAsync(Staff staff)
         {

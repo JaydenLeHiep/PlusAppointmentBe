@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using PlusAppointment.Data;
 using PlusAppointment.Models.Classes;
+
+using PlusAppointment.Models.DTOs.Appointment;
 using PlusAppointment.Repositories.Interfaces.AppointmentRepo.AppointmentRead;
 using PlusAppointment.Utils.Redis;
 

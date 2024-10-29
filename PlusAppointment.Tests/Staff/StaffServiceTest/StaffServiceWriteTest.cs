@@ -4,6 +4,7 @@ using PlusAppointment.Repositories.Interfaces.StaffRepo;
 using PlusAppointment.Services.Implementations.StaffService;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
+using PlusAppointment.Models.DTOs.Staff;
 using PlusAppointment.Utils.Hash;
 
 namespace PlusAppointment.Tests.Staff.StaffServiceTest;
@@ -33,68 +34,73 @@ public class StaffServiceWriteTest
     [Fact]
     public async Task AddStaffAsync_AddsStaff_WhenStaffDtoIsValid()
     {
+        int businessId = 1;
         var staffDto = new StaffDto
         {
             Name = "Jane Doe",
             Email = "jane@example.com",
             Phone = "1234567890",
             Password = "password123",
-            BusinessId = 1
+            //BusinessId = 1
         };
         // Act: Call the AddStaffAsync method
-        await _staffService.AddStaffAsync(staffDto);
+        await _staffService.AddStaffAsync(staffDto, businessId);
 
         // Assert: Verify that the repository's AddStaffAsync method was called exactly once
-        _mockStaffRepository.Verify(repo => repo.AddStaffAsync(It.IsAny<Models.Classes.Staff>(), staffDto.BusinessId),
+        _mockStaffRepository.Verify(repo => repo.AddStaffAsync(It.IsAny<Models.Classes.Staff>(), businessId),
             Times.Once);
     }
 
     [Fact]
     public async Task AddStaffAsync_ThrowsArgumentNullException_WhenStaffDtoIsNull()
     {
-        await Assert.ThrowsAsync<ArgumentNullException>(() => _staffService.AddStaffAsync(null));
+        int businessId = 1;
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _staffService.AddStaffAsync(null, businessId));
     }
 
     [Fact]
     public async Task AddStaffAsync_ThrowsArgumentException_WhenPasswordIsEmpty()
     {
+        int businessId = 1;
         var staffDto = new StaffDto
         {
             Name = "Jane Doe",
             Email = "jane@example.com",
             Phone = "1234567890",
             Password = "",
-            BusinessId = 1
+            
         };
 
-        await Assert.ThrowsAsync<ArgumentException>(() => _staffService.AddStaffAsync(staffDto));
+        await Assert.ThrowsAsync<ArgumentException>(() => _staffService.AddStaffAsync(staffDto, businessId));
     }
 
     [Fact]
     public async Task AddStaffAsync_CreatesStaffFromDto()
     {
+        int businessId = 2;
         var staffDto = new StaffDto
         {
             Name = "John Smith",
             Email = "john@example.com",
             Phone = "9876543210",
             Password = "password456",
-            BusinessId = 2
+            
         };
 
-        await _staffService.AddStaffAsync(staffDto);
+        await _staffService.AddStaffAsync(staffDto, businessId);
 
         _mockStaffRepository.Verify(repo => repo.AddStaffAsync(It.Is<Models.Classes.Staff>(staff =>
             staff.Name == "John Smith" &&
             staff.Email == "john@example.com" &&
-            staff.Phone == "9876543210" &&
-            staff.BusinessId == 2
-        ), staffDto.BusinessId), Times.Once);
+            staff.Phone == "9876543210"
+            
+        ), businessId), Times.Once);
     }
 
     [Fact]
     public async Task AddStaffAsync_StoresHashedPassword_WhenPasswordIsHashed()
     {
+        int businessId = 1;
         // Arrange: Create a StaffDto with a plaintext password
         var staffDto = new StaffDto
         {
@@ -102,7 +108,7 @@ public class StaffServiceWriteTest
             Email = "john@example.com",
             Phone = "1234567890",
             Password = "plaintextpassword123", // Plaintext password
-            BusinessId = 1
+            
         };
 
         // Mock the IHashUtility to return a hashed password
@@ -122,10 +128,10 @@ public class StaffServiceWriteTest
         var staffService = new StaffService(_mockStaffRepository.Object, new Mock<IConfiguration>().Object, mockHashUtility.Object);
 
         // Act: Call AddStaffAsync
-        await staffService.AddStaffAsync(staffDto);
+        await staffService.AddStaffAsync(staffDto, businessId);
 
         // Assert: Verify that AddStaffAsync was called exactly once
-        _mockStaffRepository.Verify(repo => repo.AddStaffAsync(It.IsAny<Models.Classes.Staff>(), staffDto.BusinessId), Times.Once, "AddStaffAsync should be called exactly once.");
+        _mockStaffRepository.Verify(repo => repo.AddStaffAsync(It.IsAny<Models.Classes.Staff>(), businessId), Times.Once, "AddStaffAsync should be called exactly once.");
 
         // Assert: Verify that the password was hashed correctly before being passed to the repository
         Assert.NotNull(actualPassword); // Ensure that the password was actually passed

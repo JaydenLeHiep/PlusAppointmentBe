@@ -14,6 +14,5 @@ public interface IStaffRepository
     Task UpdateAsync(Staff staff);
     Task DeleteAsync(int businessId, int staffId);
     Task<Staff> GetByEmailAsync(string email);
-    Task<bool> EmailExistsAsync(string email);
-    Task<bool> PhoneExistsAsync(string phone);
+
 }

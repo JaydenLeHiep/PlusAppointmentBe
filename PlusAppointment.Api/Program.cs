@@ -91,6 +91,7 @@ using PlusAppointment.Utils.CustomAuthorizationFilter;
 using PlusAppointment.Utils.EmailJob;
 using PlusAppointment.Utils.Hash;
 using PlusAppointment.Utils.Hub;
+using PlusAppointment.Utils.Mapping;
 using PlusAppointment.Utils.SQS;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -211,6 +212,8 @@ builder.Services.AddAWSService<Amazon.S3.IAmazonS3>(awsOptions);  // AWS S3 serv
 builder.Services.AddSingleton<S3Service>();
 builder.Services.AddScoped<BirthdayEmailJob>();
 
+// mapping
+builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 // Configure Redis
 var redisConnectionString = builder.Configuration.GetConnectionString("RedisConnection");

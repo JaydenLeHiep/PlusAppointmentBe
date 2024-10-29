@@ -7,40 +7,51 @@ namespace PlusAppointment.Controllers.NotAvailableTimeController
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class NotAvailableTimeController(INotAvailableTimeService notAvailableTimeService) : ControllerBase
+    public class NotAvailableTimeController : ControllerBase
     {
-        [HttpGet("business_id={businessId}")]
+        private readonly INotAvailableTimeService _notAvailableTimeService;
+
+        public NotAvailableTimeController(INotAvailableTimeService notAvailableTimeService)
+        {
+            _notAvailableTimeService = notAvailableTimeService;
+        }
+
+        // GET: api/notavailabletime/business/{businessId}
+        [HttpGet("business/{businessId}")]
         public async Task<IActionResult> GetAllByBusiness(int businessId)
         {
-            var notAvailableTimes = await notAvailableTimeService.GetAllByBusinessIdAsync(businessId);
+            var notAvailableTimes = await _notAvailableTimeService.GetAllByBusinessIdAsync(businessId);
             return Ok(notAvailableTimes);
         }
 
-        [HttpGet("business_id={businessId}/staff_id={staffId}")]
+        // GET: api/notavailabletime/business/{businessId}/staff/{staffId}
+        [HttpGet("business/{businessId}/staff/{staffId}")]
         public async Task<IActionResult> GetAllByStaff(int businessId, int staffId)
         {
-            var notAvailableTimes = await notAvailableTimeService.GetAllByStaffIdAsync(businessId, staffId);
+            var notAvailableTimes = await _notAvailableTimeService.GetAllByStaffIdAsync(businessId, staffId);
             return Ok(notAvailableTimes);
         }
 
-        [HttpGet("business_id={businessId}/staff_id={staffId}/notAvailableTime_id={notAvailableTimeId}")]
+        // GET: api/notavailabletime/business/{businessId}/staff/{staffId}/notavailabletime/{notAvailableTimeId}
+        [HttpGet("business/{businessId}/staff/{staffId}/notavailabletime/{notAvailableTimeId}")]
         public async Task<IActionResult> GetById(int businessId, int staffId, int notAvailableTimeId)
         {
-            var notAvailableTime = await notAvailableTimeService.GetByIdAsync(businessId, staffId, notAvailableTimeId);
+            var notAvailableTime = await _notAvailableTimeService.GetByIdAsync(businessId, staffId, notAvailableTimeId);
             if (notAvailableTime == null)
             {
-                return Ok(null);
+                return NotFound(new { message = "Not available time not found" });
             }
             return Ok(notAvailableTime);
         }
 
+        // POST: api/notavailabletime/business/{businessId}/staff/{staffId}
         [Authorize]
-        [HttpPost("business_id={businessId}/staff_id={staffId}/add")]
+        [HttpPost("business/{businessId}/staff/{staffId}")]
         public async Task<IActionResult> Add(int businessId, int staffId, [FromBody] NotAvailableTimeDto notAvailableTimeDto)
         {
             try
             {
-                await notAvailableTimeService.AddNotAvailableTimeAsync(businessId, staffId, notAvailableTimeDto);
+                await _notAvailableTimeService.AddNotAvailableTimeAsync(businessId, staffId, notAvailableTimeDto);
                 return Ok(new { message = "Not available time added successfully" });
             }
             catch (Exception ex)
@@ -49,13 +60,14 @@ namespace PlusAppointment.Controllers.NotAvailableTimeController
             }
         }
 
+        // PUT: api/notavailabletime/business/{businessId}/staff/{staffId}/notavailabletime/{notAvailableTimeId}
         [Authorize]
-        [HttpPut("business_id={businessId}/staff_id={staffId}/notAvailableTime_id={notAvailableTimeId}")]
+        [HttpPut("business/{businessId}/staff/{staffId}/notavailabletime/{notAvailableTimeId}")]
         public async Task<IActionResult> Update(int businessId, int staffId, int notAvailableTimeId, [FromBody] NotAvailableTimeDto notAvailableTimeDto)
         {
             try
             {
-                await notAvailableTimeService.UpdateNotAvailableTimeAsync(businessId, staffId, notAvailableTimeId, notAvailableTimeDto);
+                await _notAvailableTimeService.UpdateNotAvailableTimeAsync(businessId, staffId, notAvailableTimeId, notAvailableTimeDto);
                 return Ok(new { message = "Not available time updated successfully" });
             }
             catch (KeyNotFoundException ex)
@@ -68,13 +80,14 @@ namespace PlusAppointment.Controllers.NotAvailableTimeController
             }
         }
 
+        // DELETE: api/notavailabletime/business/{businessId}/staff/{staffId}/notavailabletime/{notAvailableTimeId}
         [Authorize]
-        [HttpDelete("business_id={businessId}/staff_id={staffId}/notAvailableTime_id={notAvailableTimeId}")]
+        [HttpDelete("business/{businessId}/staff/{staffId}/notavailabletime/{notAvailableTimeId}")]
         public async Task<IActionResult> Delete(int businessId, int staffId, int notAvailableTimeId)
         {
             try
             {
-                await notAvailableTimeService.DeleteNotAvailableTimeAsync(businessId, staffId, notAvailableTimeId);
+                await _notAvailableTimeService.DeleteNotAvailableTimeAsync(businessId, staffId, notAvailableTimeId);
                 return Ok(new { message = "Not available time deleted successfully" });
             }
             catch (Exception ex)

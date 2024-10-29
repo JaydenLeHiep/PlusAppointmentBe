@@ -2,7 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using PlusAppointment.Models.DTOs;
+using PlusAppointment.Models.DTOs.Staff;
 using PlusAppointment.Models.Enums;
 using PlusAppointment.Services.Interfaces.StaffService;
 using PlusAppointment.Utils.Hub;
@@ -38,7 +38,7 @@ namespace PlusAppointment.Controllers.StaffController
         }
         
         [Authorize]
-        [HttpGet("staff_id={staffId}")]
+        [HttpGet("{staffId}")]
         public async Task<IActionResult> GetById(int staffId)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
@@ -60,7 +60,7 @@ namespace PlusAppointment.Controllers.StaffController
 
 
         // Get all staff by business ID
-        [HttpGet("business_id={businessId}")]
+        [HttpGet("business/{businessId}")]
         public async Task<IActionResult> GetAllStaffByBusinessId(int businessId)
         {
             // var userRole = HttpContext.Items["UserRole"]?.ToString();
@@ -75,7 +75,7 @@ namespace PlusAppointment.Controllers.StaffController
         }
         
         [Authorize] 
-        [HttpPost("business_id={businessId}/add")]
+        [HttpPost("business/{businessId}")]
         public async Task<IActionResult> AddStaff(int businessId, [FromBody] StaffDto? staffDto)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
@@ -90,10 +90,10 @@ namespace PlusAppointment.Controllers.StaffController
                 return Unauthorized(new { message = "User not authorized" });
             }
 
-            staffDto.BusinessId = businessId;
+            
             try
             {
-                await _staffService.AddStaffAsync(staffDto);
+                await _staffService.AddStaffAsync(staffDto, businessId);
                 await _hubContext.Clients.All.SendAsync("ReceiveStaffUpdate", "A new staff has been added.");
                 return Ok(new { message = "Staff added successfully" });
             }
@@ -103,7 +103,7 @@ namespace PlusAppointment.Controllers.StaffController
             }
         }
         [Authorize] 
-        [HttpPost("business_id={businessId}/addList")]
+        [HttpPost("business/{businessId}/bulk")]
         public async Task<IActionResult> AddStaffs(int businessId, [FromBody] IEnumerable<StaffDto?> staffDtos)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
@@ -130,7 +130,7 @@ namespace PlusAppointment.Controllers.StaffController
             }
         }
         [Authorize] 
-        [HttpPut("business_id={businessId}/staff_id={staffId}")]
+        [HttpPut("business/{businessId}/staff/{staffId}")]
         public async Task<IActionResult> Update(int businessId, int staffId, [FromBody] StaffDto staffDto)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
@@ -160,7 +160,7 @@ namespace PlusAppointment.Controllers.StaffController
             }
         }
         [Authorize] 
-        [HttpDelete("business_id={businessId}/staff_id={staffId}")]
+        [HttpDelete("business/{businessId}/staff/{staffId}")]
         public async Task<IActionResult> Delete(int businessId, int staffId)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();

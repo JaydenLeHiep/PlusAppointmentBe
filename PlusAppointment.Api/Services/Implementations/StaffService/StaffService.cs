@@ -1,5 +1,7 @@
+using AutoMapper;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
+using PlusAppointment.Models.DTOs.Staff;
 using PlusAppointment.Repositories.Interfaces.StaffRepo;
 using PlusAppointment.Services.Interfaces.StaffService;
 using PlusAppointment.Utils.Hash;
@@ -11,12 +13,14 @@ namespace PlusAppointment.Services.Implementations.StaffService
     {
         private readonly IStaffRepository _staffRepository;
         private readonly IConfiguration _configuration;
-        private readonly IHashUtility _hashUtility; 
-        public StaffService(IStaffRepository staffRepository, IConfiguration configuration, IHashUtility hashUtility)
+        private readonly IHashUtility _hashUtility;
+        private readonly IMapper _mapper;
+        public StaffService(IStaffRepository staffRepository, IConfiguration configuration, IHashUtility hashUtility, IMapper mapper)
         {
             _staffRepository = staffRepository;
             _configuration = configuration;
             _hashUtility = hashUtility;
+            _mapper = mapper;
         }
 
         public async Task<IEnumerable<Staff>> GetAllStaffsAsync()
@@ -32,21 +36,22 @@ namespace PlusAppointment.Services.Implementations.StaffService
             return staff;
         }
 
-        public async Task<IEnumerable<Staff?>> GetAllStaffByBusinessIdAsync(int businessId)
+        public async Task<IEnumerable<StaffRetrieveDto?>> GetAllStaffByBusinessIdAsync(int businessId)
         {
-            return await _staffRepository.GetAllByBusinessIdAsync(businessId);
+            var staffs = await _staffRepository.GetAllByBusinessIdAsync(businessId);
+            return _mapper.Map<IEnumerable<StaffRetrieveDto>>(staffs);
         }
 
-        public async Task AddStaffAsync(StaffDto? staffDto)
+        public async Task AddStaffAsync(StaffDto? staffDto, int businessId)
         {
             ValidateStaffDto(staffDto);
 
 
             if (staffDto != null)
             {
-                var staff = CreateStaffFromDto(staffDto, staffDto.BusinessId);
+                var staff = CreateStaffFromDto(staffDto, businessId);
 
-                await _staffRepository.AddStaffAsync(staff, staffDto.BusinessId);
+                await _staffRepository.AddStaffAsync(staff, businessId);
             }
         }
 
@@ -63,15 +68,7 @@ namespace PlusAppointment.Services.Implementations.StaffService
             {
                 ValidateStaffDto(staffDto);
 
-                // if (staffDto?.Email != null && await _staffRepository.EmailExistsAsync(staffDto.Email))
-                // {
-                //     throw new Exception($"Email {staffDto.Email} already exists");
-                // }
-                //
-                // if (staffDto?.Phone != null && await _staffRepository.PhoneExistsAsync(staffDto.Phone))
-                // {
-                //     throw new Exception($"Phone number {staffDto.Phone} already exists");
-                // }
+
             }
 
             var staffs = staffDtoList.Select(staffDto => CreateStaffFromDto(staffDto, businessId)).ToList();

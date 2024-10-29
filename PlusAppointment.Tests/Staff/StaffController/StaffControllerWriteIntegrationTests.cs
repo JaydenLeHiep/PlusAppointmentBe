@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
+using PlusAppointment.Models.DTOs.Staff;
 using PlusAppointment.Models.Enums;
 using PlusAppointment.Tests.Factories;
 using PlusAppointment.Utils.Jwt;
@@ -42,7 +43,7 @@ public class StaffControllerWriteIntegrationTests : IClassFixture<CustomWebAppli
             Email = "johndoe@example.com",
             Phone = "1234567890",
             Password = "123",
-            BusinessId = businessId
+            //BusinessId = businessId
         };
 
         // Convert staffDto to JSON for the request body
@@ -73,7 +74,7 @@ public class StaffControllerWriteIntegrationTests : IClassFixture<CustomWebAppli
             Name = "John",
             Email = "johndoe@example.com",
             Phone = "1234567890",
-            BusinessId = businessId
+            //BusinessId = businessId
         };
 
         // Convert staffDto to JSON for the request body
@@ -103,7 +104,7 @@ public class StaffControllerWriteIntegrationTests : IClassFixture<CustomWebAppli
             Email = "updatedemail@example.com",
             Phone = "9876543210",
             Password = "updatedpassword",
-            BusinessId = businessId
+            //BusinessId = businessId
         };
 
         // Convert staffDto to JSON for the request body

@@ -3,10 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 using PlusAppointment.Models.DTOs;
 using PlusAppointment.Services.Interfaces.NotAvailableDateService;
 
-namespace PlusAppointment.Controllers.NotAvailableDateController
+namespace PlusAppointment.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/notavailabledate")]
     public class NotAvailableDateController : ControllerBase
     {
         private readonly INotAvailableDateService _notAvailableDateService;
@@ -15,37 +15,38 @@ namespace PlusAppointment.Controllers.NotAvailableDateController
         {
             _notAvailableDateService = notAvailableDateService;
         }
-        
-        [HttpGet("business_id={businessId}")]
+
+        // GET: api/notavailabledate/business/{businessId}
+        [HttpGet("business/{businessId}")]
         public async Task<IActionResult> GetAllByBusiness(int businessId)
         {
             var notAvailableDates = await _notAvailableDateService.GetAllByBusinessIdAsync(businessId);
-            // Always return Ok, even if the list is empty
-            return Ok(notAvailableDates);
+            return Ok(notAvailableDates); // Always return Ok, even if empty
         }
-        
-        [HttpGet("business_id={businessId}/staff_id={staffId}")]
+
+        // GET: api/notavailabledate/business/{businessId}/staff/{staffId}
+        [HttpGet("business/{businessId}/staff/{staffId}")]
         public async Task<IActionResult> GetAllByStaff(int businessId, int staffId)
         {
             var notAvailableDates = await _notAvailableDateService.GetAllByStaffIdAsync(businessId, staffId);
-            // Always return Ok, even if the list is empty
-            return Ok(notAvailableDates);
+            return Ok(notAvailableDates); // Always return Ok, even if empty
         }
-        
-        [HttpGet("business_id={businessId}/staff_id={staffId}/notAvailable_id={notAvailableId}")]
+
+        // GET: api/notavailabledate/business/{businessId}/staff/{staffId}/notavailable/{notAvailableId}
+        [HttpGet("business/{businessId}/staff/{staffId}/notavailable/{notAvailableId}")]
         public async Task<IActionResult> GetById(int businessId, int staffId, int notAvailableId)
         {
             var notAvailableDate = await _notAvailableDateService.GetByIdAsync(businessId, staffId, notAvailableId);
             if (notAvailableDate == null)
             {
-                // If not found, return Ok with null or an empty object
-                return Ok(null);
+                return Ok(null); // Return Ok with null if not found
             }
             return Ok(notAvailableDate);
         }
 
+        // POST: api/notavailabledate/business/{businessId}/staff/{staffId}
         [Authorize]
-        [HttpPost("business_id={businessId}/staff_id={staffId}/add")]
+        [HttpPost("business/{businessId}/staff/{staffId}")]
         public async Task<IActionResult> Add(int businessId, int staffId, [FromBody] NotAvailableDateDto notAvailableDateDto)
         {
             try
@@ -59,8 +60,9 @@ namespace PlusAppointment.Controllers.NotAvailableDateController
             }
         }
 
+        // PUT: api/notavailabledate/business/{businessId}/staff/{staffId}/notavailable/{notAvailableId}
         [Authorize]
-        [HttpPut("business_id={businessId}/staff_id={staffId}/notAvailable_id={notAvailableId}")]
+        [HttpPut("business/{businessId}/staff/{staffId}/notavailable/{notAvailableId}")]
         public async Task<IActionResult> Update(int businessId, int staffId, int notAvailableId, [FromBody] NotAvailableDateDto notAvailableDateDto)
         {
             try
@@ -78,8 +80,9 @@ namespace PlusAppointment.Controllers.NotAvailableDateController
             }
         }
 
+        // DELETE: api/notavailabledate/business/{businessId}/staff/{staffId}/notavailable/{notAvailableId}
         [Authorize]
-        [HttpDelete("business_id={businessId}/staff_id={staffId}/notAvailable_id={notAvailableId}")]
+        [HttpDelete("business/{businessId}/staff/{staffId}/notavailable/{notAvailableId}")]
         public async Task<IActionResult> Delete(int businessId, int staffId, int notAvailableId)
         {
             try

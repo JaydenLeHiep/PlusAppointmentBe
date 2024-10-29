@@ -29,7 +29,7 @@ public class EmailUsageController : ControllerBase
         }
 
         [Authorize]
-        [HttpGet("business_id={businessId}/year={year}/month={month}")]
+        [HttpGet("business/{businessId}/year/{year}/month/{month}")]
         public async Task<IActionResult> GetEmailUsagesByBusinessIdAndMonth(int businessId, int year, int month)
         {
             var emailUsages = await _emailUsageService.GetEmailUsagesByBusinessIdAndMonthAsync(businessId, year, month);
@@ -40,7 +40,7 @@ public class EmailUsageController : ControllerBase
 
 
 
-        [HttpGet("email_usage_id={emailUsageId}")]
+        [HttpGet("{emailUsageId}")]
         public async Task<IActionResult> GetEmailUsageById(int emailUsageId)
         {
             var emailUsage = await _emailUsageService.GetEmailUsageByIdAsync(emailUsageId);
@@ -65,7 +65,7 @@ public class EmailUsageController : ControllerBase
         }
 
         [Authorize]
-        [HttpPut("email_usage_id={emailUsageId}")]
+        [HttpPut("{emailUsageId}")]
         public async Task<IActionResult> Update(int emailUsageId, [FromBody] EmailUsage emailUsage)
         {
             if (emailUsage == null)
@@ -87,7 +87,7 @@ public class EmailUsageController : ControllerBase
         }
 
         [Authorize]
-        [HttpDelete("email_usage_id={emailUsageId}")]
+        [HttpDelete("{emailUsageId}")]
         public async Task<IActionResult> Delete(int emailUsageId)
         {
             try

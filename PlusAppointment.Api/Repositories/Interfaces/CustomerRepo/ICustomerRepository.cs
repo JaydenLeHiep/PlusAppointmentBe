@@ -1,5 +1,5 @@
 using PlusAppointment.Models.Classes;
-using PlusAppointment.Models.DTOs;
+
 using PlusAppointment.Models.DTOs.Appointment;
 
 namespace PlusAppointment.Repositories.Interfaces.CustomerRepo;

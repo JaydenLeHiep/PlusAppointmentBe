@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using PlusAppointment.Models.DTOs;
+using PlusAppointment.Models.DTOs.Services;
 using PlusAppointment.Models.Enums;
 using PlusAppointment.Services.Interfaces.ServicesService;
 using PlusAppointment.Utils.Hub;

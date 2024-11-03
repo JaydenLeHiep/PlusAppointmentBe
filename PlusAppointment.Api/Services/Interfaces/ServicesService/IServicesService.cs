@@ -1,5 +1,6 @@
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
+using PlusAppointment.Models.DTOs.Services;
 
 namespace PlusAppointment.Services.Interfaces.ServicesService
 {

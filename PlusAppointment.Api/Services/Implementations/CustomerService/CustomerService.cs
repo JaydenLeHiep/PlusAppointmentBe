@@ -1,6 +1,8 @@
+using AutoMapper;
 using PlusAppointment.Models.Classes;
-using PlusAppointment.Models.DTOs;
+
 using PlusAppointment.Models.DTOs.Appointment;
+using PlusAppointment.Models.DTOs.Customers;
 using PlusAppointment.Repositories.Interfaces.CustomerRepo;
 using PlusAppointment.Services.Interfaces.CustomerService;
 
@@ -9,46 +11,47 @@ namespace PlusAppointment.Services.Implementations.CustomerService;
 public class CustomerService : ICustomerService
 {
     private readonly ICustomerRepository _customerRepository;
+    private readonly IMapper _mapper;
 
-    public CustomerService(ICustomerRepository customerRepository)
+    public CustomerService(ICustomerRepository customerRepository, IMapper mapper)
     {
         _customerRepository = customerRepository;
+        _mapper = mapper;
     }
 
-    public async Task<IEnumerable<Customer?>> GetAllCustomersAsync()
+    // Return a list of CustomerDto for all customers
+    public async Task<IEnumerable<CustomerRetrieveDto?>> GetAllCustomersAsync()
     {
-        return await _customerRepository.GetAllCustomersAsync();
+        var customers = await _customerRepository.GetAllCustomersAsync();
+        return _mapper.Map<IEnumerable<CustomerRetrieveDto>>(customers);
     }
 
-    public async Task<Customer?> GetCustomerByIdAsync(int id)
+    // Return a CustomerDto by customer ID
+    public async Task<CustomerRetrieveDto?> GetCustomerByIdAsync(int id)
     {
         var customer = await _customerRepository.GetCustomerByIdAsync(id);
-        if (customer == null)
-        {
-            return null;
-        }
-
-        return customer;
+        return customer == null ? null : _mapper.Map<CustomerRetrieveDto>(customer);
     }
 
-    public async Task<Customer?> GetCustomerByEmailOrPhoneAsync(string emailOrPhone)
+    public async Task<CustomerRetrieveDto?> GetCustomerByEmailOrPhoneAsync(string emailOrPhone)
     {
         var customer = await _customerRepository.GetCustomerByEmailOrPhoneAsync(emailOrPhone);
-        if (customer == null)
-        {
-            return null;
-        }
-
-        return customer;
+        return customer == null ? null : _mapper.Map<CustomerRetrieveDto>(customer);
     }
 
     public async Task<Customer?> GetCustomerByEmailOrPhoneAndBusinessIdAsync(string emailOrPhone, int businessId)
     {
         return await _customerRepository.GetCustomerByEmailOrPhoneAndBusinessIdAsync(emailOrPhone, businessId);
     }
+    
+    // Return a list of CustomerDto by business ID
+    public async Task<IEnumerable<CustomerRetrieveDto?>> GetCustomersByBusinessIdAsync(int businessId)
+    {
+        var customers = await _customerRepository.GetCustomersByBusinessIdAsync(businessId);
+        return _mapper.Map<IEnumerable<CustomerRetrieveDto>>(customers);
+    }
 
-
-    public async Task AddCustomerAsync(CustomerDto customerDto)
+    public async Task AddCustomerAsync(int businessId, CustomerDto customerDto)
     {
         if (customerDto == null)
         {
@@ -60,23 +63,16 @@ public class CustomerService : ICustomerService
             throw new ArgumentException("Name cannot be null or empty.", nameof(customerDto.Name));
         }
 
-        //if (string.IsNullOrWhiteSpace(customerDto.Email))
-        // {
-        //     throw new ArgumentException("Email cannot be null or empty.", nameof(customerDto.Email));
-        // }
-        //
-        // if (string.IsNullOrWhiteSpace(customerDto.Phone))
-        // {
-        //     throw new ArgumentException("Phone cannot be null or empty.", nameof(customerDto.Phone));
-        // }
-        //
-        
-        if (!await _customerRepository.IsEmailUniqueAsync(customerDto.Email))
+        // Skip email uniqueness check if email is not provided
+        if (!string.IsNullOrWhiteSpace(customerDto.Email) && 
+            !await _customerRepository.IsEmailUniqueAsync(customerDto.Email))
         {
             throw new ArgumentException("Email is already in use.");
         }
-        
-        if (!await _customerRepository.IsPhoneUniqueAsync(customerDto.Phone))
+
+        // Skip phone uniqueness check if phone is not provided
+        if (!string.IsNullOrWhiteSpace(customerDto.Phone) && 
+            !await _customerRepository.IsPhoneUniqueAsync(customerDto.Phone))
         {
             throw new ArgumentException("Phone is already in use.");
         }
@@ -86,7 +82,7 @@ public class CustomerService : ICustomerService
             Name = customerDto.Name,
             Email = customerDto.Email,
             Phone = customerDto.Phone,
-            BusinessId = customerDto.BusinessId,
+            BusinessId = businessId,
             Birthday = customerDto.Birthday, // Set birthday
             WantsPromotion = customerDto.WantsPromotion, // Set promotion preference
             Note = customerDto.Note
@@ -95,7 +91,8 @@ public class CustomerService : ICustomerService
         await _customerRepository.AddCustomerAsync(customer);
     }
 
-    public async Task UpdateCustomerAsync(int businessId, int customerId, CustomerDto customerDto)
+
+    public async Task UpdateCustomerAsync(int customerId, CustomerDto customerDto)
     {
         if (customerDto == null)
         {
@@ -170,7 +167,7 @@ public class CustomerService : ICustomerService
     }
 
 
-    public async Task DeleteCustomerAsync(int businessId, int customerId)
+    public async Task DeleteCustomerAsync(int customerId)
     {
         await _customerRepository.DeleteCustomerAsync(customerId);
     }
@@ -186,10 +183,7 @@ public class CustomerService : ICustomerService
         return await _customerRepository.GetAppointmentsByCustomerIdAsync(customerId);
     }
 
-    public async Task<IEnumerable<Customer?>> GetCustomersByBusinessIdAsync(int businessId)
-    {
-        return await _customerRepository.GetCustomersByBusinessIdAsync(businessId);
-    }
+
 
 
     public async Task<Customer?> GetCustomerByNameOrPhoneAsync(string nameOrPhone)

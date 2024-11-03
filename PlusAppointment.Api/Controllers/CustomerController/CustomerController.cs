@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using PlusAppointment.Models.DTOs;
 using PlusAppointment.Services.Interfaces.CustomerService;
 using PlusAppointment.Models.Classes;
+using PlusAppointment.Models.DTOs.Customers;
 using PlusAppointment.Utils.Hub;
 
 namespace PlusAppointment.Controllers.CustomerController
@@ -30,7 +30,7 @@ namespace PlusAppointment.Controllers.CustomerController
         }
         
         [AllowAnonymous]
-        [HttpGet("customer_id={customerId}")]
+        [HttpGet("{customerId}")]
         [Authorize]
         public async Task<IActionResult> GetById(int customerId)
         {
@@ -42,7 +42,7 @@ namespace PlusAppointment.Controllers.CustomerController
 
             return Ok(customer);
         }
-        [HttpGet("business_id={businessId}/customers")]
+        [HttpGet("business/{businessId}")]
         [Authorize]
         public async Task<IActionResult> GetCustomersByBusinessId(int businessId)
         {
@@ -66,7 +66,7 @@ namespace PlusAppointment.Controllers.CustomerController
         }
         
         [AllowAnonymous]
-        [HttpPost("find-customer/business_id={businessId}")]
+        [HttpPost("find-customer/business/{businessId}")]
         public async Task<IActionResult> FindByEmailOrPhone(int businessId, [FromBody] FindCustomerDto findCustomerDto)
         {
             var customer = await _customerService.GetCustomerByEmailOrPhoneAndBusinessIdAsync(findCustomerDto.EmailOrPhone, businessId);
@@ -81,7 +81,7 @@ namespace PlusAppointment.Controllers.CustomerController
 
         
         
-        [HttpGet("customer_id={customerId}/find-appointments")]
+        [HttpGet("{customerId}/find-appointments")]
         [Authorize]
         public async Task<IActionResult> GetCustomerAppointments(int customerId)
         {
@@ -94,13 +94,13 @@ namespace PlusAppointment.Controllers.CustomerController
             return Ok(appointments);
         }
         
-        [HttpPost("add")]
-        public async Task<IActionResult> AddCustomer([FromBody] CustomerDto customerDto)
+        [HttpPost("business/{businessId}")]
+        public async Task<IActionResult> AddCustomer(int businessId, [FromBody] CustomerDto customerDto)
         {
             try
             {
                 // Assign the business_id from the URL to the DTO
-                await _customerService.AddCustomerAsync(customerDto);
+                await _customerService.AddCustomerAsync(businessId, customerDto);
                 // Notify the frontend
                 await _hubContext.Clients.All.SendAsync("ReceiveCustomerUpdate", "A new customer has been added.");
                 return Ok(new { message = "Customer added successfully" });
@@ -111,9 +111,9 @@ namespace PlusAppointment.Controllers.CustomerController
             }
         }
 
-        [HttpPut("business_id={businessId}/customer_id={customerId}")]
+        [HttpPut("{customerId}")]
         
-        public async Task<IActionResult> UpdateCustomer(int businessId,int customerId, [FromBody] CustomerDto? customerDto)
+        public async Task<IActionResult> UpdateCustomer(int customerId, [FromBody] CustomerDto? customerDto)
         {
             if (customerDto == null)
             {
@@ -122,7 +122,7 @@ namespace PlusAppointment.Controllers.CustomerController
 
             try
             {
-                await _customerService.UpdateCustomerAsync(businessId,customerId, customerDto);
+                await _customerService.UpdateCustomerAsync(customerId, customerDto);
                 return Ok(new { message = "Customer updated successfully" });
             }
             catch (KeyNotFoundException ex)
@@ -139,13 +139,13 @@ namespace PlusAppointment.Controllers.CustomerController
             }
         }
 
-        [HttpDelete("business_id={businessId}/customer_id={customerId}")]
+        [HttpDelete("{customerId}")]
         
-        public async Task<IActionResult> DeleteCustomer(int businessId, int customerId)
+        public async Task<IActionResult> DeleteCustomer(int customerId)
         {
             try
             {
-                await _customerService.DeleteCustomerAsync(businessId, customerId);
+                await _customerService.DeleteCustomerAsync(customerId);
                 return Ok(new { message = "Customer deleted successfully" });
             }
             catch (KeyNotFoundException ex)

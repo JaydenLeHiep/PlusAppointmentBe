@@ -159,7 +159,9 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             var emailCount = 0;
 
             var frontendBaseUrl = _appSettings.Value.FrontendBaseUrl;
-            var cancelAppointmentLink = $"{frontendBaseUrl}/delete-appointment-customer?business_name={business.Name}";
+            var businessNameEncoded = Uri.EscapeDataString(business.Name);
+            var cancelAppointmentLink = $"{frontendBaseUrl}/delete-appointment-customer?business_name={businessNameEncoded}";
+
 
             // Send customer confirmation email
             if (!string.IsNullOrWhiteSpace(customer.Email))

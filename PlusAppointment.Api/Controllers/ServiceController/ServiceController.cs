@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using PlusAppointment.Models.DTOs;
+using PlusAppointment.Models.DTOs.Services;
 using PlusAppointment.Models.Enums;
 using PlusAppointment.Services.Interfaces.ServicesService;
 using PlusAppointment.Utils.Hub;
@@ -36,7 +37,7 @@ namespace PlusAppointment.Controllers.ServiceController
             return Ok(services);
         }
         [Authorize] 
-        [HttpGet("service_id={serviceId}")]
+        [HttpGet("{serviceId}")]
         public async Task<IActionResult> GetById(int serviceId)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
@@ -55,7 +56,7 @@ namespace PlusAppointment.Controllers.ServiceController
         }
         
         // Get all service by business ID
-        [HttpGet("business_id={businessId}")]
+        [HttpGet("business/{businessId}")]
         public async Task<IActionResult> GetAllServiceByBusinessId(int businessId)
         {
             // var userRole = HttpContext.Items["UserRole"]?.ToString();
@@ -69,7 +70,7 @@ namespace PlusAppointment.Controllers.ServiceController
             return Ok(services);
         }
         [Authorize] 
-        [HttpPost("business_id={businessId}/add")]
+        [HttpPost("business/{businessId}")]
         public async Task<IActionResult> AddService(int businessId, [FromBody] ServiceDto? serviceDto)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
@@ -96,7 +97,7 @@ namespace PlusAppointment.Controllers.ServiceController
             }
         }
         [Authorize]
-        [HttpPost("business_id={businessId}/addList")]
+        [HttpPost("business/{businessId}/addList")]
         public async Task<IActionResult> AddServices(int businessId, [FromBody] List<ServiceDto>? servicesDtos)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
@@ -123,7 +124,7 @@ namespace PlusAppointment.Controllers.ServiceController
         }
 
         [Authorize]
-        [HttpPut("business_id={businessId}/service_id={serviceId}")]
+        [HttpPut("business/{businessId}/service/{serviceId}")]
         public async Task<IActionResult> UpdateService(int businessId, int serviceId, [FromBody] ServiceDto? serviceDto)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();
@@ -150,7 +151,7 @@ namespace PlusAppointment.Controllers.ServiceController
         }
 
         [Authorize] 
-        [HttpDelete("business_id={businessId}/service_id={serviceId}")]
+        [HttpDelete("business/{businessId}/service/{serviceId}")]
         public async Task<IActionResult> DeleteService(int businessId, int serviceId)
         {
             var userRole = HttpContext.Items["UserRole"]?.ToString();

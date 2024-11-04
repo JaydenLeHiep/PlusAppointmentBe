@@ -1,4 +1,4 @@
-namespace PlusAppointment.Models.DTOs;
+namespace PlusAppointment.Models.DTOs.Customers;
 
 public class FindCustomerDto
 {

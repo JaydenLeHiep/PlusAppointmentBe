@@ -13,8 +13,8 @@ public interface ICustomerRepository
     Task AddCustomerAsync(Customer? customer);
     Task UpdateCustomerAsync(Customer? customer);
     Task DeleteCustomerAsync(int customerId);
-    Task<bool> IsEmailUniqueAsync(string email);
-    Task<bool> IsPhoneUniqueAsync(string phone);
+    Task<bool> IsEmailUniqueAsync(int businessId, string email);
+    Task<bool> IsPhoneUniqueAsync(int businessId, string phone);
     Task<IEnumerable<Customer?>> SearchCustomersByNameOrPhoneAsync(string searchTerm);
     Task<Customer?> GetCustomerByNameOrPhoneAsync(string nameOrPhone);
     Task<IEnumerable<AppointmentHistoryDto>> GetAppointmentsByCustomerIdAsync(int customerId);

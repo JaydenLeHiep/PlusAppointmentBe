@@ -65,14 +65,14 @@ public class CustomerService : ICustomerService
 
         // Skip email uniqueness check if email is not provided
         if (!string.IsNullOrWhiteSpace(customerDto.Email) && 
-            !await _customerRepository.IsEmailUniqueAsync(customerDto.Email))
+            !await _customerRepository.IsEmailUniqueAsync(businessId,customerDto.Email))
         {
             throw new ArgumentException("Email is already in use.");
         }
 
         // Skip phone uniqueness check if phone is not provided
         if (!string.IsNullOrWhiteSpace(customerDto.Phone) && 
-            !await _customerRepository.IsPhoneUniqueAsync(customerDto.Phone))
+            !await _customerRepository.IsPhoneUniqueAsync(businessId,customerDto.Phone))
         {
             throw new ArgumentException("Phone is already in use.");
         }
@@ -110,10 +110,10 @@ public class CustomerService : ICustomerService
         {
             if (!string.IsNullOrWhiteSpace(customerDto.Email) && customerDto.Email != existingCustomer.Email)
             {
-                if (!await _customerRepository.IsEmailUniqueAsync(customerDto.Email))
-                {
-                    throw new ArgumentException("Email is already in use.");
-                }
+                // if (!await _customerRepository.IsEmailUniqueAsync(customerDto.Email))
+                // {
+                //     throw new ArgumentException("Email is already in use.");
+                // }
 
                 existingCustomer.Email = customerDto.Email; // Update email if provided
             }
@@ -127,10 +127,10 @@ public class CustomerService : ICustomerService
         {
             if (!string.IsNullOrWhiteSpace(customerDto.Phone) && customerDto.Phone != existingCustomer.Phone)
             {
-                if (!await _customerRepository.IsPhoneUniqueAsync(customerDto.Phone))
-                {
-                    throw new ArgumentException("Phone is already in use.");
-                }
+                // if (!await _customerRepository.IsPhoneUniqueAsync(customerDto.Phone))
+                // {
+                //     throw new ArgumentException("Phone is already in use.");
+                // }
 
                 existingCustomer.Phone = customerDto.Phone; // Update phone if provided
             }

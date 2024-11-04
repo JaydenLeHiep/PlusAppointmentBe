@@ -194,21 +194,22 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
             }
         }
 
-        public async Task<bool> IsEmailUniqueAsync(string email)
+        public async Task<bool> IsEmailUniqueAsync(int businessId, string email)
         {
             using (var context = _contextFactory.CreateDbContext())
             {
-                return !await context.Customers.AnyAsync(c => c.Email.ToLower() == email.ToLower());
+                return !await context.Customers.AnyAsync(c => c.Email.ToLower() == email.ToLower() && c.BusinessId == businessId);
             }
         }
 
-        public async Task<bool> IsPhoneUniqueAsync(string phone)
+        public async Task<bool> IsPhoneUniqueAsync(int businessId, string phone)
         {
             using (var context = _contextFactory.CreateDbContext())
             {
-                return !await context.Customers.AnyAsync(c => c.Phone.ToLower() == phone.ToLower());
+                return !await context.Customers.AnyAsync(c => c.Phone.ToLower() == phone.ToLower() && c.BusinessId == businessId);
             }
         }
+
 
         public async Task<IEnumerable<AppointmentHistoryDto>> GetAppointmentsByCustomerIdAsync(int customerId)
         {

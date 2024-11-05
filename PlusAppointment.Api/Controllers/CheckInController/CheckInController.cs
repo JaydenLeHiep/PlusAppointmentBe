@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using PlusAppointment.Models.Classes;
+using PlusAppointment.Models.Classes.CheckIn;
 using PlusAppointment.Services.Interfaces.CheckInService;
 using PlusAppointment.Utils.Hub;
 

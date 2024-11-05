@@ -1,4 +1,6 @@
-namespace PlusAppointment.Models.Classes
+using PlusAppointment.Models.Classes.CheckIn;
+
+namespace PlusAppointment.Models.Classes.Business
 {
     public class Business
     {
@@ -23,10 +25,12 @@ namespace PlusAppointment.Models.Classes
         public ICollection<EmailUsage>? EmailUsages { get; set; } = new List<EmailUsage>();
 
         public ICollection<OpeningHours> OpeningHours { get; set; } = new List<OpeningHours>();
-        public ICollection<CheckIn> CheckIns { get; set; } = new List<CheckIn>();
+        public ICollection<CheckIn.CheckIn> CheckIns { get; set; } = new List<CheckIn.CheckIn>();
         
+        public ICollection<DiscountTier> DiscountTiers { get; set; } = new List<DiscountTier>();  // Collection for DiscountTier
         public bool RequiresAppointmentConfirmation { get; set; }
         
+        public decimal BirthdayDiscountPercentage { get; set; } = 0;
         public Business( string name, string address, string phone, string email, int userID)
         {
             

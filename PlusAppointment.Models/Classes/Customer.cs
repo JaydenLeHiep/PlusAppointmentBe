@@ -11,10 +11,10 @@ namespace PlusAppointment.Models.Classes
         public ICollection<Appointment> Appointments { get; set; } = new List<Appointment>();
         // Add BusinessId and Navigation Property
         public int BusinessId { get; set; }
-        public Business Business { get; set; }
+        public Business.Business Business { get; set; }
         
         // Add a collection for check-ins
-        public ICollection<CheckIn> CheckIns { get; set; } = new List<CheckIn>();
+        public ICollection<CheckIn.CheckIn> CheckIns { get; set; } = new List<CheckIn.CheckIn>();
         public string? Note { get; set; }
     }
 }

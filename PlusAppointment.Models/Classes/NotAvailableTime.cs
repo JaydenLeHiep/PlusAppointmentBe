@@ -6,7 +6,7 @@ namespace PlusAppointment.Models.Classes
         public int StaffId { get; set; }
         public Staff Staff { get; set; }
         public int BusinessId { get; set; }
-        public Business Business { get; set; }
+        public Business.Business Business { get; set; }
         public DateTime Date { get; set; }
         public DateTime From { get; set; } 
         public DateTime To { get; set; } 

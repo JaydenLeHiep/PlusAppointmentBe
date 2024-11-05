@@ -1,4 +1,5 @@
 using PlusAppointment.Models.Classes;
+using PlusAppointment.Models.Classes.CheckIn;
 
 namespace PlusAppointment.Services.Interfaces.CheckInService;
 

@@ -1,4 +1,5 @@
-using PlusAppointment.Models.Classes;
+
+using PlusAppointment.Models.Classes.CheckIn;
 
 namespace PlusAppointment.Repositories.Interfaces.CheckInRepo;
 
@@ -10,4 +11,5 @@ public interface ICheckInRepository
     Task AddCheckInAsync(CheckIn? checkIn);
     Task UpdateCheckInAsync(CheckIn? checkIn);
     Task DeleteCheckInAsync(int checkInId);
+    Task<bool> HasCheckedInTodayAsync(int businessId, int customerId, DateTime checkInDate);
 }

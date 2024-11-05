@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using PlusAppointment.Data;
-using PlusAppointment.Models.Classes;
+using PlusAppointment.Models.Classes.CheckIn;
 using PlusAppointment.Repositories.Interfaces.CheckInRepo;
 using PlusAppointment.Utils.Redis;
 
@@ -153,6 +153,19 @@ public class CheckInRepository : ICheckInRepository
                 await RefreshRelatedCachesAsync(checkIn);
             }
         }
+    }
+    
+    public async Task<bool> HasCheckedInTodayAsync(int businessId, int customerId, DateTime checkInDate)
+    {
+        using var context = _contextFactory.CreateDbContext();
+        var startOfDay = checkInDate.Date;
+        var endOfDay = startOfDay.AddDays(1).AddTicks(-1);
+
+        return await context.CheckIns.AnyAsync(ci =>
+            ci.BusinessId == businessId &&
+            ci.CustomerId == customerId &&
+            ci.CheckInTime >= startOfDay &&
+            ci.CheckInTime <= endOfDay);
     }
 
     // Private helper methods to handle caching

@@ -6,7 +6,7 @@ namespace PlusAppointment.Models.Classes
     {
         public int StaffId { get; set; }
         public int BusinessId { get; set; }
-        public Business? Business { get; set; }
+        public Business.Business? Business { get; set; }
         public string Name { get; set; } = String.Empty;
         public string? Email { get; set; }
         public string? Phone { get; set; }

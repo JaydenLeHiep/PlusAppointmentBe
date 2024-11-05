@@ -1,4 +1,5 @@
 using PlusAppointment.Models.Classes;
+using PlusAppointment.Models.Classes.Business;
 using PlusAppointment.Models.DTOs;
 using PlusAppointment.Repositories.Interfaces.BusinessRepo;
 using PlusAppointment.Services.Interfaces.BusinessService;

@@ -2,6 +2,7 @@ using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using PlusAppointment.Models.Classes.Business;
 
 namespace PlusAppointment.Services.Interfaces.BusinessService
 {

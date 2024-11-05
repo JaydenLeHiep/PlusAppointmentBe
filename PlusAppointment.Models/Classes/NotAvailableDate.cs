@@ -11,5 +11,5 @@ public class NotAvailableDate
 
     // Navigation properties
     public Staff Staff { get; set; }
-    public Business Business { get; set; }
+    public Business.Business Business { get; set; }
 }

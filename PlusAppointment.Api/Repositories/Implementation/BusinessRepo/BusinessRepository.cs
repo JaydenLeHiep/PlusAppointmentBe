@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PlusAppointment.Data;
 using PlusAppointment.Models.Classes;
+using PlusAppointment.Models.Classes.Business;
 using PlusAppointment.Repositories.Interfaces.BusinessRepo;
 using PlusAppointment.Utils.Redis;
 
@@ -169,6 +170,17 @@ namespace PlusAppointment.Repositories.Implementation.BusinessRepo
                 await _redisHelper.SetCacheAsync(cacheKey, businesses, TimeSpan.FromMinutes(10));
                 return businesses;
             }
+        }
+        
+        public async Task<decimal?> GetBirthdayDiscountPercentageAsync(int businessId)
+        {
+            using var context = _contextFactory.CreateDbContext();
+            var business = await context.Businesses
+                .Where(b => b.BusinessId == businessId)
+                .Select(b => b.BirthdayDiscountPercentage)
+                .FirstOrDefaultAsync();
+
+            return business;
         }
 
         private async Task RefreshRelatedCachesAsync(Business business)

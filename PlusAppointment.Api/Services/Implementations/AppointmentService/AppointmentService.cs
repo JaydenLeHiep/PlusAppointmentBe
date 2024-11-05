@@ -160,6 +160,7 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
             var frontendBaseUrl = _appSettings.Value.FrontendBaseUrl;
             var businessNameEncoded = Uri.EscapeDataString(business.Name);
+            var addNewAppointmentLink = $"{frontendBaseUrl}/customer-dashboard?business_name={businessNameEncoded}";
             var cancelAppointmentLink = $"{frontendBaseUrl}/delete-appointment-customer?business_name={businessNameEncoded}";
 
 
@@ -167,12 +168,9 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             if (!string.IsNullOrWhiteSpace(customer.Email))
             {
                 var customerEmailBody =
-                    $"<p>Hi {customer.Name},</p>" +
-                    $"<p>Your appointment at <strong>{business.Name}</strong> for <strong>{appointmentTimeFormatted}</strong> is confirmed.</p>" +
-                    $"<p>If you want to cancel your appointment, please click <a href='{cancelAppointmentLink}'>here</a>.</p>" +
-                    $"<hr>" +
                     $"<p>Hallo {customer.Name},</p>" +
                     $"<p>Ihr Termin bei <strong>{business.Name}</strong> für <strong>{appointmentTimeFormatted}</strong> ist bestätigt.</p>" +
+                    $"<p>Falls Sie noch einen weiteren Termin buchen möchten, klicken Sie bitte <a href='{addNewAppointmentLink}'>hier</a>.</p>" +
                     $"<p>Wenn Sie Ihren Termin stornieren möchten, klicken Sie bitte <a href='{cancelAppointmentLink}'>hier</a>.</p>";
                 emailTasks.Add(_emailService.SendEmailAsync(customer.Email, "Appointment Confirmation",
                     customerEmailBody));
@@ -182,11 +180,10 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             if (!string.IsNullOrWhiteSpace(customer.Email))
             {
                 var reminderBody =
-                    $"<p>Hi {customer.Name},</p>" +
-                    $"<p>Reminder: Your appointment at <strong>{business.Name}</strong> is on <strong>{appointmentTimeFormatted}</strong>.</p>" +
-                    $"<hr>" +
                     $"<p>Hallo {customer.Name},</p>" +
-                    $"<p>Erinnerung: Ihr Termin bei <strong>{business.Name}</strong> ist am <strong>{appointmentTimeFormatted}</strong>.</p>";
+                    $"<p>Erinnerung: Ihr Termin bei <strong>{business.Name}</strong> ist am <strong>{appointmentTimeFormatted}</strong>.</p>" +
+                    $"<p>Falls Sie noch einen weiteren Termin buchen möchten, klicken Sie bitte <a href='{addNewAppointmentLink}'>hier</a>.</p>";
+
 
                 var reminderTime24Hours = appointmentDto.AppointmentTime.AddHours(-24);
                 var reminderTime2Hours = appointmentDto.AppointmentTime.AddHours(-2);
@@ -287,10 +284,6 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             // Prepare the email in both English and German
             var subject = "Appointment Updated - Terminänderung";
             var bodyEmail =
-                $"<p>Hi {customer.Name},</p>" +
-                $"<p>Your appointment at <strong>{business.Name}</strong> has been updated. The new time is <strong>{appointmentTimeFormatted}</strong>.</p>" +
-                $"<p>If you have any questions, reach us at <strong>{business.Phone}</strong>. See you soon!</p>" +
-                $"<hr>" +
                 $"<p>Hallo {customer.Name},</p>" +
                 $"<p>Ihr Termin bei <strong>{business.Name}</strong> wurde geändert. Die neue Uhrzeit ist <strong>{appointmentTimeFormatted}</strong>.</p>" +
                 $"<p>Falls Sie Fragen haben, erreichen Sie uns unter <strong>{business.Phone}</strong>. Wir freuen uns auf Ihren Besuch!</p>";
@@ -378,8 +371,6 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
 
             var subject = "Appointment Confirmation - Terminbestätigung";
             var bodySms =
-                $"Dear Customer, your appointment at {business.Name} is confirmed for {appointmentTimeFormatted}. We look forward to serving you!" +
-                $"<hr>" +
                 $"Hallo, Ihr Termin bei {business.Name} ist für {appointmentTimeFormatted} bestätigt. Wir freuen uns auf Sie!";
 
             var emailMessage = new EmailMessage

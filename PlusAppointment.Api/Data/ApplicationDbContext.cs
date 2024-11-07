@@ -218,9 +218,7 @@ namespace PlusAppointment.Data
                     v => v.ToString(),  // Convert Enum to string when saving
                     v => (CheckInType)Enum.Parse(typeof(CheckInType), v)  // Convert string to Enum when reading
                 );
-            modelBuilder.Entity<CheckIn>().Property(ci => ci.CheckInCycle)
-                .HasColumnName("check_in_cycle")
-                .HasDefaultValue(1);
+            
             
             // DiscountTier configuration
             modelBuilder.Entity<DiscountTier>().ToTable("discount_tiers");

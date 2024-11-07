@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PlusAppointment.Models.Classes;
+using PlusAppointment.Models.Classes.Business;
+using PlusAppointment.Models.Classes.CheckIn;
 using PlusAppointment.Models.Classes.Emails;
 using PlusAppointment.Models.Enums;
 
@@ -29,9 +31,13 @@ namespace PlusAppointment.Data
 
         public DbSet<OpeningHours> OpeningHours { get; set; }
 
-        public DbSet<CheckIn?> CheckIns { get; set; }
+        public DbSet<CheckIn> CheckIns { get; set; }
         
         public DbSet<EmailContent> EmailContents { get; set; }
+        
+        public DbSet<DiscountTier> DiscountTiers { get; set; }
+        
+        public DbSet<DiscountCode> DiscountCodes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -68,7 +74,9 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<Business>().Property(b => b.RequiresAppointmentConfirmation)
                 .HasColumnName("requires_appointment_confirmation")
                 .HasDefaultValue(false);  // Ensure it has a default value
-
+            modelBuilder.Entity<Business>().Property(b => b.BirthdayDiscountPercentage)
+                .HasColumnName("birthday_discount_percentage")
+                .HasDefaultValue(0);  // Set default value to 0
 
             modelBuilder.Entity<Appointment>().Property(a => a.AppointmentId).HasColumnName("appointment_id");
             modelBuilder.Entity<Appointment>().Property(a => a.CustomerId).HasColumnName("customer_id");
@@ -210,6 +218,28 @@ namespace PlusAppointment.Data
                     v => v.ToString(),  // Convert Enum to string when saving
                     v => (CheckInType)Enum.Parse(typeof(CheckInType), v)  // Convert string to Enum when reading
                 );
+            
+            
+            // DiscountTier configuration
+            modelBuilder.Entity<DiscountTier>().ToTable("discount_tiers");
+            modelBuilder.Entity<DiscountTier>().Property(dt => dt.DiscountTierId).HasColumnName("discount_tier_id");
+            modelBuilder.Entity<DiscountTier>().Property(dt => dt.BusinessId).HasColumnName("business_id");
+            modelBuilder.Entity<DiscountTier>().Property(dt => dt.CheckInThreshold).HasColumnName("check_in_threshold");
+            modelBuilder.Entity<DiscountTier>().Property(dt => dt.DiscountPercentage).HasColumnName("discount_percentage");
+
+            modelBuilder.Entity<DiscountTier>()
+                .HasOne(dt => dt.Business)
+                .WithMany(b => b.DiscountTiers)  // Use `DiscountTiers` (plural) for the collection navigation property
+                .HasForeignKey(dt => dt.BusinessId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            modelBuilder.Entity<DiscountCode>().ToTable("discount_codes");
+            modelBuilder.Entity<DiscountCode>().Property(dc => dc.DiscountCodeId).HasColumnName("discount_code_id");
+            modelBuilder.Entity<DiscountCode>().Property(dc => dc.Code).HasColumnName("code").IsRequired();
+            modelBuilder.Entity<DiscountCode>().Property(dc => dc.DiscountPercentage).HasColumnName("discount_percentage");
+            modelBuilder.Entity<DiscountCode>().Property(dc => dc.IsUsed).HasColumnName("is_used");
+            modelBuilder.Entity<DiscountCode>().Property(dc => dc.GeneratedAt).HasColumnName("generated_at");
+
 
 
             // Configure the OpeningHours table
@@ -486,6 +516,10 @@ namespace PlusAppointment.Data
             modelBuilder.Entity<Customer>()
                 .HasIndex(c => c.Note)
                 .HasDatabaseName("IX_Customer_Note");
+            modelBuilder.Entity<DiscountTier>()
+                .HasIndex(dt => dt.BusinessId)
+                .HasDatabaseName("IX_DiscountTier_BusinessId");
+
         }
     }
 }

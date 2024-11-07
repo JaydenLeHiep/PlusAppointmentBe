@@ -96,7 +96,7 @@ namespace PlusAppointment.Migrations
                     b.ToTable("appointment_services_staffs", (string)null);
                 });
 
-            modelBuilder.Entity("PlusAppointment.Models.Classes.Business", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Business.Business", b =>
                 {
                     b.Property<int>("BusinessId")
                         .ValueGeneratedOnAdd()
@@ -109,6 +109,12 @@ namespace PlusAppointment.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("address");
+
+                    b.Property<decimal>("BirthdayDiscountPercentage")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("numeric")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("birthday_discount_percentage");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -142,7 +148,7 @@ namespace PlusAppointment.Migrations
                     b.ToTable("businesses", (string)null);
                 });
 
-            modelBuilder.Entity("PlusAppointment.Models.Classes.CheckIn", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.CheckIn.CheckIn", b =>
                 {
                     b.Property<int>("CheckInId")
                         .ValueGeneratedOnAdd()
@@ -180,6 +186,66 @@ namespace PlusAppointment.Migrations
                         .HasDatabaseName("IX_CheckIn_CustomerId");
 
                     b.ToTable("check_ins", (string)null);
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.CheckIn.DiscountCode", b =>
+                {
+                    b.Property<int>("DiscountCodeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("discount_code_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("DiscountCodeId"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("code");
+
+                    b.Property<decimal>("DiscountPercentage")
+                        .HasColumnType("numeric")
+                        .HasColumnName("discount_percentage");
+
+                    b.Property<DateTime>("GeneratedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("generated_at");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_used");
+
+                    b.HasKey("DiscountCodeId");
+
+                    b.ToTable("discount_codes", (string)null);
+                });
+
+            modelBuilder.Entity("PlusAppointment.Models.Classes.CheckIn.DiscountTier", b =>
+                {
+                    b.Property<int>("DiscountTierId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("discount_tier_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("DiscountTierId"));
+
+                    b.Property<int>("BusinessId")
+                        .HasColumnType("integer")
+                        .HasColumnName("business_id");
+
+                    b.Property<int>("CheckInThreshold")
+                        .HasColumnType("integer")
+                        .HasColumnName("check_in_threshold");
+
+                    b.Property<decimal>("DiscountPercentage")
+                        .HasColumnType("numeric")
+                        .HasColumnName("discount_percentage");
+
+                    b.HasKey("DiscountTierId");
+
+                    b.HasIndex("BusinessId")
+                        .HasDatabaseName("IX_DiscountTier_BusinessId");
+
+                    b.ToTable("discount_tiers", (string)null);
                 });
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.Customer", b =>
@@ -722,7 +788,7 @@ namespace PlusAppointment.Migrations
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.Appointment", b =>
                 {
-                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
+                    b.HasOne("PlusAppointment.Models.Classes.Business.Business", "Business")
                         .WithMany("Appointments")
                         .HasForeignKey("BusinessId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -766,7 +832,7 @@ namespace PlusAppointment.Migrations
                     b.Navigation("Staff");
                 });
 
-            modelBuilder.Entity("PlusAppointment.Models.Classes.Business", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Business.Business", b =>
                 {
                     b.HasOne("PlusAppointment.Models.Classes.User", "User")
                         .WithMany("Businesses")
@@ -777,9 +843,9 @@ namespace PlusAppointment.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("PlusAppointment.Models.Classes.CheckIn", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.CheckIn.CheckIn", b =>
                 {
-                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
+                    b.HasOne("PlusAppointment.Models.Classes.Business.Business", "Business")
                         .WithMany("CheckIns")
                         .HasForeignKey("BusinessId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -796,9 +862,20 @@ namespace PlusAppointment.Migrations
                     b.Navigation("Customer");
                 });
 
+            modelBuilder.Entity("PlusAppointment.Models.Classes.CheckIn.DiscountTier", b =>
+                {
+                    b.HasOne("PlusAppointment.Models.Classes.Business.Business", "Business")
+                        .WithMany("DiscountTiers")
+                        .HasForeignKey("BusinessId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Business");
+                });
+
             modelBuilder.Entity("PlusAppointment.Models.Classes.Customer", b =>
                 {
-                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
+                    b.HasOne("PlusAppointment.Models.Classes.Business.Business", "Business")
                         .WithMany("Customers")
                         .HasForeignKey("BusinessId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -809,7 +886,7 @@ namespace PlusAppointment.Migrations
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.EmailUsage", b =>
                 {
-                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
+                    b.HasOne("PlusAppointment.Models.Classes.Business.Business", "Business")
                         .WithMany("EmailUsages")
                         .HasForeignKey("BusinessId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -820,7 +897,7 @@ namespace PlusAppointment.Migrations
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.NotAvailableDate", b =>
                 {
-                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
+                    b.HasOne("PlusAppointment.Models.Classes.Business.Business", "Business")
                         .WithMany("NotAvailableDates")
                         .HasForeignKey("BusinessId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -839,7 +916,7 @@ namespace PlusAppointment.Migrations
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.NotAvailableTime", b =>
                 {
-                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
+                    b.HasOne("PlusAppointment.Models.Classes.Business.Business", "Business")
                         .WithMany("NotAvailableTimes")
                         .HasForeignKey("BusinessId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -858,7 +935,7 @@ namespace PlusAppointment.Migrations
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.Notification", b =>
                 {
-                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
+                    b.HasOne("PlusAppointment.Models.Classes.Business.Business", "Business")
                         .WithMany("Notifications")
                         .HasForeignKey("BusinessId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -869,7 +946,7 @@ namespace PlusAppointment.Migrations
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.OpeningHours", b =>
                 {
-                    b.HasOne("PlusAppointment.Models.Classes.Business", null)
+                    b.HasOne("PlusAppointment.Models.Classes.Business.Business", null)
                         .WithMany("OpeningHours")
                         .HasForeignKey("BusinessId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -878,7 +955,7 @@ namespace PlusAppointment.Migrations
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.Service", b =>
                 {
-                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
+                    b.HasOne("PlusAppointment.Models.Classes.Business.Business", "Business")
                         .WithMany("Services")
                         .HasForeignKey("BusinessId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -896,7 +973,7 @@ namespace PlusAppointment.Migrations
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.ShopPicture", b =>
                 {
-                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
+                    b.HasOne("PlusAppointment.Models.Classes.Business.Business", "Business")
                         .WithMany("ShopPictures")
                         .HasForeignKey("BusinessId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -907,7 +984,7 @@ namespace PlusAppointment.Migrations
 
             modelBuilder.Entity("PlusAppointment.Models.Classes.Staff", b =>
                 {
-                    b.HasOne("PlusAppointment.Models.Classes.Business", "Business")
+                    b.HasOne("PlusAppointment.Models.Classes.Business.Business", "Business")
                         .WithMany("Staffs")
                         .HasForeignKey("BusinessId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -932,13 +1009,15 @@ namespace PlusAppointment.Migrations
                     b.Navigation("AppointmentServices");
                 });
 
-            modelBuilder.Entity("PlusAppointment.Models.Classes.Business", b =>
+            modelBuilder.Entity("PlusAppointment.Models.Classes.Business.Business", b =>
                 {
                     b.Navigation("Appointments");
 
                     b.Navigation("CheckIns");
 
                     b.Navigation("Customers");
+
+                    b.Navigation("DiscountTiers");
 
                     b.Navigation("EmailUsages");
 

@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using PlusAppointment.Data;
 using PlusAppointment.Models.Classes;
+using PlusAppointment.Models.Classes.Business;
 using PlusAppointment.Models.Enums; // Your DbContext namespace
 
 namespace PlusAppointment.Tests.Factories

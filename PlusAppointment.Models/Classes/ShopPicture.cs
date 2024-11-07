@@ -8,5 +8,5 @@ public class ShopPicture
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow; // Timestamp of when the image was added
 
     // Navigation property to Business
-    public Business? Business { get; set; }
+    public Business.Business? Business { get; set; }
 }

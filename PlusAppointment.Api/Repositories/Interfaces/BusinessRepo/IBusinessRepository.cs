@@ -1,4 +1,5 @@
 using PlusAppointment.Models.Classes;
+using PlusAppointment.Models.Classes.Business;
 
 namespace PlusAppointment.Repositories.Interfaces.BusinessRepo;
 
@@ -14,4 +15,5 @@ public interface IBusinessRepository
     
     Task<IEnumerable<Business?>> GetAllByUserIdAsync(int userId);
     Task<Business?> GetByNameAsync(string businessName);
+    Task<decimal?> GetBirthdayDiscountPercentageAsync(int businessId);
 }

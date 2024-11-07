@@ -19,7 +19,7 @@ namespace PlusAppointment.Models.Classes
 
 
         [JsonConverter(typeof(BusinessCollectionConverter))]
-        public ICollection<Business> Businesses { get; set; } = new List<Business>();
+        public ICollection<Business.Business> Businesses { get; set; } = new List<Business.Business>();
         
         public ICollection<UserRefreshToken> RefreshTokens { get; set; } = new List<UserRefreshToken>();
         
@@ -41,15 +41,15 @@ namespace PlusAppointment.Models.Classes
         string IUserIdentity.Role => Role.ToString();
     }
 
-    public class BusinessCollectionConverter : JsonConverter<ICollection<Business>>
+    public class BusinessCollectionConverter : JsonConverter<ICollection<Business.Business>>
     {
-        public override ICollection<Business> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override ICollection<Business.Business> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            var businesses = JsonSerializer.Deserialize<List<Business>>(ref reader, options);
-            return businesses ?? new List<Business>();
+            var businesses = JsonSerializer.Deserialize<List<Business.Business>>(ref reader, options);
+            return businesses ?? new List<Business.Business>();
         }
 
-        public override void Write(Utf8JsonWriter writer, ICollection<Business> value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, ICollection<Business.Business> value, JsonSerializerOptions options)
         {
             JsonSerializer.Serialize(writer, value, options);
         }

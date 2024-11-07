@@ -11,6 +11,6 @@ public class CheckIn
     public Business.Business? Business { get; set; }
     public DateTime CheckInTime { get; set; }
     public CheckInType CheckInType { get; set; }  // Enum property to indicate walk-in or online check-in
-    public int CheckInCycle { get; set; } = 1;
+    
 
 }

@@ -85,7 +85,7 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
 
         public async Task<Customer?> GetCustomerByEmailOrPhoneAndBusinessIdAsync(string emailOrPhone, int businessId)
         {
-            string cacheKey = $"customer_emailOrPhone_{emailOrPhone}_business_{businessId}";
+            string cacheKey = $"customer_emailOrPhone_{emailOrPhone.ToLower()}_business_{businessId}";
             var cachedCustomer = await _redisHelper.GetCacheAsync<Customer>(cacheKey);
             if (cachedCustomer != null)
             {
@@ -94,12 +94,14 @@ namespace PlusAppointment.Repositories.Implementation.CustomerRepo
 
             using (var context = _contextFactory.CreateDbContext())
             {
+                // Convert the email or phone input to lowercase for comparison
                 var customer = await context.Customers
                     .FirstOrDefaultAsync(c =>
-                        (c.Email == emailOrPhone || c.Phone == emailOrPhone) && c.BusinessId == businessId);
+                        (c.Email.ToLower() == emailOrPhone.ToLower() || c.Phone == emailOrPhone) && c.BusinessId == businessId);
 
                 if (customer != null)
                 {
+                    // Cache the customer object using the lowercase cache key
                     await _redisHelper.SetCacheAsync(cacheKey, customer, TimeSpan.FromMinutes(10));
                 }
 

@@ -43,7 +43,7 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
                 var staff = await context.Staffs.FindAsync(id);
                 if (staff == null)
                 {
-                    throw new Exception($"Staff with ID {id} not found");
+                    throw new KeyNotFoundException($"Staff with ID {id} not found");
                 }
 
                 return staff;
@@ -79,7 +79,7 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
                 var business = await context.Businesses.FindAsync(businessId);
                 if (business == null)
                 {
-                    throw new Exception("Business not found");
+                    throw new KeyNotFoundException($"Business with ID {businessId} not found.");
                 }
 
                 staff.BusinessId = businessId;
@@ -90,7 +90,7 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
             await RefreshRelatedCachesAsync(staff);
         }
 
-        public async Task AddListStaffsAsync(IEnumerable<Staff>? staffs)
+        public async Task AddListStaffsAsync(Staff?[] staffs)
         {
             if (staffs == null || !staffs.Any())
             {
@@ -104,7 +104,7 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
                 var business = await context.Businesses.FindAsync(businessId);
                 if (business == null)
                 {
-                    throw new Exception("Business not found");
+                    throw new KeyNotFoundException($"Business with ID {businessId} not found.");
                 }
 
                 await context.Staffs.AddRangeAsync(staffList);
@@ -156,9 +156,9 @@ namespace PlusAppointment.Repositories.Implementation.StaffRepo
             }
         }
 
-        public async Task<Staff?> GetByBusinessIdServiceIdAsync(int businessId, int staffId)
+        public async Task<Staff?> GetByBusinessIdStaffIdAsync(int businessId, int staffId)
         {
-            string cacheKey = $"staff_{staffId}";
+            string cacheKey = $"staff_{staffId}_{businessId}";
             var cachedStaff = await _redisHelper.GetCacheAsync<Staff>(cacheKey);
             if (cachedStaff != null)
             {

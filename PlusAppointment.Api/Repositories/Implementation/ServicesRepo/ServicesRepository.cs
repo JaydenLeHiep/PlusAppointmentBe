@@ -74,7 +74,7 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
             }
         }
 
-        public async Task AddServiceAsync(Service? service, int businessId)
+        public async Task AddServiceAsync(Service? service)
         {
             if (service == null)
             {
@@ -83,10 +83,10 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
 
             using (var context = _contextFactory.CreateDbContext())
             {
-                var business = await context.Businesses.FindAsync(businessId);
+                var business = await context.Businesses.FindAsync(service.BusinessId);
                 if (business == null)
                 {
-                    throw new Exception("Business not found");
+                    throw new KeyNotFoundException($"Business with ID {service.BusinessId} not found.");
                 }
 
                 await context.Services.AddAsync(service);
@@ -96,30 +96,24 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
             await RefreshRelatedCachesAsync(service);
         }
 
-        public async Task AddListServicesAsync(IEnumerable<Service?> services, int businessId)
+
+        public async Task AddListServicesAsync(IEnumerable<Service?> services)
         {
-            if (!services.Any()) return;
+            var enumerable = services.ToList();
+            if (!enumerable.Any()) return;
 
             using (var context = _contextFactory.CreateDbContext())
             {
-                var business = await context.Businesses.FindAsync(businessId);
-                if (business == null)
-                {
-                    throw new Exception("Business not found");
-                }
-
-                await context.Services.AddRangeAsync(services!);
+                await context.Services.AddRangeAsync(enumerable!);
                 await context.SaveChangesAsync();
             }
 
-            foreach (var service in services)
+            foreach (var service in enumerable)
             {
-                if (service != null)
-                {
-                    await UpdateServiceCacheAsync(service);
-                }
+                if (service != null) await UpdateServiceCacheAsync(service);
             }
         }
+
 
         public async Task UpdateAsync(Service service)
         {

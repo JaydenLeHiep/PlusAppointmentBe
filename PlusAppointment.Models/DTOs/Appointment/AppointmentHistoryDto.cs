@@ -8,6 +8,6 @@ public class AppointmentHistoryDto
 
 public class StaffServiceDto
 {
-    public string StaffName { get; set; } = String.Empty;
+    public string? StaffName { get; set; } = String.Empty;
     public string ServiceName { get; set; } = String.Empty;
 }

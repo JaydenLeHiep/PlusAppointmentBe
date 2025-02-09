@@ -1,15 +1,14 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PlusAppointment.Models.DTOs;
-using PlusAppointment.Models.Enums;
+using PlusAppointment.Models.Classes.Business;
+using PlusAppointment.Models.DTOs.Businesses;
 using PlusAppointment.Services.Interfaces.BusinessService;
-
 
 namespace PlusAppointment.Controllers.BusinessController
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/businesses")]
     public class BusinessController : ControllerBase
     {
         private readonly IBusinessService _businessService;
@@ -19,16 +18,10 @@ namespace PlusAppointment.Controllers.BusinessController
             _businessService = businessService;
         }
 
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<IActionResult> GetAllAdmin()
         {
-            var userRole = HttpContext.Items["UserRole"]?.ToString();
-            if (userRole != Role.Admin.ToString())
-            {
-                return NotFound(new { message = "You are not authorized to view all businesses." });
-            }
-
             var businesses = await _businessService.GetAllBusinessesAsync();
             if (!businesses.Any())
             {
@@ -37,155 +30,134 @@ namespace PlusAppointment.Controllers.BusinessController
             return Ok(businesses);
         }
 
-        [Authorize]
+        [Authorize(Roles = "Admin,Owner")]
         [HttpGet("byUser")]
         public async Task<IActionResult> GetAllByUser()
         {
-            var userRole = HttpContext.Items["UserRole"]?.ToString();
-            var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
-            if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
-            {
-                return NotFound(new { message = "You are not authorized to view this business." });
-            }
+            var currentUserId = GetCurrentUserId();
             var businesses = await _businessService.GetAllBusinessesByUserIdAsync(currentUserId);
-            if (!businesses.Any())
-            {
-                return NotFound(new { message = "No businesses found for this user." });
-            }
             return Ok(businesses);
         }
 
-        [HttpGet("business_id={businessId}")]
+        [HttpGet("{businessId}")]
         public async Task<IActionResult> GetById(int businessId)
         {
             var business = await _businessService.GetBusinessByIdAsync(businessId);
             if (business == null)
             {
-                return NotFound(new { message = "Business not found." });
+                return NotFound(new { error = "NotFound", message = $"Business with ID {businessId} was not found." });
             }
             return Ok(business);
         }
-        [HttpGet("business_name={businessName}/booking")]
+
+        [HttpGet("{businessName}/booking")]
         public async Task<IActionResult> GetBusinessByName(string businessName)
         {
             var business = await _businessService.GetBusinessByNameAsync(businessName);
             if (business == null)
             {
-                return NotFound(new { message = "Business not found." });
+                return NotFound(new { error = "NotFound", message = "Business not found." });
             }
             return Ok(business);
         }
 
-        [Authorize]
+        [Authorize(Roles = "Admin,Owner")]
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] BusinessDto? businessDto)
+        public async Task<IActionResult> Create([FromBody] BusinessDto businessDto)
         {
-            var userRole = HttpContext.Items["UserRole"]?.ToString();
-            if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
-            {
-                return NotFound(new { message = "You are not authorized to create a business." });
-            }
+            var userId = GetCurrentUserId();
 
-            if (businessDto == null)
-            {
-                return BadRequest(new { message = "No data provided." });
-            }
+            var business = new Business
+            (
+                name: businessDto.Name,
+                address: businessDto.Address,
+                phone: businessDto.Phone,
+                email: businessDto.Email,
+                userID: userId
+            );
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { message = "User not authorized." });
-            }
+            await _businessService.AddBusinessAsync(business);
 
-            await _businessService.AddBusinessAsync(businessDto, int.Parse(userId));
-            return Ok(new { message = "Business created successfully." });
+            return CreatedAtAction(nameof(GetById), new { businessId = business.BusinessId }, 
+                new { message = "Business created successfully.", businessId = business.BusinessId });
         }
 
-        [Authorize]
-        [HttpPut("business_id={businessId}")]
+
+        [Authorize(Roles = "Admin,Owner")]
+        [HttpPut("{businessId}")]
         public async Task<IActionResult> Update(int businessId, [FromBody] BusinessDto? businessDto)
         {
-            var userRole = HttpContext.Items["UserRole"]?.ToString();
-            var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
-            if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
-            {
-                return NotFound(new { message = "You are not authorized to update this business." });
-            }
-
             if (businessDto == null)
             {
-                return BadRequest(new { message = "No data provided." });
+                return BadRequest(new { error = "Validation Error", message = "No data provided." });
+            }
+            
+
+            var business = await _businessService.GetBusinessByIdAsync(businessId);
+            if (business == null)
+            {
+                return NotFound(new { error = "NotFound", message = "Business not found." });
             }
 
-            try
+            // Update only if fields are provided
+            if (!string.IsNullOrEmpty(businessDto.Name))
             {
-                await _businessService.UpdateBusinessAsync(businessId, businessDto, currentUserId, userRole);
-                return Ok(new { message = "Business updated successfully." });
+                business.Name = businessDto.Name;
             }
-            catch (Exception ex)
+
+            if (!string.IsNullOrEmpty(businessDto.Address))
             {
-                return BadRequest(new { message = $"Update failed: {ex.Message}" });
+                business.Address = businessDto.Address;
             }
+
+            if (!string.IsNullOrEmpty(businessDto.Phone))
+            {
+                business.Phone = businessDto.Phone;
+            }
+
+            if (!string.IsNullOrEmpty(businessDto.Email))
+            {
+                business.Email = businessDto.Email;
+            }
+
+            await _businessService.UpdateBusinessAsync(businessId,business);
+            return Ok(new { message = "Business updated successfully." });
         }
 
-        [Authorize]
-        [HttpDelete("business_id={businessId}")]
+        [Authorize(Roles = "Admin,Owner")]
+        [HttpDelete("{businessId}")]
         public async Task<IActionResult> Delete(int businessId)
         {
-            var userRole = HttpContext.Items["UserRole"]?.ToString();
-            var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
-            if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
-            {
-                return NotFound(new { message = "You are not authorized to delete this business." });
-            }
 
-            try
-            {
-                await _businessService.DeleteBusinessAsync(businessId, currentUserId, userRole);
-                return Ok(new { message = "Business deleted successfully." });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = $"Delete failed: {ex.Message}" });
-            }
+            await _businessService.DeleteBusinessAsync(businessId);
+            return Ok(new { message = "Business deleted successfully." });
         }
 
-        [Authorize]
-        [HttpGet("business_id={businessId}/services")]
+        [Authorize(Roles = "Admin,Owner")]
+        [HttpGet("{businessId}/services")]
         public async Task<IActionResult> GetServices(int businessId)
         {
-            var userRole = HttpContext.Items["UserRole"]?.ToString();
-            if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
-            {
-                return NotFound(new { message = "You are not authorized to view the services of this business." });
-            }
-
             var services = await _businessService.GetServicesByBusinessIdAsync(businessId);
-            if (!services.Any())
-            {
-                return NotFound(new { message = "No services found for this business." });
-            }
-
             return Ok(services);
         }
 
-        [Authorize]
-        [HttpGet("business_id={businessId}/staff")]
+        [Authorize(Roles = "Admin,Owner")]
+        [HttpGet("{businessId}/staffs")]
         public async Task<IActionResult> GetStaff(int businessId)
         {
-            var userRole = HttpContext.Items["UserRole"]?.ToString();
-            if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
-            {
-                return NotFound(new { message = "You are not authorized to view the staff of this business." });
-            }
-
             var staff = await _businessService.GetStaffByBusinessIdAsync(businessId);
-            if (!staff.Any())
-            {
-                return NotFound(new { message = "No staff found for this business." });
-            }
-
             return Ok(staff);
         }
+
+        private int GetCurrentUserId()
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
+            {
+                throw new UnauthorizedAccessException("User not authorized.");
+            }
+            return userId;
+        }
+        
     }
 }

@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using Amazon;
 using Amazon.Extensions.NETCore.Setup;
 using Amazon.Runtime;
@@ -97,6 +98,7 @@ using PlusAppointment.Services.Interfaces.EmailContentService;
 using PlusAppointment.Services.Interfaces.EmailSendingService;
 using PlusAppointment.Utils.CustomAuthorizationFilter;
 using PlusAppointment.Utils.EmailJob;
+using PlusAppointment.Utils.Errors;
 using PlusAppointment.Utils.Hash;
 using PlusAppointment.Utils.Hub;
 using PlusAppointment.Utils.Mapping;
@@ -130,17 +132,18 @@ var logRepository = LogManager.GetRepository(System.Reflection.Assembly.GetEntry
 XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
 
 // Add services to the container.
-builder.Services.AddControllers()
+builder.Services.AddControllers(options =>
+    {
+        options.Filters.Add<ValidationErrorFilter>(); // Global validation filter
+    })
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve;
         options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
-        // Add enum converter to handle enum values as strings
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
-
-        // Optional: Ignore case for property names (including enum values)
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     });
+
 builder.Services.AddSignalR(options =>
 {
     options.MaximumReceiveMessageSize = 102400; // Set to 100KB, adjust based on your object size
@@ -301,7 +304,7 @@ builder.Services.AddAuthentication(options =>
         {
             var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
 
-            // If the Authorization header is missing or empty, use the refresh token
+            // If the Authorization header is missing or empty, try to use the refresh token from cookies.
             if (string.IsNullOrEmpty(token) && context.Request.Cookies.ContainsKey("refreshToken"))
             {
                 token = context.Request.Cookies["refreshToken"];
@@ -313,8 +316,29 @@ builder.Services.AddAuthentication(options =>
             }
 
             context.Token = token;
-
             return Task.CompletedTask;
+        },
+        OnChallenge = async context =>
+        {
+            // Skip the default behavior.
+            context.HandleResponse();
+
+            // Set the response status code and content type.
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            context.Response.ContentType = "application/json";
+
+            // Create your custom payload.
+            var responsePayload = new
+            {
+                error = "Unauthorized",
+                message = "You are not authorized to access this resource."
+            };
+
+            // Serialize the payload to JSON.
+            var json = JsonSerializer.Serialize(responsePayload);
+
+            // Write the JSON payload to the response.
+            await context.Response.WriteAsync(json);
         }
     };
 });
@@ -354,7 +378,7 @@ app.UseRouting();
 
 // Use CORS
 app.UseCors("AllowFrontendOnly");
-
+app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseAuthentication();
 app.UseRoleMiddleware();
 app.UseAuthorization();

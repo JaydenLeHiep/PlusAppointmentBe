@@ -85,12 +85,42 @@ namespace PlusAppointment.Controllers.BusinessController
 
         [Authorize(Roles = "Admin,Owner")]
         [HttpPut("{businessId}")]
-        public async Task<IActionResult> Update(int businessId, [FromBody] BusinessDto businessDto)
+        public async Task<IActionResult> Update(int businessId, [FromBody] BusinessDto? businessDto)
         {
-            var currentUserId = GetCurrentUserId();
-            var userRole = GetCurrentUserRole();
+            if (businessDto == null)
+            {
+                return BadRequest(new { error = "Validation Error", message = "No data provided." });
+            }
+            
 
-            await _businessService.UpdateBusinessAsync(businessId, businessDto, currentUserId, userRole);
+            var business = await _businessService.GetBusinessByIdAsync(businessId);
+            if (business == null)
+            {
+                return NotFound(new { error = "NotFound", message = "Business not found." });
+            }
+
+            // Update only if fields are provided
+            if (!string.IsNullOrEmpty(businessDto.Name))
+            {
+                business.Name = businessDto.Name;
+            }
+
+            if (!string.IsNullOrEmpty(businessDto.Address))
+            {
+                business.Address = businessDto.Address;
+            }
+
+            if (!string.IsNullOrEmpty(businessDto.Phone))
+            {
+                business.Phone = businessDto.Phone;
+            }
+
+            if (!string.IsNullOrEmpty(businessDto.Email))
+            {
+                business.Email = businessDto.Email;
+            }
+
+            await _businessService.UpdateBusinessAsync(businessId,business);
             return Ok(new { message = "Business updated successfully." });
         }
 
@@ -98,10 +128,8 @@ namespace PlusAppointment.Controllers.BusinessController
         [HttpDelete("{businessId}")]
         public async Task<IActionResult> Delete(int businessId)
         {
-            var currentUserId = GetCurrentUserId();
-            var userRole = GetCurrentUserRole();
 
-            await _businessService.DeleteBusinessAsync(businessId, currentUserId, userRole);
+            await _businessService.DeleteBusinessAsync(businessId);
             return Ok(new { message = "Business deleted successfully." });
         }
 
@@ -130,10 +158,6 @@ namespace PlusAppointment.Controllers.BusinessController
             }
             return userId;
         }
-
-        private string GetCurrentUserRole()
-        {
-            return User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
-        }
+        
     }
 }

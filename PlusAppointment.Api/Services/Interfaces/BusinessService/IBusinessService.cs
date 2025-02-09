@@ -12,8 +12,8 @@ namespace PlusAppointment.Services.Interfaces.BusinessService
         Task<IEnumerable<Business?>> GetAllBusinessesAsync();
         Task<Business?> GetBusinessByIdAsync(int id);
         Task AddBusinessAsync(Business business);
-        Task UpdateBusinessAsync(int businessId, BusinessDto businessDto, int currentUserId, string userRole);
-        Task DeleteBusinessAsync(int businessId, int currentUserId, string userRole);
+        Task UpdateBusinessAsync(int businessId, Business business);
+        Task DeleteBusinessAsync(int businessId);
         Task<IEnumerable<Service?>> GetServicesByBusinessIdAsync(int businessId);
         Task<IEnumerable<Staff?>> GetStaffByBusinessIdAsync(int businessId);
         Task<IEnumerable<Business?>> GetAllBusinessesByUserIdAsync(int userId);

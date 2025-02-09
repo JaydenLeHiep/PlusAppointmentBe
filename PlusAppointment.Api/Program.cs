@@ -378,7 +378,7 @@ app.UseRouting();
 
 // Use CORS
 app.UseCors("AllowFrontendOnly");
-
+app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseAuthentication();
 app.UseRoleMiddleware();
 app.UseAuthorization();

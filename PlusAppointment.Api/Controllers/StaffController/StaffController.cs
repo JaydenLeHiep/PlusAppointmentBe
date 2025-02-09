@@ -1,211 +1,174 @@
-using System.Security.Claims;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.DTOs.Staff;
-using PlusAppointment.Models.Enums;
 using PlusAppointment.Services.Interfaces.StaffService;
+using PlusAppointment.Utils.Hash;
 using PlusAppointment.Utils.Hub;
 
 namespace PlusAppointment.Controllers.StaffController
 {
     [ApiController]
-    [Route("api/[controller]")]
-     // Ensure all actions require authentication
+    [Route("api/staffs")]
     public class StaffController : ControllerBase
     {
         private readonly IStaffService _staffService;
         private readonly IHubContext<AppointmentHub> _hubContext;
+        private readonly IHashUtility _hashUtility;
 
-        public StaffController(IStaffService staffService, IHubContext<AppointmentHub> hubContext)
+        public StaffController(IStaffService staffService, IHubContext<AppointmentHub> hubContext, IHashUtility hashUtility)
         {
             _staffService = staffService;
             _hubContext = hubContext;
+            _hashUtility = hashUtility;
         }
-        
-        [Authorize] 
+
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var userRole = HttpContext.Items["UserRole"]?.ToString();
-            if (userRole != Role.Admin.ToString())
-            {
-                return NotFound(new { message = "You are not authorized to view all staff." });
-            }
-
             var staffs = await _staffService.GetAllStaffsAsync();
+            if (!staffs.Any())
+            {
+                return NotFound(new { message = "No staff found." });
+            }
             return Ok(staffs);
         }
-        
-        [Authorize]
+
+        [Authorize(Roles = "Admin,Owner")]
         [HttpGet("{staffId}")]
         public async Task<IActionResult> GetById(int staffId)
         {
-            var userRole = HttpContext.Items["UserRole"]?.ToString();
-            if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
-            {
-                return NotFound(new { message = "You are not authorized to view this staff." });
-            }
-
-            try
-            {
-                var staff = await _staffService.GetStaffIdAsync(staffId);
-                return Ok(staff);
-            }
-            catch (Exception ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-        }
-
-
-        // Get all staff by business ID
-        [HttpGet("business/{businessId}")]
-        public async Task<IActionResult> GetAllStaffByBusinessId(int businessId)
-        {
-            // var userRole = HttpContext.Items["UserRole"]?.ToString();
-            // if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
-            // {
-            //     return NotFound(new { message = "You are not authorized to view this staff." });
-            // }
-
-            var staff = await _staffService.GetAllStaffByBusinessIdAsync(businessId);
-
+            var staff = await _staffService.GetStaffIdAsync(staffId);
             return Ok(staff);
         }
-        
-        [Authorize] 
-        [HttpPost("business/{businessId}")]
+
+        [HttpGet("businesses/{businessId}")]
+        public async Task<IActionResult> GetAllStaffByBusinessId(int businessId)
+        {
+            var staff = await _staffService.GetAllStaffByBusinessIdAsync(businessId);
+            return Ok(staff);
+        }
+
+        [Authorize(Roles = "Admin,Owner")]
+        [HttpPost("businesses/{businessId}")]
         public async Task<IActionResult> AddStaff(int businessId, [FromBody] StaffDto? staffDto)
         {
-            var userRole = HttpContext.Items["UserRole"]?.ToString();
-            if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
+            if (staffDto == null)
             {
-                return NotFound(new { message = "You are not authorized to add staff." });
+                return BadRequest(new { error = "Validation Error", message = "No data provided." });
             }
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
+            // Convert DTO to entity inside the controller
+            var staff = new Staff
             {
-                return Unauthorized(new { message = "User not authorized" });
-            }
+                Name = staffDto.Name,
+                Email = staffDto.Email,
+                Phone = staffDto.Phone,
+                BusinessId = businessId
+            };
 
-            
-            try
-            {
-                await _staffService.AddStaffAsync(staffDto, businessId);
-                await _hubContext.Clients.All.SendAsync("ReceiveStaffUpdate", "A new staff has been added.");
-                return Ok(new { message = "Staff added successfully" });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            await _staffService.AddStaffAsync(staff, businessId);
+            await _hubContext.Clients.All.SendAsync("ReceiveStaffUpdate", "A new staff has been added.");
+
+            return CreatedAtAction(nameof(GetById), new { staffId = staff.StaffId }, 
+                new { message = "Staff added successfully.", staffId = staff.StaffId });
         }
-        [Authorize] 
-        [HttpPost("business/{businessId}/bulk")]
-        public async Task<IActionResult> AddStaffs(int businessId, [FromBody] IEnumerable<StaffDto?> staffDtos)
+
+        [Authorize(Roles = "Admin,Owner")]
+        [HttpPost("businesses/{businessId}/bulk")]
+        public async Task<IActionResult> AddStaffs(int businessId, [FromBody] IEnumerable<StaffDto>? staffDtos)
         {
-            var userRole = HttpContext.Items["UserRole"]?.ToString();
-            if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
+            if (staffDtos != null)
             {
-                return NotFound(new { message = "You are not authorized to add staff." });
+                var enumerable = staffDtos.ToList();
+                if (!enumerable.Any())
+                {
+                    return BadRequest(new { error = "Validation Error", message = "Staff list cannot be empty." });
+                }
+
+                var staffList = enumerable
+                    .Select(staffDto => new Staff
+                    {
+                        Name = staffDto.Name ?? throw new ArgumentException("Name is required."),
+                        Email = staffDto.Email,
+                        Phone = staffDto.Phone,
+                    
+                        BusinessId = businessId
+                    }).ToList();
+
+                await _staffService.AddListStaffsAsync(staffList);
             }
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { message = "User not authorized" });
-            }
+            await _hubContext.Clients.All.SendAsync("ReceiveStaffUpdate", "New staff members have been added.");
 
-            try
-            {
-                await _staffService.AddListStaffsAsync(staffDtos, businessId);
-                await _hubContext.Clients.All.SendAsync("ReceiveStaffUpdate", "A new staff has been added.");
-                return Ok(new { message = "Staffs added successfully" });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            return Created("", new { message = "Staffs added successfully." });
         }
-        [Authorize] 
-        [HttpPut("business/{businessId}/staff/{staffId}")]
-        public async Task<IActionResult> Update(int businessId, int staffId, [FromBody] StaffDto staffDto)
+
+        [Authorize(Roles = "Admin,Owner")]
+        [HttpPut("businesses/{businessId}/staffs/{staffId}")]
+        public async Task<IActionResult> Update(int businessId, int staffId, [FromBody] StaffDto? staffDto)
         {
-            var userRole = HttpContext.Items["UserRole"]?.ToString();
-            if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
+            if (staffDto == null)
             {
-                return NotFound(new { message = "You are not authorized to update this staff." });
+                return BadRequest(new { error = "Validation Error", message = "No data provided." });
             }
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
+            // Fetch the existing staff member
+            var staff = await _staffService.GetByBusinessIdStaffIdAsync(businessId, staffId);
+            if (staff == null)
             {
-                return Unauthorized(new { message = "User not authorized" });
+                return NotFound(new { error = "Not Found", message = "Staff not found." });
             }
 
-            try
+            // Update only provided fields
+            if (!string.IsNullOrEmpty(staffDto.Name))
             {
-                await _staffService.UpdateStaffAsync(businessId, staffId, staffDto);
-                return Ok(new { message = "Staff updated successfully" });
+                staff.Name = staffDto.Name;
             }
-            catch (KeyNotFoundException ex)
+
+            if (!string.IsNullOrEmpty(staffDto.Email))
             {
-                return NotFound(new { message = ex.Message });
+                staff.Email = staffDto.Email;
             }
-            catch (Exception ex)
+
+            if (!string.IsNullOrEmpty(staffDto.Phone))
             {
-                return BadRequest(new { message = ex.Message });
+                staff.Phone = staffDto.Phone;
             }
+
+            if (!string.IsNullOrEmpty(staffDto.Password))
+            {
+                staff.Password = _hashUtility.HashPassword(staffDto.Password);
+            }
+
+            await _staffService.UpdateStaffAsync(staff);
+            return Ok(new { message = "Staff updated successfully." });
         }
-        [Authorize] 
-        [HttpDelete("business/{businessId}/staff/{staffId}")]
+
+
+        [Authorize(Roles = "Admin,Owner")]
+        [HttpDelete("businesses/{businessId}/staffs/{staffId}")]
         public async Task<IActionResult> Delete(int businessId, int staffId)
         {
-            var userRole = HttpContext.Items["UserRole"]?.ToString();
-            if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
-            {
-                return NotFound(new { message = "You are not authorized to delete this staff." });
-            }
-
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { message = "User not authorized" });
-            }
-
-            try
-            {
-                await _staffService.DeleteStaffAsync(businessId, staffId);
-                return Ok(new { message = "Staff deleted successfully" });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            await _staffService.DeleteStaffAsync(businessId, staffId);
+            return Ok(new { message = "Staff deleted successfully." });
         }
-        [Authorize] 
+
+        [Authorize]
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] StaffLoginDto loginDto)
         {
-            try
+            if (string.IsNullOrEmpty(loginDto.Email) || string.IsNullOrEmpty(loginDto.Password))
             {
-                if (string.IsNullOrEmpty(loginDto.Email) || string.IsNullOrEmpty(loginDto.Password))
-                {
-                    return BadRequest(new { message = "Email and Password cannot be null or empty." });
-                }
-                var token = await _staffService.LoginAsync(loginDto.Email, loginDto.Password);
-                return Ok(new { token });
+                return BadRequest(new { message = "Email and Password cannot be null or empty." });
             }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+
+            var token = await _staffService.LoginAsync(loginDto.Email, loginDto.Password);
+            return Ok(new { token });
         }
+        
     }
 }

@@ -1,11 +1,8 @@
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.Classes.Business;
-using PlusAppointment.Models.DTOs;
-using PlusAppointment.Models.DTOs.Businesses;
 using PlusAppointment.Repositories.Interfaces.BusinessRepo;
 using PlusAppointment.Services.Interfaces.BusinessService;
 
-using PlusAppointment.Models.Enums;
 
 namespace PlusAppointment.Services.Implementations.BusinessService
 {
@@ -37,54 +34,27 @@ namespace PlusAppointment.Services.Implementations.BusinessService
             await _businessRepository.AddAsync(business);
         }
 
-        public async Task UpdateBusinessAsync(int businessId, BusinessDto businessDto, int currentUserId, string userRole)
+        public async Task UpdateBusinessAsync(int businessId, Business business)
         {
-            var business = await _businessRepository.GetByIdAsync(businessId);
-            if (business == null)
+            var existingBusiness = await _businessRepository.GetByIdAsync(businessId);
+            if (existingBusiness == null)
             {
-                throw new Exception("Business not found.");
+                throw new KeyNotFoundException("Business not found.");
             }
 
-            if (business.UserID != currentUserId && userRole != Role.Admin.ToString())
-            {
-                throw new Exception("You are not authorized to update this business.");
-            }
-
-            if (!string.IsNullOrEmpty(businessDto.Name))
-            {
-                business.Name = businessDto.Name;
-            }
-
-            if (!string.IsNullOrEmpty(businessDto.Address))
-            {
-                business.Address = businessDto.Address;
-            }
-
-            if (!string.IsNullOrEmpty(businessDto.Phone))
-            {
-                business.Phone = businessDto.Phone;
-            }
-
-            if (!string.IsNullOrEmpty(businessDto.Email))
-            {
-                business.Email = businessDto.Email;
-            }
-
+            // Update the entity in the repository
             await _businessRepository.UpdateAsync(business);
         }
 
-        public async Task DeleteBusinessAsync(int businessId, int currentUserId, string userRole)
+
+        public async Task DeleteBusinessAsync(int businessId)
         {
             var business = await _businessRepository.GetByIdAsync(businessId);
             if (business == null)
             {
-                throw new Exception("Business not found.");
+                throw new KeyNotFoundException("Business not found.");
             }
-
-            if (business.UserID != currentUserId && userRole != Role.Admin.ToString())
-            {
-                throw new Exception("You are not authorized to delete this business.");
-            }
+            
 
             await _businessRepository.DeleteAsync(businessId);
         }

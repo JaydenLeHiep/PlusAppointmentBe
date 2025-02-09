@@ -77,8 +77,11 @@ namespace PlusAppointment.Controllers.BusinessController
             );
 
             await _businessService.AddBusinessAsync(business);
-            return Ok(new { message = "Business created successfully." });
+
+            return CreatedAtAction(nameof(GetById), new { businessId = business.BusinessId }, 
+                new { message = "Business created successfully.", businessId = business.BusinessId });
         }
+
 
         [Authorize(Roles = "Admin,Owner")]
         [HttpPut("{businessId}")]

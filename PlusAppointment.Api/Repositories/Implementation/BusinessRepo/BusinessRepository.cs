@@ -50,7 +50,7 @@ namespace PlusAppointment.Repositories.Implementation.BusinessRepo
                 var business = await context.Businesses.FindAsync(id);
                 if (business == null)
                 {
-                    throw new KeyNotFoundException($"Business with ID {id} not found");
+                    return null;
                 }
 
                 await _redisHelper.SetCacheAsync(cacheKey, business, TimeSpan.FromMinutes(10));

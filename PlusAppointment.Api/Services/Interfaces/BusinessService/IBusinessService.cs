@@ -3,6 +3,7 @@ using PlusAppointment.Models.DTOs;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using PlusAppointment.Models.Classes.Business;
+using PlusAppointment.Models.DTOs.Businesses;
 
 namespace PlusAppointment.Services.Interfaces.BusinessService
 {
@@ -10,7 +11,7 @@ namespace PlusAppointment.Services.Interfaces.BusinessService
     {
         Task<IEnumerable<Business?>> GetAllBusinessesAsync();
         Task<Business?> GetBusinessByIdAsync(int id);
-        Task AddBusinessAsync(BusinessDto businessDto, int userId);
+        Task AddBusinessAsync(Business business);
         Task UpdateBusinessAsync(int businessId, BusinessDto businessDto, int currentUserId, string userRole);
         Task DeleteBusinessAsync(int businessId, int currentUserId, string userRole);
         Task<IEnumerable<Service?>> GetServicesByBusinessIdAsync(int businessId);

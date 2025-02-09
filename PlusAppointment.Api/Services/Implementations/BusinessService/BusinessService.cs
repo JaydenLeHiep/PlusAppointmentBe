@@ -1,6 +1,7 @@
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Models.Classes.Business;
 using PlusAppointment.Models.DTOs;
+using PlusAppointment.Models.DTOs.Businesses;
 using PlusAppointment.Repositories.Interfaces.BusinessRepo;
 using PlusAppointment.Services.Interfaces.BusinessService;
 
@@ -31,16 +32,8 @@ namespace PlusAppointment.Services.Implementations.BusinessService
             return await _businessRepository.GetByNameAsync(businessName);
         }
 
-        public async Task AddBusinessAsync(BusinessDto businessDto, int userId)
+        public async Task AddBusinessAsync(Business business)
         {
-            var business = new Business
-            (
-                name: businessDto.Name,
-                address: businessDto.Address,
-                phone: businessDto.Phone,
-                email: businessDto.Email,
-                userID: userId
-            );
             await _businessRepository.AddAsync(business);
         }
 

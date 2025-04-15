@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using PlusAppointment.Models.DTOs;
 using PlusAppointment.Services.Interfaces.NotAvailableTimeService;
+using PlusAppointment.Utils.Hub;
 
 namespace PlusAppointment.Controllers.NotAvailableTimeController
 {
@@ -10,13 +12,14 @@ namespace PlusAppointment.Controllers.NotAvailableTimeController
     public class NotAvailableTimeController : ControllerBase
     {
         private readonly INotAvailableTimeService _notAvailableTimeService;
+        private readonly IHubContext<AppointmentHub> _hubContext;
 
-        public NotAvailableTimeController(INotAvailableTimeService notAvailableTimeService)
+        public NotAvailableTimeController(INotAvailableTimeService notAvailableTimeService, IHubContext<AppointmentHub> hubContext)
         {
             _notAvailableTimeService = notAvailableTimeService;
+            _hubContext = hubContext;
         }
 
-        // GET: api/notavailabletime/business/{businessId}
         [HttpGet("business/{businessId}")]
         public async Task<IActionResult> GetAllByBusiness(int businessId)
         {
@@ -24,7 +27,6 @@ namespace PlusAppointment.Controllers.NotAvailableTimeController
             return Ok(notAvailableTimes);
         }
 
-        // GET: api/notavailabletime/business/{businessId}/staff/{staffId}
         [HttpGet("business/{businessId}/staff/{staffId}")]
         public async Task<IActionResult> GetAllByStaff(int businessId, int staffId)
         {
@@ -32,7 +34,6 @@ namespace PlusAppointment.Controllers.NotAvailableTimeController
             return Ok(notAvailableTimes);
         }
 
-        // GET: api/notavailabletime/business/{businessId}/staff/{staffId}/notavailabletime/{notAvailableTimeId}
         [HttpGet("business/{businessId}/staff/{staffId}/notavailabletime/{notAvailableTimeId}")]
         public async Task<IActionResult> GetById(int businessId, int staffId, int notAvailableTimeId)
         {
@@ -44,7 +45,6 @@ namespace PlusAppointment.Controllers.NotAvailableTimeController
             return Ok(notAvailableTime);
         }
 
-        // POST: api/notavailabletime/business/{businessId}/staff/{staffId}
         [Authorize]
         [HttpPost("business/{businessId}/staff/{staffId}")]
         public async Task<IActionResult> Add(int businessId, int staffId, [FromBody] NotAvailableTimeDto notAvailableTimeDto)
@@ -52,6 +52,7 @@ namespace PlusAppointment.Controllers.NotAvailableTimeController
             try
             {
                 await _notAvailableTimeService.AddNotAvailableTimeAsync(businessId, staffId, notAvailableTimeDto);
+                await _hubContext.Clients.All.SendAsync("ReceiveNotAvailableTimeUpdate", "added");
                 return Ok(new { message = "Not available time added successfully" });
             }
             catch (Exception ex)
@@ -60,7 +61,6 @@ namespace PlusAppointment.Controllers.NotAvailableTimeController
             }
         }
 
-        // PUT: api/notavailabletime/business/{businessId}/staff/{staffId}/notavailabletime/{notAvailableTimeId}
         [Authorize]
         [HttpPut("business/{businessId}/staff/{staffId}/notavailabletime/{notAvailableTimeId}")]
         public async Task<IActionResult> Update(int businessId, int staffId, int notAvailableTimeId, [FromBody] NotAvailableTimeDto notAvailableTimeDto)
@@ -68,6 +68,7 @@ namespace PlusAppointment.Controllers.NotAvailableTimeController
             try
             {
                 await _notAvailableTimeService.UpdateNotAvailableTimeAsync(businessId, staffId, notAvailableTimeId, notAvailableTimeDto);
+                await _hubContext.Clients.All.SendAsync("ReceiveNotAvailableTimeUpdate", "updated");
                 return Ok(new { message = "Not available time updated successfully" });
             }
             catch (KeyNotFoundException ex)
@@ -80,7 +81,6 @@ namespace PlusAppointment.Controllers.NotAvailableTimeController
             }
         }
 
-        // DELETE: api/notavailabletime/business/{businessId}/staff/{staffId}/notavailabletime/{notAvailableTimeId}
         [Authorize]
         [HttpDelete("business/{businessId}/staff/{staffId}/notavailabletime/{notAvailableTimeId}")]
         public async Task<IActionResult> Delete(int businessId, int staffId, int notAvailableTimeId)
@@ -88,6 +88,7 @@ namespace PlusAppointment.Controllers.NotAvailableTimeController
             try
             {
                 await _notAvailableTimeService.DeleteNotAvailableTimeAsync(businessId, staffId, notAvailableTimeId);
+                await _hubContext.Clients.All.SendAsync("ReceiveNotAvailableTimeUpdate", "deleted");
                 return Ok(new { message = "Not available time deleted successfully" });
             }
             catch (Exception ex)

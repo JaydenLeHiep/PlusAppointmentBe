@@ -226,6 +226,9 @@ builder.Services.AddScoped<SqsConsumer>();
 
 builder.Services.AddScoped<IShopPictureRepository, ShopPictureRepository>();
 builder.Services.AddScoped<IShopPictureService, ShopPictureService>();
+
+builder.Services.AddHttpClient(); // Enables injecting HttpClient into controllers like GoogleReviewsController
+
 builder.Services.AddAWSService<Amazon.S3.IAmazonS3>(awsOptions);  // AWS S3 service
 builder.Services.AddSingleton<S3Service>();
 builder.Services.AddScoped<BirthdayEmailJob>();

@@ -1,49 +1,44 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
+using PlusAppointment.Services.Interfaces.IGoogleReviewService;
 
-namespace PlusAppointment.Controllers.GoogleReviews
+namespace PlusAppointment.Controllers.GoogleReviewController
 {
     [ApiController]
     [Route("api/[controller]")]
     public class GoogleReviewsController : ControllerBase
     {
-        private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IConfiguration _config;
+        private readonly IGoogleReviewService _googleReviewService;
 
-        public GoogleReviewsController(IHttpClientFactory httpClientFactory, IConfiguration config)
+        public GoogleReviewsController(IGoogleReviewService googleReviewService)
         {
-            _httpClientFactory = httpClientFactory;
-            _config = config;
+            _googleReviewService = googleReviewService;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetReviews()
         {
-            var apiKey = _config["Google:ApiKey"];
-            var placeId = _config["Google:PlaceId"];
-
-            if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(placeId))
-                return BadRequest("API Key or Place ID not configured.");
-
-            var client = _httpClientFactory.CreateClient();
-            var url = $"https://maps.googleapis.com/maps/api/place/details/json?place_id={placeId}&fields=reviews,rating,user_ratings_total&key={apiKey}";
-
             try
             {
-                var response = await client.GetAsync(url);
-                response.EnsureSuccessStatusCode();
-                var content = await response.Content.ReadAsStringAsync();
-                return Content(content, "application/json");
+                var result = await _googleReviewService.GetReviewsAsync();
+                return Content(result, "application/json");
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex)
             {
-                return StatusCode(502, $"Google API error: {ex.Message}");
+                return StatusCode(500, new { message = ex.Message });
             }
-            catch
+        }
+
+        [HttpGet("avatar")]
+        public async Task<IActionResult> GetAvatar([FromQuery] string url)
+        {
+            try
             {
-                return StatusCode(500, "Internal server error while fetching reviews.");
+                var imageBytes = await _googleReviewService.GetAvatarAsync(url);
+                return File(imageBytes, "image/jpeg");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
         }
     }

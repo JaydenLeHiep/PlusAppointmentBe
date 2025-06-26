@@ -91,13 +91,11 @@ using PlusAppointment.Services.Implementations.DiscountCodeService;
 using PlusAppointment.Services.Implementations.DiscountTierService;
 using PlusAppointment.Services.Implementations.EmailContentService;
 using PlusAppointment.Services.Implementations.EmailSendingService;
-using PlusAppointment.Services.Implementations.GoogleService;
 using PlusAppointment.Services.Interfaces.CheckInService;
 using PlusAppointment.Services.Interfaces.DiscountCodeService;
 using PlusAppointment.Services.Interfaces.DiscountTierService;
 using PlusAppointment.Services.Interfaces.EmailContentService;
 using PlusAppointment.Services.Interfaces.EmailSendingService;
-using PlusAppointment.Services.Interfaces.IGoogleReviewService;
 using PlusAppointment.Utils.CustomAuthorizationFilter;
 using PlusAppointment.Utils.EmailJob;
 using PlusAppointment.Utils.Errors;
@@ -234,8 +232,6 @@ builder.Services.AddHttpClient(); // Enables injecting HttpClient into controlle
 builder.Services.AddAWSService<Amazon.S3.IAmazonS3>(awsOptions);  // AWS S3 service
 builder.Services.AddSingleton<S3Service>();
 builder.Services.AddScoped<BirthdayEmailJob>();
-
-builder.Services.AddScoped<IGoogleReviewService, GoogleReviewService>();
 
 // mapping
 builder.Services.AddAutoMapper(typeof(MappingProfile));

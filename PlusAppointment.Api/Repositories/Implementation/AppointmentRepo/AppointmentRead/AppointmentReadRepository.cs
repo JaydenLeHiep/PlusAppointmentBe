@@ -1,22 +1,18 @@
 using Microsoft.EntityFrameworkCore;
 using PlusAppointment.Data;
 using PlusAppointment.Models.Classes;
-
-using PlusAppointment.Models.DTOs.Appointment;
 using PlusAppointment.Repositories.Interfaces.AppointmentRepo.AppointmentRead;
-using PlusAppointment.Utils.Redis;
 
 namespace PlusAppointment.Repositories.Implementation.AppointmentRepo.AppointmentRead;
 
 public class AppointmentReadRepository : IAppointmentReadRepository
 {
     private readonly ApplicationDbContext _context;
-    private readonly RedisHelper _redisHelper;
+    private static readonly log4net.ILog logger = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-    public AppointmentReadRepository(ApplicationDbContext context, RedisHelper redisHelper)
+    public AppointmentReadRepository(ApplicationDbContext context)
     {
         _context = context;
-        _redisHelper = redisHelper;
     }
 
     private DateTime GetStartOfTodayUtc()
@@ -24,163 +20,150 @@ public class AppointmentReadRepository : IAppointmentReadRepository
         return DateTime.UtcNow.Date;
     }
 
-    public async Task<IEnumerable<Appointment>> GetAllAppointmentsAsync()
+    public async Task<List<Appointment>> GetAllAppointmentsAsync()
     {
-        const string cacheKey = "all_appointments";
-        var cachedAppointments = await _redisHelper.GetCacheAsync<List<AppointmentCacheDto>>(cacheKey);
-
-        if (cachedAppointments != null && cachedAppointments.Any())
+        try
         {
-            return cachedAppointments.Select(dto => MapFromCacheDto(dto));
+            var appointments = await _context.Appointments
+                .Include(a => a.Customer)
+                .Include(a => a.Business)
+                .Include(a => a.AppointmentServices)!
+                .ThenInclude(apptService => apptService.Service)
+                .Include(a => a.AppointmentServices)!
+                .ThenInclude(apptService => apptService.Staff)
+                .ToListAsync();
+        
+            return appointments;
         }
-
-        var appointments = await _context.Appointments
-            .Include(a => a.Customer)
-            .Include(a => a.Business)
-            .Include(a => a.AppointmentServices)!
-            .ThenInclude(apptService => apptService.Service)
-            .Include(a => a.AppointmentServices)!
-            .ThenInclude(apptService => apptService.Staff)
-            .ToListAsync();
-
-        var appointmentCacheDtos = appointments.Select(MapToCacheDto).ToList();
-        await _redisHelper.SetCacheAsync(cacheKey, appointmentCacheDtos, TimeSpan.FromMinutes(10));
-
-        return appointments;
+        catch (Exception e)
+        {
+            logger.Error("Error while retrieving all appointments: "+ e);
+            return new List<Appointment>();
+        }
     }
 
     public async Task<Appointment?> GetAppointmentByIdAsync(int appointmentId)
     {
-        // string cacheKey = $"appointment_{appointmentId}";
-        // var appointmentCacheDto = await _redisHelper.GetCacheAsync<AppointmentCacheDto>(cacheKey);
-        // if (appointmentCacheDto != null)
-        // {
-        //     return MapFromCacheDto(appointmentCacheDto);
-        // }
-
-        var appointment = await _context.Appointments
-            .Include(a => a.Customer)
-            .Include(a => a.Business)
-            .Include(a => a.AppointmentServices)!
-            .ThenInclude(apptService => apptService.Service)
-            .Include(a => a.AppointmentServices)!
-            .ThenInclude(apptService => apptService.Staff)
-            .FirstOrDefaultAsync(a => a.AppointmentId == appointmentId);
-
-        return appointment;
-    }
-
-    public async Task<IEnumerable<Appointment>> GetAppointmentsByCustomerIdAsync(int customerId)
-    {
-        string cacheKey = $"appointments_customer_{customerId}";
-        var cachedAppointments = await _redisHelper.GetCacheAsync<List<AppointmentCacheDto>>(cacheKey);
-
-        if (cachedAppointments != null && cachedAppointments.Any())
+        try
         {
-            return cachedAppointments.Select(dto => MapFromCacheDto(dto));
+            var appointment = await _context.Appointments
+                .Include(a => a.Customer)
+                .Include(a => a.Business)
+                .Include(a => a.AppointmentServices)!
+                .ThenInclude(apptService => apptService.Service)
+                .Include(a => a.AppointmentServices)!
+                .ThenInclude(apptService => apptService.Staff)
+                .FirstOrDefaultAsync(a => a.AppointmentId == appointmentId);
+
+            return appointment;
+        }
+        catch (Exception e)
+        {
+            logger.Error("Error while retrieving an appointment: "+ e);
+            return null;
         }
 
-        var startOfTodayUtc = GetStartOfTodayUtc();
-        var appointments = await _context.Appointments
-            .Include(a => a.Customer)
-            .Include(a => a.Business)
-            .Include(a => a.AppointmentServices)!
-            .ThenInclude(apptService => apptService.Service)
-            .Include(a => a.AppointmentServices)!
-            .ThenInclude(apptService => apptService.Staff)
-            .Where(a => a.CustomerId == customerId && a.AppointmentTime >= startOfTodayUtc)
-            .ToListAsync();
-
-        var appointmentCacheDtos = appointments.Select(MapToCacheDto).ToList();
-        await _redisHelper.SetCacheAsync(cacheKey, appointmentCacheDtos, TimeSpan.FromMinutes(10));
-
-        return appointments;
     }
 
-    public async Task<IEnumerable<Appointment>> GetAppointmentsByBusinessIdAsync(int businessId)
+    public async Task<List<Appointment>> GetAppointmentsByCustomerIdAsync(int customerId)
     {
-        string cacheKey = $"appointments_business_{businessId}";
-        var cachedAppointments = await _redisHelper.GetCacheAsync<List<AppointmentCacheDto>>(cacheKey);
-
-        if (cachedAppointments != null && cachedAppointments.Any())
+        try
         {
-            return cachedAppointments.Select(dto => MapFromCacheDto(dto));
+            var startOfTodayUtc = GetStartOfTodayUtc();
+            var appointments = await _context.Appointments
+                .Include(a => a.Customer)
+                .Include(a => a.Business)
+                .Include(a => a.AppointmentServices)!
+                .ThenInclude(apptService => apptService.Service)
+                .Include(a => a.AppointmentServices)!
+                .ThenInclude(apptService => apptService.Staff)
+                .Where(a => a.CustomerId == customerId && a.AppointmentTime >= startOfTodayUtc)
+                .ToListAsync();
+
+            return appointments;
         }
-
-        var startOfTodayUtc = GetStartOfTodayUtc();
-        var appointments = await _context.Appointments
-            .Include(a => a.Customer)
-            .Include(a => a.Business)
-            .Include(a => a.AppointmentServices)!
-            .ThenInclude(apptService => apptService.Service)
-            .Include(a => a.AppointmentServices)!
-            .ThenInclude(apptService => apptService.Staff)
-            .Where(a => a.BusinessId == businessId && a.AppointmentTime >= startOfTodayUtc)
-            .ToListAsync();
-
-        var appointmentCacheDtos = appointments.Select(MapToCacheDto).ToList();
-        await _redisHelper.SetCacheAsync(cacheKey, appointmentCacheDtos, TimeSpan.FromMinutes(10));
-
-        return appointments;
+        catch (Exception e)
+        {
+            logger.Error("Error while retrieving an appointment by customer id " + customerId + ": " + e);
+            return new List<Appointment>();
+        }
     }
 
-    public async Task<IEnumerable<Appointment>> GetAppointmentsByStaffIdAsync(int staffId)
+    public async Task<List<Appointment>> GetAppointmentsByBusinessIdAsync(int businessId)
     {
-        string cacheKey = $"appointments_staff_{staffId}";
-        var cachedAppointments = await _redisHelper.GetCacheAsync<List<AppointmentCacheDto>>(cacheKey);
-
-        if (cachedAppointments != null && cachedAppointments.Any())
+        try
         {
-            return cachedAppointments.Select(dto => MapFromCacheDto(dto));
+            var startOfTodayUtc = GetStartOfTodayUtc();
+            var appointments = await _context.Appointments
+                .Include(a => a.Customer)
+                .Include(a => a.Business)
+                .Include(a => a.AppointmentServices)!
+                .ThenInclude(apptService => apptService.Service)
+                .Include(a => a.AppointmentServices)!
+                .ThenInclude(apptService => apptService.Staff)
+                .Where(a => a.BusinessId == businessId && a.AppointmentTime >= startOfTodayUtc)
+                .ToListAsync();
+        
+            return appointments;
         }
-
-        var startOfTodayUtc = GetStartOfTodayUtc();
-
-        var appointments = await _context.Appointments
-            .Include(a => a.Customer)
-            .Include(a => a.Business)
-            .Include(a => a.AppointmentServices)!
-            .ThenInclude(apptService => apptService.Service)
-            .Include(a => a.AppointmentServices)!
-            .ThenInclude(apptService => apptService.Staff)
-            .Where(a => a.AppointmentServices != null &&
-                        a.AppointmentServices.Any(apptService => apptService.StaffId == staffId) &&
-                        a.AppointmentTime >= startOfTodayUtc)
-            .ToListAsync();
-
-        var appointmentCacheDtos = appointments.Select(MapToCacheDto).ToList();
-        await _redisHelper.SetCacheAsync(cacheKey, appointmentCacheDtos, TimeSpan.FromMinutes(10));
-
-        return appointments;
+        catch (Exception e)
+        {
+            logger.Error("Error while retrieving an appointment by business id " + businessId + ": " + e);
+            return new List<Appointment>();
+        }
     }
 
-    public async Task<IEnumerable<Appointment>> GetCustomerAppointmentHistoryAsync(int customerId)
+    public async Task<List<Appointment>> GetAppointmentsByStaffIdAsync(int staffId)
     {
-        string cacheKey = $"appointments_customer_{customerId}_history";
-        var cachedAppointments = await _redisHelper.GetCacheAsync<List<AppointmentCacheDto>>(cacheKey);
-
-        if (cachedAppointments != null && cachedAppointments.Any())
+        try
         {
-            return cachedAppointments.Select(dto => MapFromCacheDto(dto));
+            var startOfTodayUtc = GetStartOfTodayUtc();
+
+            var appointments = await _context.Appointments
+                .Include(a => a.Customer)
+                .Include(a => a.Business)
+                .Include(a => a.AppointmentServices)!
+                .ThenInclude(apptService => apptService.Service)
+                .Include(a => a.AppointmentServices)!
+                .ThenInclude(apptService => apptService.Staff)
+                .Where(a => a.AppointmentServices != null &&
+                            a.AppointmentServices.Any(apptService => apptService.StaffId == staffId) &&
+                            a.AppointmentTime >= startOfTodayUtc)
+                .ToListAsync();
+
+            return appointments;
         }
-
-        var appointments = await _context.Appointments
-            .Include(a => a.Customer)
-            .Include(a => a.Business)
-            .Include(a => a.AppointmentServices)!
-            .ThenInclude(apptService => apptService.Service)
-            .Include(a => a.AppointmentServices)!
-            .ThenInclude(apptService => apptService.Staff)
-            .Where(a => a.CustomerId == customerId)
-            .ToListAsync();
-
-        var appointmentCacheDtos = appointments.Select(MapToCacheDto).ToList();
-        await _redisHelper.SetCacheAsync(cacheKey, appointmentCacheDtos, TimeSpan.FromMinutes(10));
-
-        return appointments;
+        catch (Exception e)
+        {
+            logger.Error("Error while retrieving an appointment by staff id " + staffId + ": " + e);
+            return new List<Appointment>();
+        }
     }
 
-    public async Task<IEnumerable<DateTime>> GetNotAvailableTimeSlotsAsync(int staffId, DateTime date)
+    public async Task<List<Appointment>> GetCustomerAppointmentHistoryAsync(int customerId)
+    {
+        try
+        {
+            var appointments = await _context.Appointments
+                .Include(a => a.Customer)
+                .Include(a => a.Business)
+                .Include(a => a.AppointmentServices)!
+                .ThenInclude(apptService => apptService.Service)
+                .Include(a => a.AppointmentServices)!
+                .ThenInclude(apptService => apptService.Staff)
+                .Where(a => a.CustomerId == customerId)
+                .ToListAsync();
+        
+            return appointments;
+        }
+        catch (Exception e)
+        {
+            logger.Error("Error while retrieving an appointment by customer id " + customerId + ": " + e);
+            return new List<Appointment>();
+        }
+    }
+
+    public async Task<List<DateTime>> GetNotAvailableTimeSlotsAsync(int staffId, DateTime date)
     {
         var utcDate = DateTime.SpecifyKind(date.Date, DateTimeKind.Utc);
 
@@ -222,61 +205,5 @@ public class AppointmentReadRepository : IAppointmentReadRepository
     {
         return await _context.ServiceCategories
             .FirstOrDefaultAsync(sc => sc.CategoryId == categoryId);
-    }
-
-    private Appointment MapFromCacheDto(AppointmentCacheDto dto)
-    {
-        var services = dto.ServiceStaffs.Select(ss => new AppointmentServiceStaffMapping
-        {
-            ServiceId = ss.ServiceId,
-            StaffId = ss.StaffId,
-            Service = _context.Services.FirstOrDefault(s => s.ServiceId == ss.ServiceId),
-            Staff = _context.Staffs.FirstOrDefault(s => s.StaffId == ss.StaffId)
-        }).ToList();
-
-        return new Appointment
-        {
-            AppointmentId = dto.AppointmentId,
-            CustomerId = dto.CustomerId,
-            Customer = new Customer
-            {
-                CustomerId = dto.CustomerId,
-                Name = dto.CustomerName,
-                Phone = dto.CustomerPhone
-            },
-            BusinessId = dto.BusinessId,
-            AppointmentTime = dto.AppointmentTime,
-            Duration = dto.Duration,
-            Comment = dto.Comment,
-            Status = dto.Status,
-            AppointmentServices = services
-        };
-    }
-
-    private AppointmentCacheDto MapToCacheDto(Appointment appointment)
-    {
-        var serviceStaffs = appointment.AppointmentServices?
-            .Select(apptService => new ServiceStaffCacheDto
-            {
-                ServiceId = apptService.ServiceId,
-                ServiceName = apptService.Service?.Name ?? string.Empty,
-                StaffId = apptService.StaffId,
-                StaffName = apptService.Staff?.Name ?? string.Empty,
-                StaffPhone = apptService.Staff?.Phone ?? string.Empty
-            }).ToList() ?? new List<ServiceStaffCacheDto>();
-
-        return new AppointmentCacheDto
-        {
-            AppointmentId = appointment.AppointmentId,
-            CustomerId = appointment.CustomerId,
-            CustomerName = appointment.Customer?.Name ?? string.Empty,
-            CustomerPhone = appointment.Customer?.Phone ?? string.Empty,
-            BusinessId = appointment.BusinessId,
-            AppointmentTime = appointment.AppointmentTime,
-            Duration = appointment.Duration,
-            Comment = appointment.Comment ?? string.Empty,
-            Status = appointment.Status,
-            ServiceStaffs = serviceStaffs
-        };
     }
 }

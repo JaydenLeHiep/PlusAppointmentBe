@@ -52,7 +52,6 @@ public class AppointmentsController : ControllerBase
     public async Task<IActionResult> GetById(int appointmentId)
     {
         var userRole = HttpContext.Items["UserRole"]?.ToString();
-        //var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
         if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
         {
             return NotFound(new { message = "You are not authorized to view this business." });
@@ -90,7 +89,7 @@ public class AppointmentsController : ControllerBase
 
         var appointments = await _appointmentService.GetCustomerAppointmentHistoryAsync(customerId);
 
-        if (appointments == null || !appointments.Any())
+        if (!appointments.Any())
         {
             return NotFound(new { message = "No appointment history found for the customer." });
         }
@@ -104,7 +103,6 @@ public class AppointmentsController : ControllerBase
     public async Task<IActionResult> GetByBusinessId(int businessId)
     {
         var userRole = HttpContext.Items["UserRole"]?.ToString();
-        //var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
         if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
         {
             return NotFound(new { message = "You are not authorized to view this business." });
@@ -119,7 +117,6 @@ public class AppointmentsController : ControllerBase
     public async Task<IActionResult> GetByStaffId(int staffId)
     {
         var userRole = HttpContext.Items["UserRole"]?.ToString();
-        //var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? throw new InvalidOperationException());
         if (userRole != Role.Admin.ToString() && userRole != Role.Staff.ToString() && userRole != Role.Owner.ToString())
         {
             return NotFound(new { message = "You are not authorized to view this business." });
@@ -134,12 +131,10 @@ public class AppointmentsController : ControllerBase
     {
         try
         {
-            // Add the appointment and get the result (success flag and appointment object)
             var (isSuccess, appointment) = await _appointmentService.AddAppointmentAsync(appointmentDto);
 
             if (!isSuccess)
             {
-                // If the appointment was not added, return a BadRequest with an appropriate message
                 return BadRequest(new { message = "Appointment could not be added due to some errors." });
             }
 
@@ -154,8 +149,7 @@ public class AppointmentsController : ControllerBase
 
             // Optionally send a notification update
             await _hubContext.Clients.All.SendAsync("ReceiveNotificationUpdate", "A new notification for the appointment!");
-
-            // Return a success response with the added appointment details
+            
             return Ok(new 
             { 
                 message = "Appointment added successfully", 
@@ -164,7 +158,6 @@ public class AppointmentsController : ControllerBase
         }
         catch (Exception ex)
         {
-            // Return a BadRequest with the exception message in case of any errors
             return BadRequest(new { message = ex.Message });
         }
     }
@@ -177,8 +170,6 @@ public class AppointmentsController : ControllerBase
     {
         try
         {
-            // Ensure the provided AppointmentTime is treated as UTC
-            //updateAppointmentDto.AppointmentTime = DateTime.SpecifyKind(updateAppointmentDto.AppointmentTime, DateTimeKind.Utc);
             await _appointmentService.UpdateAppointmentAsync(appointmentId, updateAppointmentDto);
             return Ok(new { message = "Appointment updated successfully" });
         }
@@ -247,28 +238,24 @@ public class AppointmentsController : ControllerBase
         {
             return BadRequest("Invalid staff ID.");
         }
-
-        // Call the service to get the not-available time slots
+        
         var notAvailableTimeSlots = await _appointmentService.GetNotAvailableTimeSlotsAsync(staffId, date);
-
-        // Check if the time slots exist, return empty if none found
+        
         if (notAvailableTimeSlots == null || !notAvailableTimeSlots.Any())
         {
             return Ok(new AvailableTimeSlotsDto
             {
                 StaffId = staffId,
-                AvailableTimeSlots = new List<DateTime>() // Return an empty list if no slots are found
+                AvailableTimeSlots = new List<DateTime>()
             });
         }
 
-        // Prepare the response DTO with the available slots
         var response = new AvailableTimeSlotsDto
         {
             StaffId = staffId,
-            AvailableTimeSlots = notAvailableTimeSlots.ToList() // Convert to list for the DTO
+            AvailableTimeSlots = notAvailableTimeSlots.ToList()
         };
-
-        // Return the 200 OK response with the populated response DTO
+        
         return Ok(response);
     }
     

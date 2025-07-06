@@ -19,11 +19,10 @@ WORKDIR /app
 # Copy the appsettings.json file explicitly from the source directory to the runtime environment
 COPY --from=build /src/PlusAppointment.Api/appsettings.json /app/appsettings.json
 
-
-
 # Copy the published application files
 COPY --from=build /app/out .
 
+RUN mkdir -p /app/logs
 # Expose port 80
 EXPOSE 80
 

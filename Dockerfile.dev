@@ -1,0 +1,16 @@
+# Development-only Dockerfile with dotnet watch for hot reload
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS dev
+WORKDIR /app
+
+# Copy everything so that watch has full context
+COPY . .
+
+# Create logs directory
+RUN mkdir -p /app/logs
+
+# Expose port for development
+EXPOSE 80
+
+# Use dotnet watch for hot reload
+ENTRYPOINT ["dotnet", "watch", "--project", "PlusAppointment.Api/PlusAppointment.Api.csproj", "run", "--urls=http://0.0.0.0:80"]

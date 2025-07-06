@@ -1,5 +1,3 @@
-using PlusAppointment.Models.Classes;
-using PlusAppointment.Models.DTOs;
 using PlusAppointment.Models.DTOs.Appointment;
 
 namespace PlusAppointment.Services.Interfaces.AppointmentService
@@ -15,7 +13,7 @@ namespace PlusAppointment.Services.Interfaces.AppointmentService
         Task DeleteAppointmentAsync(int id);
         Task DeleteAppointmentForCustomerAsync(int id);
         Task<IEnumerable<AppointmentRetrieveDto>> GetAppointmentsByCustomerIdAsync(int customerId);
-        Task<IEnumerable<AppointmentRetrieveDto>> GetAppointmentsByBusinessIdAsync(int businessId);
+        Task<List<AppointmentRetrieveDto>> GetAppointmentsByBusinessIdAsync(int businessId);
         Task<IEnumerable<AppointmentRetrieveDto>> GetAppointmentsByStaffIdAsync(int staffId);
         Task<IEnumerable<AppointmentRetrieveDto>> GetCustomerAppointmentHistoryAsync(int customerId);
         Task<IEnumerable<DateTime>> GetNotAvailableTimeSlotsAsync(int staffId, DateTime date);

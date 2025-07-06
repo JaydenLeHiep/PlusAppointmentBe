@@ -20,7 +20,7 @@ public class AppointmentReadRepository : IAppointmentReadRepository
         return DateTime.UtcNow.Date;
     }
 
-    public async Task<List<Appointment>> GetAllAppointmentsAsync()
+    public async Task<IEnumerable<Appointment>> GetAllAppointmentsAsync()
     {
         try
         {
@@ -38,7 +38,7 @@ public class AppointmentReadRepository : IAppointmentReadRepository
         catch (Exception e)
         {
             logger.Error("Error while retrieving all appointments: "+ e);
-            return new List<Appointment>();
+            return Enumerable.Empty<Appointment>();
         }
     }
 
@@ -65,7 +65,7 @@ public class AppointmentReadRepository : IAppointmentReadRepository
 
     }
 
-    public async Task<List<Appointment>> GetAppointmentsByCustomerIdAsync(int customerId)
+    public async Task<IEnumerable<Appointment>> GetAppointmentsByCustomerIdAsync(int customerId)
     {
         try
         {
@@ -85,11 +85,11 @@ public class AppointmentReadRepository : IAppointmentReadRepository
         catch (Exception e)
         {
             logger.Error("Error while retrieving an appointment by customer id " + customerId + ": " + e);
-            return new List<Appointment>();
+            return Enumerable.Empty<Appointment>();
         }
     }
 
-    public async Task<List<Appointment>> GetAppointmentsByBusinessIdAsync(int businessId)
+    public async Task<IEnumerable<Appointment>> GetAppointmentsByBusinessIdAsync(int businessId)
     {
         try
         {
@@ -109,11 +109,11 @@ public class AppointmentReadRepository : IAppointmentReadRepository
         catch (Exception e)
         {
             logger.Error("Error while retrieving an appointment by business id " + businessId + ": " + e);
-            return new List<Appointment>();
+            return Enumerable.Empty<Appointment>();
         }
     }
 
-    public async Task<List<Appointment>> GetAppointmentsByStaffIdAsync(int staffId)
+    public async Task<IEnumerable<Appointment>> GetAppointmentsByStaffIdAsync(int staffId)
     {
         try
         {
@@ -136,11 +136,11 @@ public class AppointmentReadRepository : IAppointmentReadRepository
         catch (Exception e)
         {
             logger.Error("Error while retrieving an appointment by staff id " + staffId + ": " + e);
-            return new List<Appointment>();
+            return Enumerable.Empty<Appointment>();
         }
     }
 
-    public async Task<List<Appointment>> GetCustomerAppointmentHistoryAsync(int customerId)
+    public async Task<IEnumerable<Appointment>> GetCustomerAppointmentHistoryAsync(int customerId)
     {
         try
         {
@@ -159,11 +159,11 @@ public class AppointmentReadRepository : IAppointmentReadRepository
         catch (Exception e)
         {
             logger.Error("Error while retrieving an appointment by customer id " + customerId + ": " + e);
-            return new List<Appointment>();
+            return Enumerable.Empty<Appointment>();
         }
     }
 
-    public async Task<List<DateTime>> GetNotAvailableTimeSlotsAsync(int staffId, DateTime date)
+    public async Task<IEnumerable<DateTime>> GetNotAvailableTimeSlotsAsync(int staffId, DateTime date)
     {
         var utcDate = DateTime.SpecifyKind(date.Date, DateTimeKind.Utc);
 

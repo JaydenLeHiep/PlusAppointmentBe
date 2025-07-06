@@ -4,35 +4,23 @@ using NpgsqlTypes;
 using PlusAppointment.Data;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Repositories.Interfaces.ServicesRepo;
-using PlusAppointment.Utils.Redis;
 
 namespace PlusAppointment.Repositories.Implementation.ServicesRepo
 {
     public class ServicesRepository : IServicesRepository
     {
         private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
-        private readonly RedisHelper _redisHelper;
 
-        public ServicesRepository(IDbContextFactory<ApplicationDbContext> contextFactory, RedisHelper redisHelper)
+        public ServicesRepository(IDbContextFactory<ApplicationDbContext> contextFactory)
         {
             _contextFactory = contextFactory;
-            _redisHelper = redisHelper;
         }
 
         public async Task<IEnumerable<Service?>> GetAllAsync()
         {
-            const string cacheKey = "all_services";
-            var cachedServices = await _redisHelper.GetCacheAsync<List<Service>>(cacheKey);
-
-            if (cachedServices != null && cachedServices.Any())
-            {
-                return cachedServices;
-            }
-
             using (var context = _contextFactory.CreateDbContext())
             {
                 var services = await context.Services.Include(s => s.Category).ToListAsync();
-                await _redisHelper.SetCacheAsync(cacheKey, services, TimeSpan.FromMinutes(10));
                 return services;
             }
         }
@@ -53,14 +41,6 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
 
         public async Task<IEnumerable<Service?>> GetAllByBusinessIdAsync(int businessId)
         {
-            string cacheKey = $"service_business_{businessId}";
-            var cachedServices = await _redisHelper.GetCacheAsync<List<Service>>(cacheKey);
-
-            if (cachedServices != null && cachedServices.Any())
-            {
-                return cachedServices.OrderBy(s => s.ServiceId);
-            }
-
             using (var context = _contextFactory.CreateDbContext())
             {
                 var services = await context.Services
@@ -69,7 +49,6 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
                     .OrderBy(s => s.ServiceId)
                     .ToListAsync();
 
-                await _redisHelper.SetCacheAsync(cacheKey, services, TimeSpan.FromMinutes(10));
                 return services;
             }
         }
@@ -92,8 +71,6 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
                 await context.Services.AddAsync(service);
                 await context.SaveChangesAsync();
             }
-
-            await RefreshRelatedCachesAsync(service);
         }
 
 
@@ -106,11 +83,6 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
             {
                 await context.Services.AddRangeAsync(enumerable!);
                 await context.SaveChangesAsync();
-            }
-
-            foreach (var service in enumerable)
-            {
-                if (service != null) await UpdateServiceCacheAsync(service);
             }
         }
 
@@ -144,8 +116,6 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
 
                 await command.ExecuteNonQueryAsync();
                 await transaction.CommitAsync();
-
-                await UpdateServiceCacheAsync(service);
             }
             catch
             {
@@ -156,13 +126,6 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
 
         public async Task<Service?> GetByBusinessIdServiceIdAsync(int businessId, int serviceId)
         {
-            string cacheKey = $"service_{serviceId}";
-            var cachedService = await _redisHelper.GetCacheAsync<Service>(cacheKey);
-            if (cachedService != null)
-            {
-                return cachedService;
-            }
-
             using (var context = _contextFactory.CreateDbContext())
             {
                 var service = await context.Services
@@ -174,8 +137,7 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
                 {
                     throw new KeyNotFoundException($"Service with ID {serviceId} not found for Business ID {businessId}");
                 }
-
-                await _redisHelper.SetCacheAsync(cacheKey, service, TimeSpan.FromMinutes(10));
+                
                 return service;
             }
         }
@@ -192,69 +154,7 @@ namespace PlusAppointment.Repositories.Implementation.ServicesRepo
                 {
                     context.Services.Remove(service);
                     await context.SaveChangesAsync();
-                    await InvalidateServiceCacheAsync(service);
-                    await RefreshRelatedCachesAsync(service);
                 }
-            }
-        }
-
-        private async Task UpdateServiceCacheAsync(Service service)
-        {
-            var serviceCacheKey = $"service_{service.ServiceId}";
-            await _redisHelper.SetCacheAsync(serviceCacheKey, service, TimeSpan.FromMinutes(10));
-
-            await _redisHelper.UpdateListCacheAsync<Service>(
-                $"service_business_{service.BusinessId}",
-                list =>
-                {
-                    int index = list.FindIndex(s => s.ServiceId == service.ServiceId);
-                    if (index != -1)
-                    {
-                        list[index] = service;
-                    }
-                    else
-                    {
-                        list.Add(service);
-                    }
-
-                    return list.OrderBy(s => s.ServiceId).ToList();
-                },
-                TimeSpan.FromMinutes(10));
-        }
-
-        private async Task InvalidateServiceCacheAsync(Service service)
-        {
-            var serviceCacheKey = $"service_{service.ServiceId}";
-            await _redisHelper.DeleteCacheAsync(serviceCacheKey);
-
-            await _redisHelper.RemoveFromListCacheAsync<Service>(
-                $"service_business_{service.BusinessId}",
-                list =>
-                {
-                    list.RemoveAll(s => s.ServiceId == service.ServiceId);
-                    return list;
-                },
-                TimeSpan.FromMinutes(10));
-        }
-
-        private async Task RefreshRelatedCachesAsync(Service service)
-        {
-            using (var context = _contextFactory.CreateDbContext())
-            {
-                var serviceCacheKey = $"service_{service.ServiceId}";
-                await _redisHelper.SetCacheAsync(serviceCacheKey, service, TimeSpan.FromMinutes(10));
-
-                string businessCacheKey = $"service_business_{service.BusinessId}";
-                var businessServices = await context.Services
-                    .Include(s => s.Category)
-                    .Where(s => s.BusinessId == service.BusinessId)
-                    .ToListAsync();
-
-                await _redisHelper.SetCacheAsync(businessCacheKey, businessServices, TimeSpan.FromMinutes(10));
-
-                const string allServicesCacheKey = "all_services";
-                var allServices = await context.Services.Include(s => s.Category).ToListAsync();
-                await _redisHelper.SetCacheAsync(allServicesCacheKey, allServices, TimeSpan.FromMinutes(10));
             }
         }
     }

@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using Amazon;
@@ -126,9 +127,8 @@ var awsOptions = new AWSOptions
     Region = RegionEndpoint.GetBySystemName(builder.Configuration["AWS:Region"])
 };
 
-// Ensure the Logs directory exists
-EnsureLogsDirectory();
-var logRepository = LogManager.GetRepository(System.Reflection.Assembly.GetEntryAssembly());
+// Load log4net configuration
+var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
 XmlConfigurator.Configure(logRepository, new FileInfo("log4net.config"));
 
 // Add services to the container.
@@ -226,6 +226,9 @@ builder.Services.AddScoped<SqsConsumer>();
 
 builder.Services.AddScoped<IShopPictureRepository, ShopPictureRepository>();
 builder.Services.AddScoped<IShopPictureService, ShopPictureService>();
+
+builder.Services.AddHttpClient(); // Enables injecting HttpClient into controllers like GoogleReviewsController
+
 builder.Services.AddAWSService<Amazon.S3.IAmazonS3>(awsOptions);  // AWS S3 service
 builder.Services.AddSingleton<S3Service>();
 builder.Services.AddScoped<BirthdayEmailJob>();
@@ -415,16 +418,6 @@ app.MapControllers();
 app.MapGet("/", () => "Hello World!");
 
 app.Run();
-
-// Helper function to ensure the Logs directory is created
-void EnsureLogsDirectory()
-{
-    var logsPath = Path.Combine(AppContext.BaseDirectory, "Logs");
-    if (!Directory.Exists(logsPath))
-    {
-        Directory.CreateDirectory(logsPath);
-    }
-}
 
 // Load environment-specific configuration
 builder.Configuration

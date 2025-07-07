@@ -13,6 +13,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo.Appointmen
     {
         private readonly ApplicationDbContext _context;
         private readonly IServicesRepository _servicesRepository;
+        private static readonly log4net.ILog logger = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
         public AppointmentWriteRepository(ApplicationDbContext context,
             IServicesRepository servicesRepository
@@ -211,6 +212,23 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo.Appointmen
 
             _context.Appointments.Remove(appointment);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<bool> DeleteAppointmentsBefore(DateTime date)
+        {
+            var appointments = await _context.Appointments
+                .Where(a => a.AppointmentTime < date)
+                .ToListAsync();
+            
+            if (!appointments.Any())
+            {
+                logger.Warn("No appointments to delete");
+                return false;
+            }
+
+            _context.Appointments.RemoveRange(appointments);
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 }

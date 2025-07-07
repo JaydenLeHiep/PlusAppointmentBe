@@ -38,6 +38,8 @@ using PlusAppointment.Utils.SendingSms;
 using Hangfire;
 using Hangfire.MemoryStorage;
 using Hangfire.PostgreSql;
+using PlusAppointment.CronJobs.DeleteAppointmentsLastMonthJob;
+using PlusAppointment.CronJobs.EmailJob;
 using PlusAppointment.Repositories.Implementation.AppointmentRepo.AppointmentRead;
 using PlusAppointment.Repositories.Implementation.AppointmentRepo.AppointmentWrite;
 using PlusAppointment.Repositories.Implementation.CalculateMoneyRepo;
@@ -95,7 +97,6 @@ using PlusAppointment.Services.Interfaces.DiscountTierService;
 using PlusAppointment.Services.Interfaces.EmailContentService;
 using PlusAppointment.Services.Interfaces.EmailSendingService;
 using PlusAppointment.Utils.CustomAuthorizationFilter;
-using PlusAppointment.Utils.EmailJob;
 using PlusAppointment.Utils.Errors;
 using PlusAppointment.Utils.Hash;
 using PlusAppointment.Utils.Hub;
@@ -358,19 +359,19 @@ app.UseHangfireDashboard("/api/hangfire", new DashboardOptions
 
 // Schedule the BirthdayEmailJob to run daily
 RecurringJob.AddOrUpdate<BirthdayEmailJob>(
-    "SendBirthdayEmails", // The job ID
-    job => job.ExecuteAsync(), // The method to run
-    Cron.Daily // Run the job daily
+    "SendBirthdayEmails",
+    job => job.ExecuteAsync(),
+    Cron.Daily
 );
 // Trigger the BirthdayEmailJob to run immediately for testing
 //BackgroundJob.Enqueue<BirthdayEmailJob>(job => job.ExecuteAsync());
 
-// Schedule the SqsConsumer background job to run periodically
-// RecurringJob.AddOrUpdate<SqsConsumer>(
-//     consumer => consumer.ProcessEmailQueueAsync(),
-//     Cron.Minutely); // This runs the job every minute (you can adjust this interval)
-//
-
+// Schedule the DeleteAppointmentsLastMonthJob to run monthly
+RecurringJob.AddOrUpdate<DeleteAppointmentsLastMonthJob>(
+    "DeleteAppointmentsLastMonth",
+    job => job.ExecuteAsync(),
+    Cron.Monthly
+);
 
 // Map the SignalR hub
 app.MapHub<AppointmentHub>("/appointmentHub");

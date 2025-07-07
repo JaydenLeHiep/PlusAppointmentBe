@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PlusAppointment.Data;
-using PlusAppointment.Utils.Redis;
 
 namespace PlusAppointment.Controllers
 {
@@ -10,13 +9,11 @@ namespace PlusAppointment.Controllers
     public class ConnectionController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
-        private readonly RedisHelper _redisHelper;
         private static readonly log4net.ILog logger = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        public ConnectionController(ApplicationDbContext context, RedisHelper redisHelper)
+        public ConnectionController(ApplicationDbContext context)
         {
             _context = context;
-            _redisHelper = redisHelper;
         }
 
         [HttpGet("test-connection")]

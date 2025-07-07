@@ -28,15 +28,12 @@ using PlusAppointment.Services.Interfaces.BusinessService;
 using PlusAppointment.Services.Interfaces.CustomerService;
 using PlusAppointment.Services.Interfaces.ServicesService;
 using PlusAppointment.Services.Interfaces.StaffService;
-using StackExchange.Redis;
-
 using PlusAppointment.Services.Implementations.AppointmentService;
 using PlusAppointment.Services.Implementations.BusinessService;
 using PlusAppointment.Services.Implementations.CustomerService;
 using PlusAppointment.Services.Implementations.ServicesService;
 using PlusAppointment.Services.Implementations.StaffService;
 using PlusAppointment.Services.Implementations.UserService;
-using PlusAppointment.Utils.Redis;
 using PlusAppointment.Utils.SendingSms;
 using Hangfire;
 using Hangfire.MemoryStorage;
@@ -219,7 +216,6 @@ builder.Services.AddScoped<IDiscountCodeRepository, DiscountCodeRepository>();
 builder.Services.AddScoped<IDiscountCodeService, DiscountCodeService>();
 
 builder.Services.AddSingleton<SmsService>();
-builder.Services.AddSingleton<RedisHelper>();
 builder.Services.AddTransient<SmsTextMagicService>();
 
 builder.Services.AddScoped<SqsConsumer>();
@@ -236,40 +232,6 @@ builder.Services.AddScoped<BirthdayEmailJob>();
 // mapping
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
-// Configure Redis
-var redisConnectionString = builder.Configuration.GetConnectionString("RedisConnection");
-
-if (string.IsNullOrEmpty(redisConnectionString))
-{
-    Console.WriteLine("Redis connection string is not configured.");
-    throw new InvalidOperationException("Redis connection string is not configured.");
-}
-
-ConfigurationOptions configurationOptions;
-try
-{
-    configurationOptions = ConfigurationOptions.Parse(redisConnectionString);
-    configurationOptions.AbortOnConnectFail = false;
-}
-catch (Exception ex)
-{
-    Console.WriteLine($"Failed to parse Redis connection string: {ex.Message}");
-    throw;
-}
-
-IConnectionMultiplexer redis;
-try
-{
-    redis = ConnectionMultiplexer.Connect(configurationOptions);
-    Console.WriteLine("Successfully connected to Redis.");
-}
-catch (Exception ex)
-{
-    Console.WriteLine($"Failed to connect to Redis: {ex.Message}");
-    throw;
-}
-
-builder.Services.AddSingleton(redis);
 
 // Configure Hangfire to use In-Memory storage
 builder.Services.AddHangfire(config =>

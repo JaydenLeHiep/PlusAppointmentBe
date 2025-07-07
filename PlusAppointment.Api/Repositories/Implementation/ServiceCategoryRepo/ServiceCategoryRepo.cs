@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using PlusAppointment.Data;
 using PlusAppointment.Models.Classes;
 using PlusAppointment.Repositories.Interfaces.ServiceCategoryRepo;
-using PlusAppointment.Utils.Redis;
 
 
 namespace PlusAppointment.Repositories.Implementation.ServiceCategoryRepo
@@ -10,46 +9,25 @@ namespace PlusAppointment.Repositories.Implementation.ServiceCategoryRepo
     public class ServiceCategoryRepo : IServiceCategoryRepo
     {
         private readonly ApplicationDbContext _context;
-        private readonly RedisHelper _redisHelper;
 
-        public ServiceCategoryRepo(ApplicationDbContext context, RedisHelper redisHelper)
+        public ServiceCategoryRepo(ApplicationDbContext context)
         {
             _context = context;
-            _redisHelper = redisHelper;
         }
 
         public async Task<ServiceCategory?> GetServiceCategoryByIdAsync(int id)
         {
-            string cacheKey = $"service_category_{id}";
-            var serviceCategory = await _redisHelper.GetCacheAsync<ServiceCategory>(cacheKey);
-
-            if (serviceCategory != null)
-            {
-                return serviceCategory;
-            }
-
-            serviceCategory = await _context.ServiceCategories.FindAsync(id);
+            var serviceCategory = await _context.ServiceCategories.FindAsync(id);
             if (serviceCategory == null)
             {
                 throw new KeyNotFoundException($"ServiceCategory with ID {id} not found");
             }
-
-            await _redisHelper.SetCacheAsync(cacheKey, serviceCategory, TimeSpan.FromMinutes(10));
             return serviceCategory;
         }
 
         public async Task<IEnumerable<ServiceCategory>> GetAllServiceCategoriesAsync()
         {
-            const string cacheKey = "all_service_categories";
-            var cachedServiceCategories = await _redisHelper.GetCacheAsync<List<ServiceCategory>>(cacheKey);
-
-            if (cachedServiceCategories != null && cachedServiceCategories.Any())
-            {
-                return cachedServiceCategories;
-            }
-
             var serviceCategories = await _context.ServiceCategories.ToListAsync();
-            await _redisHelper.SetCacheAsync(cacheKey, serviceCategories, TimeSpan.FromMinutes(10));
 
             return serviceCategories;
         }
@@ -58,42 +36,12 @@ namespace PlusAppointment.Repositories.Implementation.ServiceCategoryRepo
         {
             _context.ServiceCategories.Add(serviceCategory);
             await _context.SaveChangesAsync();
-
-            // Check if the cache for all service categories exists
-            const string allServiceCategoriesCacheKey = "all_service_categories";
-            var cachedServiceCategories = await _redisHelper.GetCacheAsync<List<ServiceCategory>>(allServiceCategoriesCacheKey);
-
-            if (cachedServiceCategories == null)
-            {
-                // If the cache is empty or expired, refresh the cache from the database
-                await RefreshRelatedCachesAsync(serviceCategory);
-            }
-            else
-            {
-                // If the cache exists, update it with the new service category
-                await UpdateServiceCategoryCacheAsync(serviceCategory);
-            }
         }
 
         public async Task UpdateServiceCategoryAsync(ServiceCategory serviceCategory)
         {
             _context.ServiceCategories.Update(serviceCategory);
             await _context.SaveChangesAsync();
-
-            // Check if the cache for all service categories exists
-            const string allServiceCategoriesCacheKey = "all_service_categories";
-            var cachedServiceCategories = await _redisHelper.GetCacheAsync<List<ServiceCategory>>(allServiceCategoriesCacheKey);
-
-            if (cachedServiceCategories == null)
-            {
-                // If the cache is empty or expired, refresh the cache from the database
-                await RefreshRelatedCachesAsync(serviceCategory);
-            }
-            else
-            {
-                // If the cache exists, update it with the modified service category
-                await UpdateServiceCategoryCacheAsync(serviceCategory);
-            }
         }
 
         public async Task DeleteServiceCategoryAsync(int id)
@@ -103,52 +51,7 @@ namespace PlusAppointment.Repositories.Implementation.ServiceCategoryRepo
             {
                 _context.ServiceCategories.Remove(serviceCategory);
                 await _context.SaveChangesAsync();
-                await InvalidateServiceCategoryCacheAsync(serviceCategory);
-                await RefreshRelatedCachesAsync(serviceCategory);
             }
         }
-
-        private async Task UpdateServiceCategoryCacheAsync(ServiceCategory serviceCategory)
-        {
-            var serviceCategoryCacheKey = $"service_category_{serviceCategory.CategoryId}";
-            await _redisHelper.SetCacheAsync(serviceCategoryCacheKey, serviceCategory, TimeSpan.FromMinutes(10));
-
-            await _redisHelper.UpdateListCacheAsync<ServiceCategory>(
-                "all_service_categories",
-                list =>
-                {
-                    list.RemoveAll(sc => sc.CategoryId == serviceCategory.CategoryId);
-                    list.Add(serviceCategory);
-                    return list;
-                },
-                TimeSpan.FromMinutes(10));
-        }
-
-        private async Task InvalidateServiceCategoryCacheAsync(ServiceCategory serviceCategory)
-        {
-            var serviceCategoryCacheKey = $"service_category_{serviceCategory.CategoryId}";
-            await _redisHelper.DeleteCacheAsync(serviceCategoryCacheKey);
-
-            await _redisHelper.RemoveFromListCacheAsync<ServiceCategory>(
-                "all_service_categories",
-                list =>
-                {
-                    list.RemoveAll(sc => sc.CategoryId == serviceCategory.CategoryId);
-                    return list;
-                },
-                TimeSpan.FromMinutes(10));
-        }
-        private async Task RefreshRelatedCachesAsync(ServiceCategory serviceCategory)
-        {
-            // Refresh individual ServiceCategory cache
-            var serviceCategoryCacheKey = $"service_category_{serviceCategory.CategoryId}";
-            await _redisHelper.SetCacheAsync(serviceCategoryCacheKey, serviceCategory, TimeSpan.FromMinutes(10));
-
-            // Refresh list of all ServiceCategories
-            const string allServiceCategoriesCacheKey = "all_service_categories";
-            var allServiceCategories = await _context.ServiceCategories.ToListAsync();
-            await _redisHelper.SetCacheAsync(allServiceCategoriesCacheKey, allServiceCategories, TimeSpan.FromMinutes(10));
-        }
-
     }
 }

@@ -49,26 +49,5 @@ namespace PlusAppointment.Controllers
                 logger.Info("Test connection method completed");
             }
         }
-
-        [HttpGet("test-redis-connection")]
-        public ActionResult<string> TestRedisConnection()
-        {
-            logger.Info("Starting Redis connection test");
-
-            try
-            {
-                var db = _redisHelper.GetDatabase();
-                logger.Debug("Attempting to ping Redis server");
-                var pingResult = db.Ping();
-
-                logger.Info($"Redis connection successful: Ping={pingResult.TotalMilliseconds}ms");
-                return Ok($"Redis connection is successful: Ping={pingResult.TotalMilliseconds}ms");
-            }
-            catch (Exception ex)
-            {
-                logger.Error("Redis connection failed", ex);
-                return StatusCode(500, $"Redis connection failed: {ex.Message}");
-            }
-        }
     }
 }

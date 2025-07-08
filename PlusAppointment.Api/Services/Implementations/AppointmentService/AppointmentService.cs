@@ -97,8 +97,6 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
                 {
                     ServiceId = service.ServiceId,
                     StaffId = staff.StaffId,
-                    Service = service,
-                    Staff = staff
                 };
             }).ToList();
             
@@ -117,10 +115,8 @@ namespace PlusAppointment.Services.Implementations.AppointmentService
             var appointment = new Appointment
             {
                 CustomerId = appointmentDto.CustomerId,
-                Customer = customer,
                 BusinessId = appointmentDto.BusinessId,
-                Business = business,
-                AppointmentTime = appointmentDto.AppointmentTime,
+                AppointmentTime = DateTime.SpecifyKind(appointmentDto.AppointmentTime, DateTimeKind.Utc),
                 Duration = TimeSpan.Zero,
                 Status = status,
                 CreatedAt = DateTime.UtcNow,

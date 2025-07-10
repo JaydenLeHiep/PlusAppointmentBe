@@ -101,7 +101,7 @@ using PlusAppointment.Utils.Errors;
 using PlusAppointment.Utils.Hash;
 using PlusAppointment.Utils.Hub;
 using PlusAppointment.Utils.Mapping;
-using PlusAppointment.Utils.SQS;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -218,8 +218,6 @@ builder.Services.AddScoped<IDiscountCodeService, DiscountCodeService>();
 
 builder.Services.AddSingleton<SmsService>();
 builder.Services.AddTransient<SmsTextMagicService>();
-
-builder.Services.AddScoped<SqsConsumer>();
 
 builder.Services.AddScoped<IShopPictureRepository, ShopPictureRepository>();
 builder.Services.AddScoped<IShopPictureService, ShopPictureService>();

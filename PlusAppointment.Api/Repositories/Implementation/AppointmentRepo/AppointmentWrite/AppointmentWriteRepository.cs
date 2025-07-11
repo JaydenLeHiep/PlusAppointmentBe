@@ -59,13 +59,7 @@ namespace PlusAppointment.Repositories.Implementation.AppointmentRepo.Appointmen
                             .Select(p => $"{p.Metadata.Name}={p.CurrentValue}")
                         )
                     });
-
-                foreach (var entry in trackedEntities)
-                {
-                    logger.Debug($"EF Tracking: {entry.EntityType} | State: {entry.State} | Keys: {entry.Keys}");
-                }
-
-
+                
                 _context.Appointments.Add(appointment);
 
                 await _context.SaveChangesAsync();

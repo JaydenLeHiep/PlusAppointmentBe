@@ -11,4 +11,5 @@ public interface IAppointmentWriteRepository
     Task UpdateAppointmentStatusAsync(Appointment appointment);
     Task DeleteAppointmentAsync(int appointmentId);
     Task DeleteAppointmentForCustomerAsync(int appointmentId);
+    Task<bool> DeleteAppointmentsBefore(DateTime date);
 }

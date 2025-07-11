@@ -4,6 +4,8 @@ namespace PlusAppointment.Models.Classes
     {
         public int Id { get; set; }
         public int BusinessId { get; set; } // Foreign key to link with your Business table
+        
+        public Business.Business? Business { get; set; }
 
         // TimeSpan properties for each day of the week
         public TimeSpan MondayOpeningTime { get; set; }

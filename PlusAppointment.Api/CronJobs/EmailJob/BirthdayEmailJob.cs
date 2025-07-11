@@ -4,7 +4,7 @@ using PlusAppointment.Repositories.Interfaces.CustomerRepo;
 using PlusAppointment.Repositories.Interfaces.DiscountCodeRepo;
 using PlusAppointment.Services.Interfaces.EmailSendingService;
 
-namespace PlusAppointment.Utils.EmailJob
+namespace PlusAppointment.CronJobs.EmailJob
 {
     public class BirthdayEmailJob
     {

@@ -18,6 +18,23 @@ public class NotificationController : ControllerBase
     {
         _notificationService = notificationService;
     }
+    [Authorize]
+    [HttpGet("business/{businessId}/all")]
+    public async Task<IActionResult> GetAllNotifications(int businessId)
+    {
+        var userRole = HttpContext.Items["UserRole"]?.ToString();
+        if (userRole != Role.Admin.ToString() && userRole != Role.Owner.ToString())
+        {
+            return NotFound(new { message = "You are not authorized to update this staff." });
+        }
+
+
+        var notifications = await _notificationService.GetAllNotificationsByBusinessIdAsync(businessId);
+
+
+
+        return Ok(notifications);
+    }
 
     // GET: api/notification/{businessId}
     // GET: api/notification/business/{businessId}

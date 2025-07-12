@@ -33,4 +33,9 @@ public class NotificationService: INotificationService
     {
         await _notificationRepository.MarkNotificationsAsSeenAsync(businessId, notificationIds);
     }
+
+    public async Task<IEnumerable<Notification>> GetAllNotificationsByBusinessIdAsync(int businessId)
+    {
+        return await _notificationRepository.GetAllNotificationsByBusinessIdAsync(businessId);
+    }
 }

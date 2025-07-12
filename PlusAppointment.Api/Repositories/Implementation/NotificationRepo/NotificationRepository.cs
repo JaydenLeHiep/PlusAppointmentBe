@@ -55,6 +55,20 @@ namespace PlusAppointment.Repositories.Implementation.NotificationRepo
                 await context.SaveChangesAsync();
             }
         }
-        
+
+        public async Task<IEnumerable<Notification>> GetAllNotificationsByBusinessIdAsync(int businessId)
+        {
+            var startOfToday = DateTime.UtcNow.Date;
+            var endOfToday = startOfToday.AddDays(1).AddTicks(-1);
+
+            using (var context = _contextFactory.CreateDbContext())
+            {
+                var businessNotifications = await context.Notifications
+                    .Where(n => n.BusinessId == businessId && n.CreatedAt >= startOfToday)
+                    .OrderBy(n => n.CreatedAt)
+                    .ToListAsync();
+                return businessNotifications;
+            }
+        }
     }
 }

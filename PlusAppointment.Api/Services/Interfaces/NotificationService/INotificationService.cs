@@ -8,4 +8,5 @@ public interface INotificationService
     Task<IEnumerable<Notification>> GetNotificationsByBusinessIdAsync(int businessId);
     Task MarkNotificationsAsSeenAsync(int businessId, List<int> notificationIds);
 
+    Task<IEnumerable<Notification>> GetAllNotificationsByBusinessIdAsync(int businessId);
 }

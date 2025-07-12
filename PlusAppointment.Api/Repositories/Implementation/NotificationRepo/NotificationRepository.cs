@@ -64,7 +64,7 @@ namespace PlusAppointment.Repositories.Implementation.NotificationRepo
             using (var context = _contextFactory.CreateDbContext())
             {
                 var businessNotifications = await context.Notifications
-                    .Where(n => n.BusinessId == businessId && n.CreatedAt >= startOfToday)
+                    .Where(n => n.BusinessId == businessId)
                     .OrderBy(n => n.CreatedAt)
                     .ToListAsync();
                 return businessNotifications;
